@@ -15,7 +15,7 @@ pub enum Commands {
     Save,
     Merge,
     Delete(DeleteArgs),
-    Sync,
+    Sync(SyncArgs),
     List,
 }
 
@@ -28,5 +28,10 @@ pub struct NewArgs {
 
 #[derive(Args)]
 pub struct DeleteArgs {
+    pub names: Vec<String>,
+}
+
+#[derive(Args)]
+pub struct SyncArgs {
     pub names: Vec<String>,
 }
