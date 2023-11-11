@@ -1,12 +1,10 @@
 use log::debug;
 
-use crate::branch::{string_to_branch, BranchSpec};
-
-pub fn resolve_base(specified_base: Option<String>) -> Result<BranchSpec, ()> {
+pub fn resolve_base(specified_base: &Option<String>) -> Result<String, ()> {
     debug!("resolve_base");
     if let Some(specified_base) = specified_base {
         if specified_base.len() > 0 {
-            return string_to_branch(&specified_base);
+            return Ok(specified_base.to_string());
         }
     }
     debug!("Checking iBASE");
@@ -25,10 +23,8 @@ pub fn resolve_base(specified_base: Option<String>) -> Result<BranchSpec, ()> {
     debug!("iBASE: {:?}", process_base);
 
     if let Some(process_base) = process_base {
-        return string_to_branch(&process_base);
+        return Ok(process_base);
     }
 
-    return Ok(BranchSpec::Local {
-        name: "main".to_string(),
-    });
+    return Ok("main".to_string());
 }

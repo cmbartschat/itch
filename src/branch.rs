@@ -9,7 +9,7 @@ pub enum BranchSpec {
     Remote { origin: String, name: String },
 }
 
-pub fn string_to_branch(str: &str) -> Result<BranchSpec, ()> {
+pub fn _string_to_branch(str: &str) -> Result<BranchSpec, ()> {
     let parts: Vec<&str> = str.split("/").collect();
     match parts.len() {
         1 => Ok(BranchSpec::Local {
