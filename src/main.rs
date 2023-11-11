@@ -2,6 +2,7 @@ use clap::Parser;
 use cli::{Cli, Commands};
 use ctx::init_ctx;
 use delete_command::delete_command;
+use list_command::list_command;
 use log::LevelFilter;
 use new_command::new_command;
 
@@ -10,6 +11,7 @@ mod branch;
 mod cli;
 mod ctx;
 mod delete_command;
+mod list_command;
 mod new_command;
 
 fn main() {
@@ -24,6 +26,7 @@ fn main() {
     match &cli.command {
         Commands::New(args) => new_command(&ctx, &args),
         Commands::Delete(args) => delete_command(&ctx, &args),
+        Commands::List => list_command(&ctx),
         _ => panic!("Not implemented."),
     }
     .expect("Failed to run command.");

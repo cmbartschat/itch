@@ -16,6 +16,7 @@ pub enum Commands {
     Merge,
     Delete(DeleteArgs),
     Sync,
+    List,
 }
 
 #[derive(Args)]
