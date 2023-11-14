@@ -1,4 +1,4 @@
-use git2::{Error, RebaseOptions, Repository};
+use git2::{Error, Oid, RebaseOptions, Repository};
 use log::debug;
 
 use crate::{cli::SyncArgs, ctx::Ctx};
@@ -14,16 +14,8 @@ fn sync_branch(repo: &mut Repository, branch: &str) -> Result<(), Error> {
     let upstream_id = repo.reference_to_annotated_commit(&&main_ref)?;
     let branch_id = repo.reference_to_annotated_commit(&branch_ref)?;
 
-    // let branch_commit = branch_ref.peel_to_commit()?;
-    // let main_commit = main_ref.peel_to_commit()?;
-
-    // let fork_point = repo.merge_base(start_commit.id(), base_commit.id())?;
-
     debug!("Attempting to rebase...");
 
-    // debug!("main_commit: {:?}", main_commit.id(),);
-
-    // debug!("branch_commit: {:?}", branch_commit.id(),);
     debug!(
         "branch: {:?}, ref: {:?}",
         branch_id.id(),
@@ -35,12 +27,6 @@ fn sync_branch(repo: &mut Repository, branch: &str) -> Result<(), Error> {
         upstream_id.id(),
         upstream_id.refname().unwrap_or("<unset>")
     );
-    // debug!("onto: {:?}", onto.id());
-
-    // if branch_id.id() == upstream.id() {
-    //     debug!("No change.");
-    //     return Ok(());
-    // }
 
     let mut rebase = repo.rebase(
         Some(&branch_id),
@@ -51,15 +37,27 @@ fn sync_branch(repo: &mut Repository, branch: &str) -> Result<(), Error> {
 
     debug!("Rebase started.");
 
+    let mut final_id: Option<Oid> = None;
+
     while let Some(Ok(operation)) = rebase.next() {
-        debug!("Looking at conflict: {:?}", operation);
+        debug!("Looking at operation: {:?}", operation);
+        let id = rebase.commit(None, &repo.signature()?, None)?;
+        debug!("Committed: {}", id);
+        final_id = Some(id);
     }
 
-    let result = rebase.finish(Some(&repo.signature()?))?;
+    rebase.finish(Some(&repo.signature()?))?;
 
-    // let result = rebase.commit(None, &repo.signature()?, None)?;
-    debug!("rebased and got {:?}", result);
-    // repo.branch(&branch, result, true)?;
+    match final_id {
+        Some(id) => {
+            let final_commit = repo.find_commit(id)?;
+            repo.branch(&branch, &final_commit, true)?;
+            debug!("rebased and updated {:?} with {:?}", branch, final_commit);
+        }
+        _ => {
+            debug!("Nothing to update.");
+        }
+    }
 
     Ok(())
 }
