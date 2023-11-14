@@ -3,26 +3,6 @@ use log::debug;
 
 use crate::ctx::Ctx;
 
-#[derive(Debug)]
-pub enum BranchSpec {
-    Local { name: String },
-    Remote { origin: String, name: String },
-}
-
-pub fn _string_to_branch(str: &str) -> Result<BranchSpec, ()> {
-    let parts: Vec<&str> = str.split("/").collect();
-    match parts.len() {
-        1 => Ok(BranchSpec::Local {
-            name: String::from(parts[0]),
-        }),
-        2 => Ok(BranchSpec::Remote {
-            origin: String::from(parts[0]),
-            name: String::from(parts[1]),
-        }),
-        _ => Err(()),
-    }
-}
-
 pub fn local_branch_exists(ctx: &Ctx, branch: &str) -> Result<bool, ()> {
     match ctx.repo.find_branch(branch, BranchType::Local) {
         Ok(_) => Ok(true),
