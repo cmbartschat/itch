@@ -21,6 +21,11 @@ pub fn _save_command(ctx: &Ctx, args: &SaveArgs) -> Result<(), Error> {
 
     let parent = repo.head()?.peel_to_commit()?;
 
+    if index_commit == parent.tree_id() {
+        println!("Nothing to commit.");
+        return Ok(());
+    }
+
     let commit = repo.commit(
         Some("HEAD"),
         &signature,
