@@ -3,6 +3,7 @@ use cli::{Cli, Commands};
 use ctx::init_ctx;
 use delete_command::delete_command;
 use list_command::list_command;
+use load_command::load_command;
 use log::LevelFilter;
 use new_command::new_command;
 use save_command::save_command;
@@ -14,6 +15,7 @@ mod cli;
 mod ctx;
 mod delete_command;
 mod list_command;
+mod load_command;
 mod new_command;
 mod save_command;
 mod sync_command;
@@ -33,6 +35,7 @@ fn main() {
         Commands::List => list_command(&ctx),
         Commands::Sync(args) => sync_command(&ctx, &args),
         Commands::Save(args) => save_command(&ctx, &args),
+        Commands::Load(args) => load_command(&ctx, &args),
         _ => panic!("Not implemented."),
     }
     .expect("Failed to run command.");

@@ -13,6 +13,7 @@ pub enum Commands {
     Init,
     New(NewArgs),
     Save(SaveArgs),
+    Load(LoadArgs),
     Merge,
     Delete(DeleteArgs),
     Sync(SyncArgs),
@@ -39,4 +40,9 @@ pub struct SyncArgs {
 #[derive(Args)]
 pub struct SaveArgs {
     pub message: Vec<String>,
+}
+
+#[derive(Args)]
+pub struct LoadArgs {
+    pub target: String,
 }
