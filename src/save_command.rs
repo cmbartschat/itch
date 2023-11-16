@@ -1,4 +1,4 @@
-use git2::{build::TreeUpdateBuilder, Error};
+use git2::{Error, IndexAddOption};
 use log::debug;
 
 use crate::{cli::SaveArgs, ctx::Ctx};
@@ -6,40 +6,27 @@ use crate::{cli::SaveArgs, ctx::Ctx};
 pub fn _save_command(ctx: &Ctx, args: &SaveArgs) -> Result<(), Error> {
     let repo = &ctx.repo;
 
-    let mut builder = TreeUpdateBuilder::new();
-
-    let mut index = ctx.repo.index()?;
-
+    let mut index = repo.index()?;
+    index.add_all(["*"], IndexAddOption::all(), None)?;
     let index_commit = index.write_tree()?;
 
-    let index_tree = repo.find_tree(index_commit)?;
+    let tree = repo.find_tree(index_commit)?;
 
-    // let tree_commit = builder.write()?;
+    let mut message = args.message.join(" ");
+    if message.len() == 0 {
+        message = String::from("Save");
+    }
 
-    builder.upsert(
-        "testing.txt",
-        repo.blob(&"Testing".as_bytes())?,
-        git2::FileMode::Blob,
-    );
+    let signature = repo.signature()?;
 
-    let combined_id = builder.create_updated(&repo, &index_tree)?;
+    let parent = repo.head()?.peel_to_commit()?;
 
-    let combined_tree = repo.find_tree(combined_id)?;
-
-    // ctx.repo.revparse("HEAD^{tree}")?;
-
-    let message = args.message.clone().unwrap_or(String::from("Save"));
-
-    let signature = &ctx.repo.signature()?;
-
-    let parent = &ctx.repo.head()?.peel_to_commit()?;
-
-    let commit = ctx.repo.commit(
-        None,
+    let commit = repo.commit(
+        Some("HEAD"),
         &signature,
         &signature,
         &message,
-        &combined_tree,
+        &tree,
         &[&parent],
     )?;
 

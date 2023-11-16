@@ -38,5 +38,5 @@ pub struct SyncArgs {
 
 #[derive(Args)]
 pub struct SaveArgs {
-    pub message: Option<String>,
+    pub message: Vec<String>,
 }
