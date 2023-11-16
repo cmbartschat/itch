@@ -12,7 +12,7 @@ pub struct Cli {
 pub enum Commands {
     Init,
     New(NewArgs),
-    Save,
+    Save(SaveArgs),
     Merge,
     Delete(DeleteArgs),
     Sync(SyncArgs),
@@ -34,4 +34,9 @@ pub struct DeleteArgs {
 #[derive(Args)]
 pub struct SyncArgs {
     pub names: Vec<String>,
+}
+
+#[derive(Args)]
+pub struct SaveArgs {
+    pub message: Option<String>,
 }
