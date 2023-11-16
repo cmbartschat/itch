@@ -23,7 +23,7 @@ fn main() {
         .filter_level(LevelFilter::Debug)
         .init();
 
-    let mut ctx = init_ctx().expect("Could not init ctx");
+    let ctx = init_ctx().expect("Could not init ctx");
 
     let cli = Cli::parse();
 
@@ -31,7 +31,7 @@ fn main() {
         Commands::New(args) => new_command(&ctx, &args),
         Commands::Delete(args) => delete_command(&ctx, &args),
         Commands::List => list_command(&ctx),
-        Commands::Sync(args) => sync_command(&mut ctx, &args),
+        Commands::Sync(args) => sync_command(&ctx, &args),
         Commands::Save(args) => save_command(&ctx, &args),
         _ => panic!("Not implemented."),
     }

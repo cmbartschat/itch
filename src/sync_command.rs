@@ -3,7 +3,7 @@ use log::debug;
 
 use crate::{cli::SyncArgs, ctx::Ctx};
 
-fn sync_branch(repo: &mut Repository, branch: &str) -> Result<(), Error> {
+fn sync_branch(repo: &Repository, branch: &str) -> Result<(), Error> {
     let branch_ref = repo
         .find_branch(&branch, git2::BranchType::Local)?
         .into_reference();
@@ -62,9 +62,9 @@ fn sync_branch(repo: &mut Repository, branch: &str) -> Result<(), Error> {
     Ok(())
 }
 
-pub fn sync_command(ctx: &mut Ctx, args: &SyncArgs) -> Result<(), ()> {
+pub fn sync_command(ctx: &Ctx, args: &SyncArgs) -> Result<(), ()> {
     for branch in &args.names {
-        sync_branch(&mut ctx.repo, &branch).map_err(|err| {
+        sync_branch(&ctx.repo, &branch).map_err(|err| {
             debug!("Failed to sync {} due to {:?}", branch, err);
             return ();
         })?;
