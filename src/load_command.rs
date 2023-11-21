@@ -10,19 +10,22 @@ use crate::{
 pub fn _load_command(ctx: &Ctx, args: &LoadArgs) -> Result<(), Error> {
     debug!("You want me to switch to: {}", args.target);
 
-    let branch = ctx
-        .repo
-        .find_branch(&args.target, git2::BranchType::Local)?;
+    let branch_refname = "refs/heads/".to_string() + &args.target;
 
-    let object = branch.into_reference().peel_to_commit()?.into_object();
-
-    ctx.repo.reset(&object, git2::ResetType::Hard, None)?;
+    ctx.repo.set_head(&branch_refname)?;
+    ctx.repo.checkout_head(None)?;
 
     Ok(())
 }
 
 pub fn load_command(ctx: &Ctx, args: &LoadArgs) -> Result<(), ()> {
-    save_command(ctx, &SaveArgs { message: vec![] })?;
+    let message_vec = vec!["Save before switching to".to_string(), args.target.clone()];
+    save_command(
+        ctx,
+        &SaveArgs {
+            message: message_vec,
+        },
+    )?;
 
     return _load_command(ctx, args).map_err(|e| {
         debug!("Load failed: {:?}", e);
