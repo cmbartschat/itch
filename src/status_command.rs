@@ -46,7 +46,7 @@ fn get_post_fork_commits(info: &BranchSummary) -> String {
         0 => "".to_string(),
         1 => format!("─ o{}", message_part),
         2 => format!("─ o ─ o{}", message_part),
-        3 => format!("─ o ─ o ─ o {}", message_part),
+        3 => format!("─ o ─ o ─ o{}", message_part),
         _ => format!("─ o ─ <{}> ─ o{}", info.commit_count - 2, message_part),
     }
 }
