@@ -37,12 +37,17 @@ struct ForkInfo<'a> {
 */
 
 fn get_post_fork_commits(info: &BranchSummary) -> String {
+    let message_part = match info.latest_message {
+        Some(s) => format!("<[{}]", s),
+        _ => String::from(""),
+    };
+
     match info.commit_count {
         0 => "".to_string(),
-        1 => "- o".to_string(),
-        2 => "- o - o".to_string(),
-        3 => "- o - o - o".to_string(),
-        _ => format!("- o - <{}> - o", info.commit_count - 2),
+        1 => format!("- o{}", message_part),
+        2 => format!("- o - o{}", message_part),
+        3 => format!("- o - o - o {}", message_part),
+        _ => format!("- o - <{}> - o{}", info.commit_count - 2, message_part),
     }
 }
 
