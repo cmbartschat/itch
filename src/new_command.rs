@@ -1,6 +1,12 @@
 use log::debug;
 
-use crate::{base::resolve_base, branch::choose_random_branch_name, cli::NewArgs, ctx::Ctx};
+use crate::{
+    base::resolve_base,
+    branch::choose_random_branch_name,
+    cli::{LoadArgs, NewArgs},
+    ctx::Ctx,
+    load_command::load_command,
+};
 
 pub fn new_command(ctx: &Ctx, args: &NewArgs) -> Result<(), ()> {
     debug!("Resolving base");
@@ -23,6 +29,8 @@ pub fn new_command(ctx: &Ctx, args: &NewArgs) -> Result<(), ()> {
     ctx.repo
         .branch(&name, &base_commit, false)
         .map_err(|_e| ())?;
+
+    load_command(&ctx, &LoadArgs { target: name })?;
 
     Ok(())
 }
