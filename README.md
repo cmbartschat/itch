@@ -24,6 +24,24 @@
 | cleanup | ✍️ | | | Delete branches with no changes
 | undo | | | ✍️ | Undo a change
 
+### Mapping from git
+
+- **git clone** -> `itch init https://something.git`
+-  **git init** -> `itch init`
+-  **git add** -> Not needed - there is no staging area
+-  **git commit** -> `itch save`
+-  **git status** -> todo
+-  **git pull** -> `itch sync`
+-  **git push** -> `itch merge` ?? 
+-  **git branch** `itch new` / `itch delete` / `itch list`
+-  **git checkout** `itch load`
+-  **git merge** `itch merge`
+-  **git log** `itch log`
+-  **git diff** `itch diff`
+-  **git remote** -> todo
+-  **git fetch** -> todo
+-  **git stash** -> `itch save`
+
 ## Internals
 
 - Git user metadata - uses as normal, supports code signing
