@@ -7,6 +7,7 @@ use load_command::load_command;
 use log::LevelFilter;
 use new_command::new_command;
 use save_command::save_command;
+use status_command::status_command;
 use sync_command::sync_command;
 
 mod base;
@@ -18,6 +19,7 @@ mod list_command;
 mod load_command;
 mod new_command;
 mod save_command;
+mod status_command;
 mod sync_command;
 
 fn main() {
@@ -36,6 +38,7 @@ fn main() {
         Commands::Sync(args) => sync_command(&ctx, &args),
         Commands::Save(args) => save_command(&ctx, &args),
         Commands::Load(args) => load_command(&ctx, &args),
+        Commands::Status(args) => status_command(&ctx, &args),
         _ => panic!("Not implemented."),
     }
     .expect("Failed to run command.");

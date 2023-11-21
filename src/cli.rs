@@ -18,6 +18,7 @@ pub enum Commands {
     Delete(DeleteArgs),
     Sync(SyncArgs),
     List,
+    Status(StatusArgs),
 }
 
 #[derive(Args)]
@@ -45,4 +46,9 @@ pub struct SaveArgs {
 #[derive(Args)]
 pub struct LoadArgs {
     pub target: String,
+}
+
+#[derive(Args)]
+pub struct StatusArgs {
+    pub target: Option<String>,
 }
