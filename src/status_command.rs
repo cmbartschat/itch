@@ -38,7 +38,11 @@ struct ForkInfo<'a> {
 
 fn get_post_fork_commits(info: &BranchSummary) -> String {
     let message_part = match info.latest_message {
-        Some(s) => format!("<[{}]", s),
+        Some(s) => {
+            let mut final_message = String::from(s);
+            final_message.truncate(25);
+            format!("<[{}]", final_message)
+        }
         _ => String::from(""),
     };
 
@@ -54,7 +58,7 @@ fn get_post_fork_commits(info: &BranchSummary) -> String {
 fn draw_fork_diagram(_info: &ForkInfo) {
     debug!("{:?}", _info);
     println!(
-        "         ┌─{} {}",
+        "         ┌ {} {}",
         get_post_fork_commits(&_info.head),
         _info.head.name
     );
