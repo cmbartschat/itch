@@ -2,6 +2,7 @@ use clap::Parser;
 use cli::{Cli, Commands};
 use ctx::init_ctx;
 use delete_command::delete_command;
+use diff_command::diff_command;
 use list_command::list_command;
 use load_command::load_command;
 use log::LevelFilter;
@@ -15,6 +16,7 @@ mod branch;
 mod cli;
 mod ctx;
 mod delete_command;
+mod diff_command;
 mod list_command;
 mod load_command;
 mod new_command;
@@ -39,6 +41,7 @@ fn main() {
         Commands::Save(args) => save_command(&ctx, &args),
         Commands::Load(args) => load_command(&ctx, &args),
         Commands::Status(args) => status_command(&ctx, &args),
+        Commands::Diff => diff_command(&ctx),
         _ => panic!("Not implemented."),
     }
     .expect("Failed to run command.");

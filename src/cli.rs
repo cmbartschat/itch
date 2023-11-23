@@ -19,6 +19,7 @@ pub enum Commands {
     Sync(SyncArgs),
     List,
     Status(StatusArgs),
+    Diff,
 }
 
 #[derive(Args)]
