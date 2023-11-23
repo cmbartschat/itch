@@ -19,7 +19,7 @@ pub enum Commands {
     Sync(SyncArgs),
     List,
     Status(StatusArgs),
-    Diff,
+    Diff(DiffArgs),
 }
 
 #[derive(Args)]
@@ -51,5 +51,10 @@ pub struct LoadArgs {
 
 #[derive(Args)]
 pub struct StatusArgs {
+    pub target: Option<String>,
+}
+
+#[derive(Args)]
+pub struct DiffArgs {
     pub target: Option<String>,
 }

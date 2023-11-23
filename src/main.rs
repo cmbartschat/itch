@@ -41,7 +41,7 @@ fn main() {
         Commands::Save(args) => save_command(&ctx, &args),
         Commands::Load(args) => load_command(&ctx, &args),
         Commands::Status(args) => status_command(&ctx, &args),
-        Commands::Diff => diff_command(&ctx),
+        Commands::Diff(args) => diff_command(&ctx, &args),
         _ => panic!("Not implemented."),
     }
     .expect("Failed to run command.");
