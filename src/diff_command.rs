@@ -18,8 +18,16 @@ fn _diff_command(ctx: &Ctx, args: &DiffArgs) -> Result<(), Error> {
         _ => ctx.repo.diff_tree_to_workdir(Some(&base_tree), None)?,
     };
     diff.print(git2::DiffFormat::Patch, |_, _, line| {
+        let origin = line.origin();
+        let color_code = match origin {
+            '+' => "\x1b[32m",
+            '-' => "\x1b[31m",
+            _ => "",
+        };
+
         print!(
-            "{}{}",
+            "{}{}{}\x1b[0m",
+            color_code,
             line.origin(),
             line.content().into_c_string().unwrap().to_str().unwrap()
         );
