@@ -24,6 +24,28 @@
 | cleanup | ✍️ | | | Delete branches with no changes
 | undo | | | ✍️ | Undo a change
 
+## TODO
+
+### Implement features
+
+- [ ] Add log
+- [ ] Add merge
+- [ ] Add rename
+- [ ] Add copy
+- [ ] Add squash
+- [ ] Add cleanup
+- [ ] Add undo
+
+### Tweaks
+
+- [ ] Make printing from main look more right
+- [ ] Make the index reset at times that make sense
+- [ ] Make diff take more options
+- [ ] Make sync handle conflicts
+- [ ] Trim whitespace when truncating commit messages
+- [ ] Add changed files to status
+
+
 ### Mapping from git
 
 - **git clone** -> `itch init https://something.git`
