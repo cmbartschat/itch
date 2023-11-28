@@ -6,6 +6,7 @@ use diff_command::diff_command;
 use list_command::list_command;
 use load_command::load_command;
 use log::LevelFilter;
+use log_command::log_command;
 use new_command::new_command;
 use save_command::save_command;
 use status_command::status_command;
@@ -19,6 +20,7 @@ mod delete_command;
 mod diff_command;
 mod list_command;
 mod load_command;
+mod log_command;
 mod new_command;
 mod save_command;
 mod status_command;
@@ -42,7 +44,7 @@ fn main() {
         Commands::Load(args) => load_command(&ctx, &args),
         Commands::Status(args) => status_command(&ctx, &args),
         Commands::Diff(args) => diff_command(&ctx, &args),
-        _ => panic!("Not implemented."),
+        Commands::Log => log_command(&ctx),
     }
     .expect("Failed to run command.");
 }
