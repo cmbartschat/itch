@@ -18,6 +18,7 @@ pub enum Commands {
     New(NewArgs),
     Save(SaveArgs),
     Status(StatusArgs),
+    Squash,
     Sync(SyncArgs),
 }
 

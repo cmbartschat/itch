@@ -9,6 +9,7 @@ use log::LevelFilter;
 use log_command::log_command;
 use new_command::new_command;
 use save_command::save_command;
+use squash_command::squash_command;
 use status_command::status_command;
 use sync_command::sync_command;
 
@@ -24,6 +25,7 @@ mod log_command;
 mod new_command;
 mod reset;
 mod save_command;
+mod squash_command;
 mod status_command;
 mod sync_command;
 
@@ -45,6 +47,7 @@ fn main() {
         Commands::New(args) => new_command(&ctx, &args),
         Commands::Save(args) => save_command(&ctx, &args),
         Commands::Status(args) => status_command(&ctx, &args),
+        Commands::Squash => squash_command(&ctx),
         Commands::Sync(args) => sync_command(&ctx, &args),
     }
     .expect("Failed to run command.");
