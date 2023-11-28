@@ -37,15 +37,15 @@ fn main() {
     let cli = Cli::parse();
 
     match &cli.command {
-        Commands::New(args) => new_command(&ctx, &args),
         Commands::Delete(args) => delete_command(&ctx, &args),
-        Commands::List => list_command(&ctx),
-        Commands::Sync(args) => sync_command(&ctx, &args),
-        Commands::Save(args) => save_command(&ctx, &args),
-        Commands::Load(args) => load_command(&ctx, &args),
-        Commands::Status(args) => status_command(&ctx, &args),
         Commands::Diff(args) => diff_command(&ctx, &args),
+        Commands::List => list_command(&ctx),
+        Commands::Load(args) => load_command(&ctx, &args),
         Commands::Log => log_command(&ctx),
+        Commands::New(args) => new_command(&ctx, &args),
+        Commands::Save(args) => save_command(&ctx, &args),
+        Commands::Status(args) => status_command(&ctx, &args),
+        Commands::Sync(args) => sync_command(&ctx, &args),
     }
     .expect("Failed to run command.");
 }

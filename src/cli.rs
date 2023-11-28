@@ -10,15 +10,15 @@ pub struct Cli {
 
 #[derive(Subcommand)]
 pub enum Commands {
+    Delete(DeleteArgs),
+    Diff(DiffArgs),
+    List,
+    Load(LoadArgs),
+    Log,
     New(NewArgs),
     Save(SaveArgs),
-    Load(LoadArgs),
-    Delete(DeleteArgs),
-    Sync(SyncArgs),
-    List,
     Status(StatusArgs),
-    Diff(DiffArgs),
-    Log,
+    Sync(SyncArgs),
 }
 
 #[derive(Args)]
