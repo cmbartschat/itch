@@ -1,7 +1,7 @@
 use git2::{Error, IndexAddOption};
 use log::debug;
 
-use crate::{cli::SaveArgs, ctx::Ctx};
+use crate::{cli::SaveArgs, ctx::Ctx, reset::reset_repo};
 
 pub fn _save_command(ctx: &Ctx, args: &SaveArgs) -> Result<(), Error> {
     let repo = &ctx.repo;
@@ -41,5 +41,15 @@ pub fn _save_command(ctx: &Ctx, args: &SaveArgs) -> Result<(), Error> {
 }
 
 pub fn save_command(ctx: &Ctx, args: &SaveArgs) -> Result<(), ()> {
-    return _save_command(ctx, args).map_err(|_| ());
+    _save_command(ctx, args).map_err(|e| {
+        println!("Failed to save: {}", e);
+        ()
+    })?;
+
+    reset_repo(&ctx).map_err(|e| {
+        println!("Failed to reset after save: {}", e);
+        ()
+    })?;
+
+    Ok(())
 }

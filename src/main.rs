@@ -22,6 +22,7 @@ mod list_command;
 mod load_command;
 mod log_command;
 mod new_command;
+mod reset;
 mod save_command;
 mod status_command;
 mod sync_command;
