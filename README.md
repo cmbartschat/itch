@@ -28,7 +28,7 @@
 
 ### Implement features
 
-- [ ] Add log
+- [x] Add log
 - [ ] Add merge
 - [ ] Add rename
 - [ ] Add copy
@@ -40,10 +40,14 @@
 
 - [ ] Make printing from main look more right
 - [ ] Make the index reset at times that make sense
+    - [ ] Save
+    - [ ] Switching clients
 - [ ] Make diff take more options
 - [ ] Make sync handle conflicts
 - [ ] Trim whitespace when truncating commit messages
 - [ ] Add changed files to status
+- [ ] Don't show main twice in status
+- [ ] Fix diff not showing new files
 
 
 ### Mapping from git
