@@ -15,6 +15,7 @@ pub enum Commands {
     List,
     Load(LoadArgs),
     Log,
+    Merge,
     New(NewArgs),
     Save(SaveArgs),
     Status(StatusArgs),

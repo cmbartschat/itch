@@ -7,6 +7,7 @@ use list_command::list_command;
 use load_command::load_command;
 use log::LevelFilter;
 use log_command::log_command;
+use merge_command::merge_command;
 use new_command::new_command;
 use save_command::save_command;
 use squash_command::squash_command;
@@ -22,6 +23,7 @@ mod diff_command;
 mod list_command;
 mod load_command;
 mod log_command;
+mod merge_command;
 mod new_command;
 mod reset;
 mod save_command;
@@ -44,6 +46,7 @@ fn main() {
         Commands::List => list_command(&ctx),
         Commands::Load(args) => load_command(&ctx, &args),
         Commands::Log => log_command(&ctx),
+        Commands::Merge => merge_command(&ctx),
         Commands::New(args) => new_command(&ctx, &args),
         Commands::Save(args) => save_command(&ctx, &args),
         Commands::Status(args) => status_command(&ctx, &args),
