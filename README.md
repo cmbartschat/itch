@@ -10,26 +10,37 @@
 
 | command | branches | current | files | description
 | :- | :- | :- | :- | :- |
-| init   | | | | Start a new repo
-| new    | ✍️ | ✍️ | ✍️ | Start a new branch
-| load   | ✍️ | ✍️ | ✍️ | Switch to an existing branch
-| delete | ✍️ |   |   | Delete a branch
-| save   | ✍️ | 📍 |   | Checkpoint the current work
-| merge  | ✍️ | 📍 | ✍️ | Integrate the current changes into the main branch
-| sync   | ✍️ | 📍 | ✍️ | Pull new changes from the main branch into the current branch
-| list   | 👀 | 👀 | |  List branches
-| log    | 👀 | 👀 | | Show the checkpoints along a branch
-| squash | ✍️ | 📍 | | Combine all the save commits into one commit
-| diff | 👀 | | | Compare branches and historical changes
-| cleanup | ✍️ | | | Delete branches with no changes
-| undo | | | ✍️ | Undo a change
+| init    |   |   |   | Start a new repo
+| new     | ✍️ | ✍️ | ✍️ | Start a new branch
+| load    | ✍️ | ✍️ | ✍️ | Switch to an existing branch
+| delete  | ✍️ |   |   | Delete a branch
+| save    | ✍️ | 📍 |   | Checkpoint the current work
+| merge   | ✍️ | 📍 | ✍️ | Integrate the current changes into the main branch
+| sync    | ✍️ | 📍 | ✍️ | Pull new changes from the main branch into the current branch
+| list    | 👀 | 👀 |   |  List branches
+| log     | 👀 | 👀 |   | Show the checkpoints along a branch
+| squash  | ✍️ | 📍 |   | Combine all the save commits into one commit
+| diff    | 👀 |   |   | Compare branches and historical changes
+| cleanup | ✍️ |   |   | Delete branches with no changes
+| undo    |   |   | ✍️ | Undo a change
+
+## Natural language commands
+
+```
+itch new branch from otherbranch
+itch squash to 7c5ac8
+itch squash as commit message
+itch diff between main and branch
+itch diff from 37f937
+itch sync to c001e5
+```
 
 ## TODO
 
 ### Implement features
 
 - [x] Add log
-- [ ] Add merge
+- [x] Add merge
 - [ ] Add rename
 - [ ] Add copy
 - [ ] Add squash
@@ -40,7 +51,7 @@
 
 - [ ] Make printing from main look more right
 - [ ] Make the index reset at times that make sense
-    - [ ] Save
+    - [x] Save
     - [ ] Switching clients
 - [ ] Make diff take more options
 - [ ] Make sync handle conflicts
@@ -48,7 +59,8 @@
 - [ ] Add changed files to status
 - [ ] Don't show main twice in status
 - [ ] Fix diff not showing new files
-
+- [ ] Make sync actually work
+- [ ] Remove extraneous print/debug statements
 
 ### Mapping from git
 
