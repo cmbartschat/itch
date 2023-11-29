@@ -3,7 +3,7 @@ use std::rc::Rc;
 use git2::{Commit, Error};
 use log::debug;
 
-use crate::{base::resolve_base, cli::StatusArgs, ctx::Ctx};
+use crate::{cli::StatusArgs, ctx::Ctx};
 
 #[derive(Debug)]
 struct BranchSummary<'a> {
@@ -140,8 +140,6 @@ fn _status_command(ctx: &Ctx, args: &StatusArgs, base: &str) -> Result<(), Error
 }
 
 pub fn status_command(ctx: &Ctx, args: &StatusArgs) -> Result<(), ()> {
-    let base = resolve_base(&None)?;
-
     // If separate branch:
 
     /*
@@ -159,7 +157,7 @@ pub fn status_command(ctx: &Ctx, args: &StatusArgs) -> Result<(), ()> {
     - b
      */
 
-    return _status_command(&ctx, &args, &base).map_err(|e| {
+    return _status_command(&ctx, &args, "main").map_err(|e| {
         debug!("{}", e);
         ()
     });

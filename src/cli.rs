@@ -26,8 +26,6 @@ pub enum Commands {
 #[derive(Args)]
 pub struct NewArgs {
     pub name: Option<String>,
-    #[arg(short, long)]
-    pub base: Option<String>,
 }
 
 #[derive(Args)]

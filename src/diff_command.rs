@@ -1,11 +1,10 @@
 use git2::{Delta, DiffOptions, Error, IntoCString};
 use log::debug;
 
-use crate::{base::resolve_base, cli::DiffArgs, ctx::Ctx};
+use crate::{cli::DiffArgs, ctx::Ctx};
 
 fn _diff_command(ctx: &Ctx, args: &DiffArgs) -> Result<(), Error> {
-    let base = resolve_base(&None).map_err(|_| Error::from_str("Unable to resolve base."))?;
-    let base_branch = ctx.repo.find_branch(&base, git2::BranchType::Local)?;
+    let base_branch = ctx.repo.find_branch("main", git2::BranchType::Local)?;
     let base_tree = base_branch.into_reference().peel_to_tree()?;
     debug!("{:?}", base_tree);
 

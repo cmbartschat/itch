@@ -14,7 +14,6 @@ use squash_command::squash_command;
 use status_command::status_command;
 use sync_command::sync_command;
 
-mod base;
 mod branch;
 mod cli;
 mod ctx;
