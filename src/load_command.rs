@@ -12,11 +12,16 @@ pub fn _load_command(ctx: &Ctx, args: &LoadArgs) -> Result<(), Error> {
 
     let target_ref = ctx
         .repo
-        .find_branch(&args.target, git2::BranchType::Local)?;
+        .find_branch(&args.target, git2::BranchType::Local)?
+        .into_reference();
 
-    if let Some(target) = target_ref.into_reference().name() {
+    if let Some(target) = target_ref.name() {
         ctx.repo.set_head(target)?;
-        ctx.repo.checkout_head(None)?;
+        ctx.repo.reset(
+            target_ref.peel_to_commit()?.as_object(),
+            git2::ResetType::Hard,
+            None,
+        )?;
         Ok(())
     } else {
         Err(Error::from_str("Invalid branch name"))
