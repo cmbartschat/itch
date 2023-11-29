@@ -10,12 +10,17 @@ use crate::{
 pub fn _load_command(ctx: &Ctx, args: &LoadArgs) -> Result<(), Error> {
     debug!("You want me to switch to: {}", args.target);
 
-    let branch_refname = "refs/heads/".to_string() + &args.target;
+    let target_ref = ctx
+        .repo
+        .find_branch(&args.target, git2::BranchType::Local)?;
 
-    ctx.repo.set_head(&branch_refname)?;
-    ctx.repo.checkout_head(None)?;
-
-    Ok(())
+    if let Some(target) = target_ref.into_reference().name() {
+        ctx.repo.set_head(target)?;
+        ctx.repo.checkout_head(None)?;
+        Ok(())
+    } else {
+        Err(Error::from_str("Invalid branch name"))
+    }
 }
 
 pub fn load_command(ctx: &Ctx, args: &LoadArgs) -> Result<(), ()> {
