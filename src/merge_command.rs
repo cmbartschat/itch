@@ -48,6 +48,5 @@ fn _merge_command(ctx: &Ctx) -> Result<(), Error> {
 pub fn merge_command(ctx: &Ctx) -> Result<(), ()> {
     return _merge_command(ctx).map_err(|e| {
         debug!("Failed to merge: {:?}", e);
-        ()
     });
 }

@@ -18,13 +18,17 @@ pub fn new_command(ctx: &Ctx, args: &NewArgs) -> Result<(), ()> {
     let base_branch = ctx
         .repo
         .find_branch("main", git2::BranchType::Local)
-        .map_err(|_e| ())?;
+        .map_err(|e| {
+            println!("Could not resolve base branch: {}", e.to_string());
+        })?;
 
-    let base_commit = base_branch.get().peel_to_commit().map_err(|_e| ())?;
+    let base_commit = base_branch.get().peel_to_commit().map_err(|e| {
+        println!("Failed to resolve current base: {}", e.to_string());
+    })?;
 
-    ctx.repo
-        .branch(&name, &base_commit, false)
-        .map_err(|_e| ())?;
+    ctx.repo.branch(&name, &base_commit, false).map_err(|e| {
+        println!("Could not create branch: {}", e.to_string());
+    })?;
 
     load_command(&ctx, &LoadArgs { target: name })?;
 

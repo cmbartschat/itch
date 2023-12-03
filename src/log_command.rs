@@ -33,6 +33,5 @@ pub fn _log_command(ctx: &Ctx) -> Result<(), Error> {
 pub fn log_command(ctx: &Ctx) -> Result<(), ()> {
     return _log_command(ctx).map_err(|e| {
         debug!("Failed to show history: {:?}", e);
-        ()
     });
 }

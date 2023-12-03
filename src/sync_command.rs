@@ -66,7 +66,6 @@ pub fn sync_command(ctx: &Ctx, args: &SyncArgs) -> Result<(), ()> {
     for branch in &args.names {
         sync_branch(&ctx.repo, &branch).map_err(|err| {
             debug!("Failed to sync {} due to {:?}", branch, err);
-            return ();
         })?;
     }
 

@@ -52,6 +52,5 @@ pub fn _squash_command(ctx: &Ctx) -> Result<(), Error> {
 pub fn squash_command(ctx: &Ctx) -> Result<(), ()> {
     return _squash_command(ctx).map_err(|e| {
         println!("Squash failed: {:?}", e);
-        ()
     });
 }

@@ -159,6 +159,5 @@ pub fn status_command(ctx: &Ctx, args: &StatusArgs) -> Result<(), ()> {
 
     return _status_command(&ctx, &args, "main").map_err(|e| {
         debug!("{}", e);
-        ()
     });
 }

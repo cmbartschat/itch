@@ -4,7 +4,9 @@ pub fn list_command(ctx: &Ctx) -> Result<(), ()> {
     for branch in ctx
         .repo
         .branches(Some(git2::BranchType::Local))
-        .map_err(|_| ())?
+        .map_err(|e| {
+            println!("Failed to list branches: {}", e.to_string());
+        })?
     {
         match branch {
             Ok(b) => match b.0.name() {

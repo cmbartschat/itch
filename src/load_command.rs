@@ -39,6 +39,5 @@ pub fn load_command(ctx: &Ctx, args: &LoadArgs) -> Result<(), ()> {
 
     return _load_command(ctx, args).map_err(|e| {
         debug!("Load failed: {:?}", e);
-        ()
     });
 }
