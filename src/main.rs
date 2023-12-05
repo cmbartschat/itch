@@ -39,7 +39,7 @@ fn main() {
 
     let cli = Cli::parse();
 
-    match &cli.command {
+    let res = match &cli.command {
         Commands::Delete(args) => delete_command(&ctx, &args),
         Commands::Diff(args) => diff_command(&ctx, &args),
         Commands::List => list_command(&ctx),
@@ -51,6 +51,9 @@ fn main() {
         Commands::Status(args) => status_command(&ctx, &args),
         Commands::Squash => squash_command(&ctx),
         Commands::Sync(args) => sync_command(&ctx, &args),
+    };
+
+    if let Err(e) = res {
+        eprintln!("Failed with error: {}", e.message());
     }
-    .expect("Failed to run command.");
 }

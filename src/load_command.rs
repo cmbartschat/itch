@@ -28,7 +28,7 @@ pub fn _load_command(ctx: &Ctx, args: &LoadArgs) -> Result<(), Error> {
     }
 }
 
-pub fn load_command(ctx: &Ctx, args: &LoadArgs) -> Result<(), ()> {
+pub fn load_command(ctx: &Ctx, args: &LoadArgs) -> Result<(), Error> {
     let message_vec = vec!["Save before switching to".to_string(), args.target.clone()];
     save_command(
         ctx,
@@ -37,7 +37,5 @@ pub fn load_command(ctx: &Ctx, args: &LoadArgs) -> Result<(), ()> {
         },
     )?;
 
-    return _load_command(ctx, args).map_err(|e| {
-        debug!("Load failed: {:?}", e);
-    });
+    _load_command(ctx, args)
 }

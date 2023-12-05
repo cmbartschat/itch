@@ -3,7 +3,7 @@ use log::debug;
 
 use crate::ctx::Ctx;
 
-pub fn _squash_command(ctx: &Ctx) -> Result<(), Error> {
+pub fn squash_command(ctx: &Ctx) -> Result<(), Error> {
     debug!("You want me to squash");
 
     let _head = ctx.repo.head()?;
@@ -47,10 +47,4 @@ pub fn _squash_command(ctx: &Ctx) -> Result<(), Error> {
     println!("Squashed to {}", squashed_commit.id());
 
     Ok(())
-}
-
-pub fn squash_command(ctx: &Ctx) -> Result<(), ()> {
-    return _squash_command(ctx).map_err(|e| {
-        println!("Squash failed: {:?}", e);
-    });
 }

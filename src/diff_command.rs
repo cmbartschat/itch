@@ -3,7 +3,7 @@ use log::debug;
 
 use crate::{cli::DiffArgs, ctx::Ctx};
 
-fn _diff_command(ctx: &Ctx, args: &DiffArgs) -> Result<(), Error> {
+pub fn diff_command(ctx: &Ctx, args: &DiffArgs) -> Result<(), Error> {
     let base_branch = ctx.repo.find_branch("main", git2::BranchType::Local)?;
     let base_tree = base_branch.into_reference().peel_to_tree()?;
     debug!("{:?}", base_tree);
@@ -70,10 +70,4 @@ fn _diff_command(ctx: &Ctx, args: &DiffArgs) -> Result<(), Error> {
     })?;
 
     Ok(())
-}
-
-pub fn diff_command(ctx: &Ctx, args: &DiffArgs) -> Result<(), ()> {
-    _diff_command(&ctx, &args).map_err(|e| {
-        println!("Failed to diff: {}", e.message());
-    })
 }

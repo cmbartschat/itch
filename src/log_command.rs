@@ -1,9 +1,8 @@
 use git2::Error;
-use log::debug;
 
 use crate::ctx::Ctx;
 
-pub fn _log_command(ctx: &Ctx) -> Result<(), Error> {
+pub fn log_command(ctx: &Ctx) -> Result<(), Error> {
     let mut repo_head = Some(ctx.repo.head()?.peel_to_commit()?);
     let mut iterations = 0;
     while let Some(current_commit) = repo_head {
@@ -28,10 +27,4 @@ pub fn _log_command(ctx: &Ctx) -> Result<(), Error> {
     }
 
     Ok(())
-}
-
-pub fn log_command(ctx: &Ctx) -> Result<(), ()> {
-    return _log_command(ctx).map_err(|e| {
-        debug!("Failed to show history: {:?}", e);
-    });
 }

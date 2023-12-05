@@ -62,11 +62,9 @@ fn sync_branch(repo: &Repository, branch: &str) -> Result<(), Error> {
     Ok(())
 }
 
-pub fn sync_command(ctx: &Ctx, args: &SyncArgs) -> Result<(), ()> {
+pub fn sync_command(ctx: &Ctx, args: &SyncArgs) -> Result<(), Error> {
     for branch in &args.names {
-        sync_branch(&ctx.repo, &branch).map_err(|err| {
-            debug!("Failed to sync {} due to {:?}", branch, err);
-        })?;
+        sync_branch(&ctx.repo, &branch)?;
     }
 
     Ok(())

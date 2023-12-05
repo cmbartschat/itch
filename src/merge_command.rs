@@ -1,5 +1,4 @@
 use git2::{Error, Oid};
-use log::debug;
 
 use crate::ctx::Ctx;
 
@@ -21,7 +20,7 @@ fn combine_branches(ctx: &Ctx) -> Result<Oid, Error> {
     return Err(Error::from_str("Must be synced on main"));
 }
 
-fn _merge_command(ctx: &Ctx) -> Result<(), Error> {
+pub fn merge_command(ctx: &Ctx) -> Result<(), Error> {
     let head = ctx.repo.head()?;
     let head_name = head.name().expect("No valid head name.");
 
@@ -43,10 +42,4 @@ fn _merge_command(ctx: &Ctx) -> Result<(), Error> {
         .set_target(resolved_commit, &reflog_message)?;
 
     Ok(())
-}
-
-pub fn merge_command(ctx: &Ctx) -> Result<(), ()> {
-    return _merge_command(ctx).map_err(|e| {
-        debug!("Failed to merge: {:?}", e);
-    });
 }

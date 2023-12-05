@@ -40,14 +40,8 @@ pub fn _save_command(ctx: &Ctx, args: &SaveArgs) -> Result<(), Error> {
     Ok(())
 }
 
-pub fn save_command(ctx: &Ctx, args: &SaveArgs) -> Result<(), ()> {
-    _save_command(ctx, args).map_err(|e| {
-        println!("Failed to save: {}", e);
-    })?;
-
-    reset_repo(&ctx).map_err(|e| {
-        println!("Failed to reset after save: {}", e);
-    })?;
-
+pub fn save_command(ctx: &Ctx, args: &SaveArgs) -> Result<(), Error> {
+    _save_command(ctx, args)?;
+    reset_repo(&ctx)?;
     Ok(())
 }

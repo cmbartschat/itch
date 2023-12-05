@@ -92,12 +92,28 @@ fn count_commits_since(_ctx: &Ctx, older: &Commit, newer: &Commit) -> Result<usi
     Ok(count)
 }
 
-fn _status_command(ctx: &Ctx, args: &StatusArgs, base: &str) -> Result<(), Error> {
+/*
+
+On branch: example
+     o -- <4> - o<[save] <- example*
+   /
+-o - o - <17> - o<[break something] <- main
+
+Changes:
+
+file1.txt
+
++ a
+- b
+ */
+pub fn status_command(ctx: &Ctx, args: &StatusArgs) -> Result<(), Error> {
     let repo_head = ctx.repo.head()?;
     let head_name: &str = match &args.target {
         Some(name) => name.as_str(),
         None => repo_head.shorthand().unwrap(),
     };
+
+    let base = "main";
 
     if head_name == (String::from("refs/heads/") + &base) {
         println!("Status on base: {head_name} {base}");
@@ -137,27 +153,4 @@ fn _status_command(ctx: &Ctx, args: &StatusArgs, base: &str) -> Result<(), Error
     });
 
     Ok(())
-}
-
-pub fn status_command(ctx: &Ctx, args: &StatusArgs) -> Result<(), ()> {
-    // If separate branch:
-
-    /*
-
-    On branch: example
-         o -- <4> - o<[save] <- example*
-       /
-    -o - o - <17> - o<[break something] <- main
-
-    Changes:
-
-    file1.txt
-
-    + a
-    - b
-     */
-
-    return _status_command(&ctx, &args, "main").map_err(|e| {
-        debug!("{}", e);
-    });
 }
