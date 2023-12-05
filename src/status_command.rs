@@ -18,21 +18,67 @@ struct ForkInfo<'a> {
 }
 
 /*
-         o -- <4> - o<[save] <- example*
+==========================================
+
+        o ─ <4> ─ o<[save] ←─ example*
        /
-  ... o - o - <17> - o<[break something] <- main
-*/
+─ o ─ o ←─ main
 
-/*
-      ┌─ o ─ <4> - o<[save] <- example*
+==========================================
+
+         ┌ o ─ <4> ─ o<[save] ←─ example*
+         │
+─ o ─ o ─┴──── main
+
+==========================================
+
+      ┌─  example
+      │
+─ o ─ o ←─ main
+
+==========================================
+
+      ┌─ example
+      │
+─ o ─ o<[message1] ←─ main
+
+==========================================
+
+─ o ─ o<[message1] ←─ main
+
+==========================================
+
+      ┌─ o<[message2] (example)
+      │
+─ o ─ o<[message1] (main)
+
+==========================================
+
+                         ┌─ example
+                         ↓
+─ o ─ o<[message1] ─ o ─ o<[message2]
+      ↑
+      └─ main
+
+==========================================
+
+      o ─ o<[message2] ←─ example
+      │
+─ o ─ o<[message1] ←─ main
+
+==========================================
+
+      o<[message2] ←─ example
+      │
+─ o ─ o<[message1] ←─ main
+
+==========================================
+
+      ┌─ example
       ↓
-  ... o ←─ main
-*/
+─ o ─ o<[message1] ←─ main
 
-/*
-        ┌─  example
-        ↓
-  ─ o ─ o ← main
+==========================================
 */
 
 fn get_post_fork_commits(info: &BranchSummary) -> String {
@@ -47,25 +93,30 @@ fn get_post_fork_commits(info: &BranchSummary) -> String {
 
     match info.commit_count {
         0 => "".to_string(),
-        1 => format!("─ o{}", message_part),
-        2 => format!("─ o ─ o{}", message_part),
-        3 => format!("─ o ─ o ─ o{}", message_part),
-        _ => format!("─ o ─ <{}> ─ o{}", info.commit_count - 2, message_part),
+        1 => format!("o{}", message_part),
+        2 => format!("o ─ o{}", message_part),
+        3 => format!("o ─ o ─ o{}", message_part),
+        _ => format!("o ─ <{}> ─ o{}", info.commit_count - 2, message_part),
     }
 }
 
-fn draw_fork_diagram(_info: &ForkInfo) {
-    println!(
-        "         ┌ {} {}",
-        get_post_fork_commits(&_info.head),
-        _info.head.name
-    );
-    println!("         ↓");
-    println!(
-        "   ─ o ─ o {} ← {}",
-        get_post_fork_commits(&_info.base),
-        _info.base.name
-    );
+fn draw_fork_diagram(info: &ForkInfo) {
+    let base_name = info.base.name;
+    let head_name = info.head.name;
+    let head_display = get_post_fork_commits(&info.head);
+    let base_display = get_post_fork_commits(&info.base);
+
+    if base_name != head_name {
+        if info.head.commit_count == 0 {
+            println!("      ┌─ {head_name}");
+            println!("      ↓");
+        } else {
+            println!("          {head_display} ← {head_name}");
+            println!("        /");
+        }
+    }
+
+    println!("─ o ─ {base_display} ← {base_name}")
 }
 
 fn count_commits_since(_ctx: &Ctx, older: &Commit, newer: &Commit) -> Result<usize, Error> {
@@ -130,7 +181,7 @@ pub fn status_command(ctx: &Ctx, args: &StatusArgs) -> Result<(), Error> {
         base: BranchSummary {
             name: base,
             latest_message: base_commit.summary(),
-            commit_count: base_past_fork,
+            commit_count: base_past_fork + 1,
         },
         head: BranchSummary {
             name: head_name,
