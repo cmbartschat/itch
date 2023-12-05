@@ -1,12 +1,10 @@
 use git2::{Delta, DiffOptions, Error, IntoCString};
-use log::debug;
 
 use crate::{cli::DiffArgs, ctx::Ctx};
 
 pub fn diff_command(ctx: &Ctx, args: &DiffArgs) -> Result<(), Error> {
     let base_branch = ctx.repo.find_branch("main", git2::BranchType::Local)?;
     let base_tree = base_branch.into_reference().peel_to_tree()?;
-    debug!("{:?}", base_tree);
 
     let mut options = DiffOptions::new();
 

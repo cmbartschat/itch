@@ -1,5 +1,4 @@
 use git2::Error;
-use log::debug;
 
 use crate::{
     branch::choose_random_branch_name,
@@ -13,8 +12,6 @@ pub fn new_command(ctx: &Ctx, args: &NewArgs) -> Result<(), Error> {
         Some(n) => Ok(n.to_string()),
         None => choose_random_branch_name(&ctx),
     }?;
-
-    debug!("Creating new branch: {} from main", name);
 
     let base_branch = ctx.repo.find_branch("main", git2::BranchType::Local)?;
 

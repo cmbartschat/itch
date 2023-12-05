@@ -1,5 +1,4 @@
 use git2::Error;
-use log::debug;
 
 use crate::{
     cli::{LoadArgs, SaveArgs},
@@ -8,8 +7,6 @@ use crate::{
 };
 
 pub fn _load_command(ctx: &Ctx, args: &LoadArgs) -> Result<(), Error> {
-    debug!("You want me to switch to: {}", args.target);
-
     let target_ref = ctx
         .repo
         .find_branch(&args.target, git2::BranchType::Local)?
@@ -35,6 +32,7 @@ pub fn load_command(ctx: &Ctx, args: &LoadArgs) -> Result<(), Error> {
         &SaveArgs {
             message: message_vec,
         },
+        true,
     )?;
 
     _load_command(ctx, args)

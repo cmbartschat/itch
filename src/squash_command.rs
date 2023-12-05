@@ -1,11 +1,8 @@
 use git2::Error;
-use log::debug;
 
 use crate::ctx::Ctx;
 
 pub fn squash_command(ctx: &Ctx) -> Result<(), Error> {
-    debug!("You want me to squash");
-
     let _head = ctx.repo.head()?;
 
     let signature = ctx.repo.signature()?;
@@ -43,8 +40,6 @@ pub fn squash_command(ctx: &Ctx) -> Result<(), Error> {
 
     ctx.repo
         .reset(squashed_object, git2::ResetType::Mixed, None)?;
-
-    println!("Squashed to {}", squashed_commit.id());
 
     Ok(())
 }

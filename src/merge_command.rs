@@ -30,10 +30,6 @@ pub fn merge_command(ctx: &Ctx) -> Result<(), Error> {
 
     let resolved_commit = combine_branches(ctx)?;
 
-    println!("Resolved merge to: {}", resolved_commit);
-
-    println!("Would merge from {:?}", head_name);
-
     let reflog_message = format!("Merged from {head_name}");
 
     ctx.repo

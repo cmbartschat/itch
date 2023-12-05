@@ -1,7 +1,6 @@
 use std::rc::Rc;
 
 use git2::{Commit, Error};
-use log::debug;
 
 use crate::{cli::StatusArgs, ctx::Ctx};
 
@@ -56,7 +55,6 @@ fn get_post_fork_commits(info: &BranchSummary) -> String {
 }
 
 fn draw_fork_diagram(_info: &ForkInfo) {
-    debug!("{:?}", _info);
     println!(
         "         ┌ {} {}",
         get_post_fork_commits(&_info.head),
@@ -71,11 +69,6 @@ fn draw_fork_diagram(_info: &ForkInfo) {
 }
 
 fn count_commits_since(_ctx: &Ctx, older: &Commit, newer: &Commit) -> Result<usize, Error> {
-    debug!(
-        "Counting commits between {:?} and {:?}",
-        older.id(),
-        newer.id()
-    );
     let mut count: usize = 0;
     let mut current = Rc::from(newer.clone());
     while current.id() != older.id() {
@@ -114,12 +107,6 @@ pub fn status_command(ctx: &Ctx, args: &StatusArgs) -> Result<(), Error> {
     };
 
     let base = "main";
-
-    if head_name == (String::from("refs/heads/") + &base) {
-        println!("Status on base: {head_name} {base}");
-    } else {
-        println!("Status between {head_name} and {base}");
-    }
 
     let base_commit = ctx
         .repo

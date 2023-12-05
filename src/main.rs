@@ -47,7 +47,7 @@ fn main() {
         Commands::Log => log_command(&ctx),
         Commands::Merge => merge_command(&ctx),
         Commands::New(args) => new_command(&ctx, &args),
-        Commands::Save(args) => save_command(&ctx, &args),
+        Commands::Save(args) => save_command(&ctx, &args, false),
         Commands::Status(args) => status_command(&ctx, &args),
         Commands::Squash => squash_command(&ctx),
         Commands::Sync(args) => sync_command(&ctx, &args),
