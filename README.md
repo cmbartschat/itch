@@ -43,24 +43,26 @@ itch sync to c001e5
 - [x] Add merge
 - [ ] Add rename
 - [ ] Add copy
-- [ ] Add squash
-- [ ] Add cleanup
+- [x] Add squash
+- [x] Add clean
 - [ ] Add undo
 
 ### Tweaks
 
-- [ ] Make printing from main look more right
+- [x] Make printing from main look more right
+- [x] Make diff take more options
+- [x] Make sync handle conflicts
+- [x] Don't show main twice in status
+- [x] Fix diff not showing new files
+- [x] Make sync actually work
+- [x] Remove extraneous print/debug statements
 - [ ] Make the index reset at times that make sense
     - [x] Save
-    - [ ] Switching clients
-- [ ] Make diff take more options
-- [ ] Make sync handle conflicts
 - [ ] Trim whitespace when truncating commit messages
 - [ ] Add changed files to status
-- [ ] Don't show main twice in status
-- [ ] Fix diff not showing new files
-- [ ] Make sync actually work
-- [ ] Remove extraneous print/debug statements
+- [ ] Make long output print with `less`
+- [ ] Line up diff lines with context lines
+- [ ] More advanced merge resolution during sync
 
 ### Mapping from git
 
