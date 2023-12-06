@@ -28,6 +28,7 @@ pub fn diff_command(ctx: &Ctx, args: &DiffArgs) -> Result<(), Error> {
         let color_code = match origin {
             '+' => "\x1b[32m+",
             '-' => "\x1b[31m-",
+            ' ' => " ",
             _ => "",
         };
 
