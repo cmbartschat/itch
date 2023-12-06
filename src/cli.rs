@@ -10,6 +10,7 @@ pub struct Cli {
 
 #[derive(Subcommand)]
 pub enum Commands {
+    Clean,
     Delete(DeleteArgs),
     Diff(DiffArgs),
     List,

@@ -1,4 +1,5 @@
 use clap::Parser;
+use clean_command::clean_command;
 use cli::{Cli, Commands};
 use ctx::init_ctx;
 use delete_command::delete_command;
@@ -15,6 +16,7 @@ use status_command::status_command;
 use sync_command::sync_command;
 
 mod branch;
+mod clean_command;
 mod cli;
 mod ctx;
 mod delete_command;
@@ -41,6 +43,7 @@ fn main() {
     let cli = Cli::parse();
 
     let res = match &cli.command {
+        Commands::Clean => clean_command(&ctx),
         Commands::Delete(args) => delete_command(&ctx, &args),
         Commands::Diff(args) => diff_command(&ctx, &args),
         Commands::List => list_command(&ctx),
