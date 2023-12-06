@@ -24,6 +24,7 @@ mod load_command;
 mod log_command;
 mod merge_command;
 mod new_command;
+mod path;
 mod reset;
 mod save_command;
 mod squash_command;
