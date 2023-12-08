@@ -91,7 +91,7 @@ fn sync_branch(repo: &Repository, branch_name: &str) -> Result<(), Error> {
 
                             index.remove_path(&current_path)?;
 
-                            let mut final_entry = if keep_yours { ours } else { theirs };
+                            let mut final_entry = if keep_yours { theirs } else { ours };
 
                             final_entry.flags = final_entry.flags.bitand(0x3000_u16.reverse_bits());
 
