@@ -1,6 +1,6 @@
-use std::rc::Rc;
+use std::{collections::HashMap, rc::Rc};
 
-use git2::{Commit, Error};
+use git2::{Commit, DiffOptions, Error};
 
 use crate::{cli::StatusArgs, ctx::Ctx};
 
@@ -15,6 +15,7 @@ struct BranchSummary<'a> {
 struct ForkInfo<'a> {
     base: BranchSummary<'a>,
     head: BranchSummary<'a>,
+    dirty: bool,
 }
 
 /*
@@ -86,7 +87,7 @@ fn get_post_fork_commits(info: &BranchSummary) -> String {
         Some(s) => {
             let mut final_message = String::from(s);
             final_message.truncate(25);
-            format!("<[{}]", final_message)
+            format!("<[{}]", final_message.trim())
         }
         _ => String::from(""),
     };
@@ -102,7 +103,7 @@ fn get_post_fork_commits(info: &BranchSummary) -> String {
 
 fn draw_fork_diagram(info: &ForkInfo) {
     let base_name = info.base.name;
-    let head_name = info.head.name;
+    let head_name = format!("{}{}", info.head.name, if info.dirty { "*" } else { "" });
     let head_display = get_post_fork_commits(&info.head);
     let base_display = get_post_fork_commits(&info.base);
 
@@ -165,17 +166,104 @@ pub fn status_command(ctx: &Ctx, args: &StatusArgs) -> Result<(), Error> {
         .into_reference()
         .peel_to_commit()?;
 
-    let head_commit = ctx
-        .repo
-        .find_branch(&head_name, git2::BranchType::Local)?
-        .into_reference()
-        .peel_to_commit()?;
+    let head_branch = ctx.repo.find_branch(&head_name, git2::BranchType::Local)?;
+
+    let is_head = head_branch.is_head();
+
+    let head_commit = head_branch.into_reference().peel_to_commit()?;
     let fork_point = ctx
         .repo
         .find_commit(ctx.repo.merge_base(base_commit.id(), head_commit.id())?)?;
 
     let base_past_fork = count_commits_since(ctx, &fork_point, &base_commit)?;
     let head_past_fork = count_commits_since(ctx, &fork_point, &head_commit)?;
+
+    let mut options = DiffOptions::new();
+
+    options.include_untracked(true).include_typechange(true);
+
+    let old_index = fork_point.tree()?;
+    let new_index = head_commit.tree()?;
+
+    struct Status {
+        status: Option<char>,
+        unsaved: Option<char>,
+    }
+
+    let mut statuses: HashMap<String, Status> = HashMap::new();
+
+    let committed_diff =
+        ctx.repo
+            .diff_tree_to_tree(Some(&old_index), Some(&new_index), Some(&mut options))?;
+
+    let has_saved = committed_diff.deltas().len() > 0;
+
+    committed_diff.deltas().for_each(|d| {
+        if let Some((path, status)) = match (d.old_file().exists(), d.new_file().exists()) {
+            (false, false) => None,
+            (false, true) => {
+                let path = d.new_file().path().unwrap().to_string_lossy().into_owned();
+                Some((path, 'A'))
+            }
+            (true, false) => {
+                let path = d.old_file().path().unwrap().to_string_lossy().into_owned();
+                Some((path, 'D'))
+            }
+            (true, true) => {
+                let path = d.new_file().path().unwrap().to_string_lossy().into_owned();
+                Some((path, 'M'))
+            }
+        } {
+            statuses.insert(
+                path,
+                Status {
+                    status: Some(status),
+                    unsaved: None,
+                },
+            );
+        }
+    });
+
+    let mut head_dirty = false;
+
+    if is_head {
+        let unsaved_diff = ctx
+            .repo
+            .diff_tree_to_workdir(Some(&new_index), Some(&mut options))?;
+
+        head_dirty = unsaved_diff.deltas().len() > 0;
+
+        unsaved_diff.deltas().for_each(|d| {
+            if let Some((path, status)) = match (d.old_file().exists(), d.new_file().exists()) {
+                (false, false) => None,
+                (false, true) => {
+                    let path = d.new_file().path().unwrap().to_string_lossy().into_owned();
+                    Some((path, 'A'))
+                }
+                (true, false) => {
+                    let path = d.old_file().path().unwrap().to_string_lossy().into_owned();
+                    Some((path, 'D'))
+                }
+                (true, true) => {
+                    let path = d.new_file().path().unwrap().to_string_lossy().into_owned();
+                    Some((path, 'M'))
+                }
+            } {
+                let existing = statuses.get(&path);
+                statuses.insert(
+                    path,
+                    Status {
+                        status: if let Some(e) = existing {
+                            e.status
+                        } else {
+                            None
+                        },
+                        unsaved: Some(status),
+                    },
+                );
+            }
+        });
+    }
 
     draw_fork_diagram(&ForkInfo {
         base: BranchSummary {
@@ -188,7 +276,34 @@ pub fn status_command(ctx: &Ctx, args: &StatusArgs) -> Result<(), Error> {
             latest_message: head_commit.summary(),
             commit_count: head_past_fork,
         },
+        dirty: head_dirty,
     });
+
+    if statuses.len() > 0 {
+        println!("");
+
+        let mut changes = statuses.into_iter().collect::<Vec<(String, Status)>>();
+        changes.sort_by_key(|f| f.0.clone());
+        changes.into_iter().for_each(|e| {
+            let saved = e.1.status.unwrap_or(' ');
+            let unsaved = e.1.unsaved.unwrap_or(' ');
+            match (has_saved, head_dirty) {
+                (true, true) => {
+                    let divider = if saved == ' ' || unsaved == ' ' {
+                        ' '
+                    } else {
+                        '.'
+                    };
+                    print!("{}{}{}", saved, divider, unsaved)
+                }
+                (true, false) => print!("{}", saved),
+                (false, true) => print!("{}", unsaved),
+                (false, false) => {}
+            }
+
+            println!(" {}", e.0);
+        });
+    }
 
     Ok(())
 }
