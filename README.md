@@ -58,11 +58,12 @@ itch sync to c001e5
 - [x] Remove extraneous print/debug statements
 - [ ] Make the index reset at times that make sense
     - [x] Save
-- [ ] Trim whitespace when truncating commit messages
-- [ ] Add changed files to status
+- [x] Trim whitespace when truncating commit messages
+- [x] Add changed files to status
 - [ ] Make long output print with `less`
-- [ ] Line up diff lines with context lines
+- [x] Line up diff lines with context lines
 - [ ] More advanced merge resolution during sync
+- [ ] Fix diff not diffing from fork point
 
 ### Mapping from git
 
