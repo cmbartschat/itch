@@ -9,8 +9,8 @@ pub fn collapse_renames(diff: &mut Diff) -> Result<(), git2::Error> {
 
 pub fn good_diff_options() -> DiffOptions {
     let mut options = DiffOptions::new();
-    options.show_untracked_content(true);
     options.include_typechange(true);
+    options.show_untracked_content(true);
     options.recurse_untracked_dirs(true);
     options
 }
