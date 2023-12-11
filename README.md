@@ -41,10 +41,10 @@ itch sync to c001e5
 
 - [x] Add log
 - [x] Add merge
-- [ ] Add rename
-- [ ] Add copy
 - [x] Add squash
 - [x] Add clean
+- [ ] Add rename
+- [ ] Add copy
 - [ ] Add undo
 
 ### Tweaks
@@ -56,14 +56,15 @@ itch sync to c001e5
 - [x] Fix diff not showing new files
 - [x] Make sync actually work
 - [x] Remove extraneous print/debug statements
-- [ ] Make the index reset at times that make sense
-    - [x] Save
+- [x] Line up diff lines with context lines
 - [x] Trim whitespace when truncating commit messages
 - [x] Add changed files to status
+- [ ] Make the index reset at times that make sense
+    - [x] Save
 - [ ] Make long output print with `less`
-- [x] Line up diff lines with context lines
 - [ ] More advanced merge resolution during sync
 - [ ] Fix diff not diffing from fork point
+- [ ] Fix status showing renamed files as modified
 
 ### Mapping from git
 
