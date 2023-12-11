@@ -183,6 +183,7 @@ impl SegmentedStatus {
         }
         if let Some(work) = self.work {
             work_char = work.char();
+            potential_rename_chain.push(work.from);
             potential_rename_chain.push(work.to);
         }
 
@@ -363,6 +364,7 @@ pub fn status_command(ctx: &Ctx, args: &StatusArgs) -> Result<(), Error> {
             }
 
             if !found {
+                println!("Untouched file: {:?}", d);
                 statuses.push(SegmentedStatus::from_work_delta(&d));
             }
         });
