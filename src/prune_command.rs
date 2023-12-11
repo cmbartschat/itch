@@ -2,7 +2,7 @@ use git2::{BranchType, Error};
 
 use crate::{cli::DeleteArgs, ctx::Ctx, delete_command::delete_command};
 
-pub fn clean_command(ctx: &Ctx) -> Result<(), Error> {
+pub fn prune_command(ctx: &Ctx) -> Result<(), Error> {
     let mut branches_to_delete: Vec<String> = vec![];
 
     let main_ref = ctx

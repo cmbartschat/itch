@@ -1,5 +1,4 @@
 use clap::Parser;
-use clean_command::clean_command;
 use cli::{Cli, Commands};
 use ctx::init_ctx;
 use delete_command::delete_command;
@@ -10,13 +9,13 @@ use log::LevelFilter;
 use log_command::log_command;
 use merge_command::merge_command;
 use new_command::new_command;
+use prune_command::prune_command;
 use save_command::save_command;
 use squash_command::squash_command;
 use status_command::status_command;
 use sync_command::sync_command;
 
 mod branch;
-mod clean_command;
 mod cli;
 mod ctx;
 mod delete_command;
@@ -27,6 +26,7 @@ mod log_command;
 mod merge_command;
 mod new_command;
 mod path;
+mod prune_command;
 mod reset;
 mod save_command;
 mod squash_command;
@@ -43,7 +43,7 @@ fn main() {
     let cli = Cli::parse();
 
     let res = match &cli.command {
-        Commands::Clean => clean_command(&ctx),
+        Commands::Prune => prune_command(&ctx),
         Commands::Delete(args) => delete_command(&ctx, &args),
         Commands::Diff(args) => diff_command(&ctx, &args),
         Commands::List => list_command(&ctx),
