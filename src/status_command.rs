@@ -237,21 +237,27 @@ fn get_post_fork_commits(info: &BranchSummary) -> String {
 
 fn draw_fork_diagram(info: &ForkInfo) {
     let base_name = info.base.name;
-    let head_name = format!("{}{}", info.head.name, if info.dirty { "*" } else { "" });
+    let head_name = info.head.name;
     let head_display = get_post_fork_commits(&info.head);
     let base_display = get_post_fork_commits(&info.base);
 
+    let mut main_dirty_indicator = "";
+
     if base_name != head_name {
+        let dirty_indicator = if info.dirty { "*" } else { "" };
+
         if info.head.commit_count == 0 {
-            println!("      ┌─ {head_name}");
+            println!("      ┌─ {head_name}{dirty_indicator}");
             println!("      ↓");
         } else {
-            println!("          {head_display} ← {head_name}");
+            println!("          {head_display} ← {head_name}{dirty_indicator}");
             println!("        /");
         }
+    } else if info.dirty {
+        main_dirty_indicator = "*"
     }
 
-    println!("─ o ─ {base_display} ← {base_name}")
+    println!("─ o ─ {base_display} ← {base_name}{main_dirty_indicator}")
 }
 
 fn count_commits_since(_ctx: &Ctx, older: &Commit, newer: &Commit) -> Result<usize, Error> {
