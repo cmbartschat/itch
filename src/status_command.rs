@@ -1,8 +1,8 @@
-use std::{collections::HashMap, rc::Rc};
+use std::rc::Rc;
 
-use git2::{Commit, DiffOptions, Error};
+use git2::{Commit, DiffDelta, DiffFile, DiffOptions, Error};
 
-use crate::{cli::StatusArgs, ctx::Ctx};
+use crate::{cli::StatusArgs, ctx::Ctx, diff::collapse_renames};
 
 #[derive(Debug)]
 struct BranchSummary<'a> {
@@ -81,6 +81,140 @@ struct ForkInfo<'a> {
 
 ==========================================
 */
+
+#[derive(Debug)]
+struct FileStatus {
+    from: Option<String>,
+    to: Option<String>,
+    changed: bool,
+}
+
+impl FileStatus {
+    fn from_delta(delta: &DiffDelta) -> Self {
+        Self {
+            from: extract_optional_path(&delta.old_file()),
+            to: extract_optional_path(&delta.new_file()),
+            changed: delta.old_file().id() != delta.new_file().id(),
+        }
+    }
+
+    fn char(&self) -> char {
+        match (&self.from, &self.to) {
+            (None, None) => ' ',
+            (None, Some(_)) => 'A',
+            (Some(_), None) => 'D',
+            (Some(a), Some(b)) => {
+                if self.changed {
+                    'M'
+                } else if a != b {
+                    'R'
+                } else {
+                    ' '
+                }
+            }
+        }
+    }
+}
+
+fn extract_path(d: &DiffFile) -> String {
+    d.path()
+        .expect("Expected path for DiffFile.")
+        .to_string_lossy()
+        .into_owned()
+}
+
+fn extract_optional_path(d: &DiffFile) -> Option<String> {
+    if d.exists() {
+        Some(extract_path(&d))
+    } else {
+        None
+    }
+}
+
+#[derive(Debug)]
+struct SegmentedStatus {
+    committed: Option<FileStatus>,
+    work: Option<FileStatus>,
+}
+
+impl SegmentedStatus {
+    fn from_committed_delta(delta: &DiffDelta) -> Self {
+        return Self {
+            committed: Some(FileStatus::from_delta(&delta)),
+            work: None,
+        };
+    }
+    fn from_work_delta(delta: &DiffDelta) -> Self {
+        return Self {
+            committed: None,
+            work: Some(FileStatus::from_delta(&delta)),
+        };
+    }
+    fn maybe_add_work(&mut self, delta: &DiffDelta) -> bool {
+        if let Some(committed) = &self.committed {
+            if let Some(committed_path) = &committed.to {
+                if let Some(new_base_path) = extract_optional_path(&delta.old_file()) {
+                    if &new_base_path == committed_path {
+                        self.work = Some(FileStatus::from_delta(&delta));
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+    fn print(self) {
+        let mut committed_char = ' ';
+        let mut work_char = ' ';
+
+        let mut rename_chain: Vec<String> = Vec::new();
+
+        let mut potential_rename_chain: Vec<Option<String>> = Vec::new();
+
+        if let Some(committed) = self.committed {
+            committed_char = committed.char();
+            potential_rename_chain.push(committed.from);
+            potential_rename_chain.push(committed.to);
+        }
+        if let Some(work) = self.work {
+            work_char = work.char();
+            potential_rename_chain.push(work.to);
+        }
+
+        potential_rename_chain.iter().for_each(|p| match p {
+            Some(v) => {
+                rename_chain.push(v.clone());
+            }
+            _ => {}
+        });
+
+        let mut rename_chain = potential_rename_chain
+            .into_iter()
+            .filter_map(|f| f)
+            .collect::<Vec<String>>();
+
+        if let Some(first) = rename_chain.first() {
+            if rename_chain.iter().skip(1).all(|f| f == first) {
+                rename_chain.truncate(1);
+            }
+        }
+
+        let combined = if committed_char == ' ' || work_char == ' ' {
+            ' '
+        } else {
+            '.'
+        };
+
+        println!(
+            "{}{}{} {}",
+            committed_char,
+            combined,
+            work_char,
+            rename_chain.join(" -> ")
+        );
+    }
+}
 
 fn get_post_fork_commits(info: &BranchSummary) -> String {
     let message_part = match info.latest_message {
@@ -185,82 +319,43 @@ pub fn status_command(ctx: &Ctx, args: &StatusArgs) -> Result<(), Error> {
     let old_index = fork_point.tree()?;
     let new_index = head_commit.tree()?;
 
-    struct Status {
-        status: Option<char>,
-        unsaved: Option<char>,
-    }
+    let mut statuses: Vec<SegmentedStatus> = vec![];
 
-    let mut statuses: HashMap<String, Status> = HashMap::new();
-
-    let committed_diff =
+    let mut committed_diff =
         ctx.repo
             .diff_tree_to_tree(Some(&old_index), Some(&new_index), Some(&mut options))?;
 
-    let has_saved = committed_diff.deltas().len() > 0;
+    collapse_renames(&mut committed_diff)?;
+
+    let _has_saved = committed_diff.deltas().len() > 0;
 
     committed_diff.deltas().for_each(|d| {
-        if let Some((path, status)) = match (d.old_file().exists(), d.new_file().exists()) {
-            (false, false) => None,
-            (false, true) => {
-                let path = d.new_file().path().unwrap().to_string_lossy().into_owned();
-                Some((path, 'A'))
-            }
-            (true, false) => {
-                let path = d.old_file().path().unwrap().to_string_lossy().into_owned();
-                Some((path, 'D'))
-            }
-            (true, true) => {
-                let path = d.new_file().path().unwrap().to_string_lossy().into_owned();
-                Some((path, 'M'))
-            }
-        } {
-            statuses.insert(
-                path,
-                Status {
-                    status: Some(status),
-                    unsaved: None,
-                },
-            );
-        }
+        statuses.push(SegmentedStatus::from_committed_delta(&d));
     });
 
     let mut head_dirty = false;
 
     if is_head {
-        let unsaved_diff = ctx
+        let mut unsaved_diff = ctx
             .repo
             .diff_tree_to_workdir(Some(&new_index), Some(&mut options))?;
+
+        collapse_renames(&mut unsaved_diff)?;
 
         head_dirty = unsaved_diff.deltas().len() > 0;
 
         unsaved_diff.deltas().for_each(|d| {
-            if let Some((path, status)) = match (d.old_file().exists(), d.new_file().exists()) {
-                (false, false) => None,
-                (false, true) => {
-                    let path = d.new_file().path().unwrap().to_string_lossy().into_owned();
-                    Some((path, 'A'))
+            let mut found = false;
+
+            for change in statuses.iter_mut() {
+                if change.maybe_add_work(&d) {
+                    found = true;
+                    break;
                 }
-                (true, false) => {
-                    let path = d.old_file().path().unwrap().to_string_lossy().into_owned();
-                    Some((path, 'D'))
-                }
-                (true, true) => {
-                    let path = d.new_file().path().unwrap().to_string_lossy().into_owned();
-                    Some((path, 'M'))
-                }
-            } {
-                let existing = statuses.get(&path);
-                statuses.insert(
-                    path,
-                    Status {
-                        status: if let Some(e) = existing {
-                            e.status
-                        } else {
-                            None
-                        },
-                        unsaved: Some(status),
-                    },
-                );
+            }
+
+            if !found {
+                statuses.push(SegmentedStatus::from_work_delta(&d));
             }
         });
     }
@@ -282,27 +377,9 @@ pub fn status_command(ctx: &Ctx, args: &StatusArgs) -> Result<(), Error> {
     if statuses.len() > 0 {
         println!("");
 
-        let mut changes = statuses.into_iter().collect::<Vec<(String, Status)>>();
-        changes.sort_by_key(|f| f.0.clone());
-        changes.into_iter().for_each(|e| {
-            let saved = e.1.status.unwrap_or(' ');
-            let unsaved = e.1.unsaved.unwrap_or(' ');
-            match (has_saved, head_dirty) {
-                (true, true) => {
-                    let divider = if saved == ' ' || unsaved == ' ' {
-                        ' '
-                    } else {
-                        '.'
-                    };
-                    print!("{}{}{}", saved, divider, unsaved)
-                }
-                (true, false) => print!("{}", saved),
-                (false, true) => print!("{}", unsaved),
-                (false, false) => {}
-            }
-
-            println!(" {}", e.0);
-        });
+        for status in statuses.into_iter() {
+            status.print();
+        }
     }
 
     Ok(())

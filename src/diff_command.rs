@@ -1,6 +1,6 @@
 use git2::{Delta, DiffOptions, Error, IntoCString};
 
-use crate::{cli::DiffArgs, ctx::Ctx};
+use crate::{cli::DiffArgs, ctx::Ctx, diff::collapse_renames};
 
 pub fn diff_command(ctx: &Ctx, args: &DiffArgs) -> Result<(), Error> {
     let base_branch = ctx.repo.find_branch("main", git2::BranchType::Local)?;
@@ -12,7 +12,7 @@ pub fn diff_command(ctx: &Ctx, args: &DiffArgs) -> Result<(), Error> {
 
     let diff_options = Some(&mut options);
 
-    let diff = match &args.target {
+    let mut diff = match &args.target {
         Some(branch) => {
             let target_branch = ctx.repo.find_branch(&branch, git2::BranchType::Local)?;
             let target_tree = target_branch.into_reference().peel_to_tree()?;
@@ -23,6 +23,9 @@ pub fn diff_command(ctx: &Ctx, args: &DiffArgs) -> Result<(), Error> {
             .repo
             .diff_tree_to_workdir(Some(&base_tree), diff_options)?,
     };
+
+    collapse_renames(&mut diff)?;
+
     diff.print(git2::DiffFormat::Patch, |_, _, line| {
         let origin = line.origin();
         let color_code = match origin {

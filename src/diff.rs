@@ -1,0 +1,8 @@
+use git2::{Diff, DiffFindOptions};
+
+pub fn collapse_renames(diff: &mut Diff) -> Result<(), git2::Error> {
+    let mut options = DiffFindOptions::new();
+    options.all(true);
+    options.break_rewrites(false);
+    diff.find_similar(Some(&mut options))
+}

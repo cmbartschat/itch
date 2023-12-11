@@ -19,6 +19,7 @@ mod branch;
 mod cli;
 mod ctx;
 mod delete_command;
+mod diff;
 mod diff_command;
 mod list_command;
 mod load_command;
