@@ -1,6 +1,6 @@
 use git2::{BranchType, Error};
 
-use crate::{cli::DeleteArgs, ctx::Ctx, delete_command::delete_command};
+use crate::{cli::DeleteArgs, command::delete::delete_command, ctx::Ctx};
 
 pub fn prune_command(ctx: &Ctx) -> Result<(), Error> {
     let mut branches_to_delete: Vec<String> = vec![];

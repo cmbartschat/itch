@@ -2,8 +2,8 @@ use git2::Error;
 
 use crate::{
     cli::{LoadArgs, SaveArgs},
+    command::save::save_command,
     ctx::Ctx,
-    save_command::save_command,
 };
 
 pub fn _load_command(ctx: &Ctx, args: &LoadArgs) -> Result<(), Error> {

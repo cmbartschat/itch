@@ -3,8 +3,8 @@ use git2::Error;
 use crate::{
     branch::choose_random_branch_name,
     cli::{LoadArgs, NewArgs},
+    command::load::load_command,
     ctx::Ctx,
-    load_command::load_command,
 };
 
 pub fn new_command(ctx: &Ctx, args: &NewArgs) -> Result<(), Error> {

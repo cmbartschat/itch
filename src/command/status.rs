@@ -1,8 +1,12 @@
 use std::rc::Rc;
 
-use git2::{Commit, DiffDelta, DiffFile, DiffOptions, Error};
+use git2::{Commit, DiffDelta, DiffFile, Error};
 
-use crate::{cli::StatusArgs, ctx::Ctx, diff::collapse_renames};
+use crate::{
+    cli::StatusArgs,
+    ctx::Ctx,
+    diff::{collapse_renames, good_diff_options},
+};
 
 #[derive(Debug)]
 struct BranchSummary<'a> {
@@ -318,9 +322,7 @@ pub fn status_command(ctx: &Ctx, args: &StatusArgs) -> Result<(), Error> {
     let base_past_fork = count_commits_since(ctx, &fork_point, &base_commit)?;
     let head_past_fork = count_commits_since(ctx, &fork_point, &head_commit)?;
 
-    let mut options = DiffOptions::new();
-
-    options.include_untracked(true).include_typechange(true);
+    let mut options = good_diff_options();
 
     let old_index = fork_point.tree()?;
     let new_index = head_commit.tree()?;

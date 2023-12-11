@@ -1,14 +1,16 @@
-use git2::{Delta, DiffOptions, Error, IntoCString};
+use git2::{Delta, Error, IntoCString};
 
-use crate::{cli::DiffArgs, ctx::Ctx, diff::collapse_renames};
+use crate::{
+    cli::DiffArgs,
+    ctx::Ctx,
+    diff::{collapse_renames, good_diff_options},
+};
 
 pub fn diff_command(ctx: &Ctx, args: &DiffArgs) -> Result<(), Error> {
     let base_branch = ctx.repo.find_branch("main", git2::BranchType::Local)?;
     let base_tree = base_branch.into_reference().peel_to_tree()?;
 
-    let mut options = DiffOptions::new();
-
-    options.include_untracked(true).include_typechange(true);
+    let mut options = good_diff_options();
 
     let diff_options = Some(&mut options);
 
