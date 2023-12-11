@@ -1,4 +1,4 @@
-use git2::{Delta, Error, IntoCString};
+use git2::{Error, IntoCString};
 
 use crate::{
     cli::DiffArgs,
@@ -43,34 +43,6 @@ pub fn diff_command(ctx: &Ctx, args: &DiffArgs) -> Result<(), Error> {
             line.content().into_c_string().unwrap().to_str().unwrap()
         );
         return true;
-    })?;
-
-    diff.deltas().try_for_each(|delta| -> Result<(), Error> {
-        return match delta.status() {
-            Delta::Untracked => {
-                println!(
-                    "New file: {}",
-                    delta.new_file().path().unwrap().to_str().unwrap()
-                );
-                let blob = ctx
-                    .repo
-                    .blob_path(delta.new_file().path().expect("New file has no path"))?;
-
-                let file = ctx.repo.find_blob(blob)?;
-                if file.is_binary() {
-                    println!("(Binary file)");
-                } else {
-                    String::from_utf8_lossy(file.content())
-                        .lines()
-                        .for_each(|line| {
-                            println!("\x1b[32m+{}\x1b[0m", line);
-                        });
-                }
-
-                Ok(())
-            }
-            _ => Ok(()),
-        };
     })?;
 
     Ok(())
