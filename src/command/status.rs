@@ -183,7 +183,9 @@ impl SegmentedStatus {
         }
         if let Some(work) = self.work {
             work_char = work.char();
-            potential_rename_chain.push(work.from);
+            if potential_rename_chain.len() == 0 {
+                potential_rename_chain.push(work.from);
+            }
             potential_rename_chain.push(work.to);
         }
 
