@@ -8,7 +8,7 @@ use crate::{
 
 pub fn diff_command(ctx: &Ctx, args: &DiffArgs) -> Result<(), Error> {
     let base_branch = ctx.repo.find_branch("main", git2::BranchType::Local)?;
-    let base_tree = base_branch.into_reference().peel_to_tree()?;
+    let base_commit = base_branch.into_reference().peel_to_commit()?;
 
     let mut options = good_diff_options();
 
@@ -16,14 +16,32 @@ pub fn diff_command(ctx: &Ctx, args: &DiffArgs) -> Result<(), Error> {
 
     let mut diff = match &args.target {
         Some(branch) => {
-            let target_branch = ctx.repo.find_branch(&branch, git2::BranchType::Local)?;
-            let target_tree = target_branch.into_reference().peel_to_tree()?;
-            ctx.repo
-                .diff_tree_to_tree(Some(&base_tree), Some(&target_tree), diff_options)?
+            let target_id = ctx
+                .repo
+                .find_branch(&branch, git2::BranchType::Local)?
+                .into_reference()
+                .peel_to_commit()?;
+
+            let fork_point = ctx
+                .repo
+                .find_commit(ctx.repo.merge_base(base_commit.id(), target_id.id())?)?;
+
+            ctx.repo.diff_tree_to_tree(
+                Some(&fork_point.tree()?),
+                Some(&target_id.tree()?),
+                diff_options,
+            )?
         }
-        _ => ctx
-            .repo
-            .diff_tree_to_workdir(Some(&base_tree), diff_options)?,
+        _ => {
+            let head_id = ctx.repo.head()?.peel_to_commit()?;
+
+            let fork_point = ctx
+                .repo
+                .find_commit(ctx.repo.merge_base(base_commit.id(), head_id.id())?)?;
+
+            ctx.repo
+                .diff_tree_to_workdir(Some(&fork_point.tree()?), diff_options)?
+        }
     };
 
     collapse_renames(&mut diff)?;
