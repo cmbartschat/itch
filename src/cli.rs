@@ -1,4 +1,5 @@
 use clap::{Args, Parser, Subcommand};
+use serde::Deserialize;
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
@@ -47,7 +48,7 @@ pub enum Commands {
     Prune,
 }
 
-#[derive(Args)]
+#[derive(Args, Deserialize, Debug)]
 pub struct NewArgs {
     pub name: Option<String>,
 }
@@ -67,17 +68,17 @@ pub struct SaveArgs {
     pub message: Vec<String>,
 }
 
-#[derive(Args)]
+#[derive(Args, Deserialize, Debug)]
 pub struct LoadArgs {
     pub name: String,
 }
 
-#[derive(Args)]
+#[derive(Args, Deserialize, Debug)]
 pub struct StatusArgs {
     pub name: Option<String>,
 }
 
-#[derive(Args)]
+#[derive(Args, Deserialize, Debug)]
 pub struct DiffArgs {
     pub name: Option<String>,
 }

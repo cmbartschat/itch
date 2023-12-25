@@ -24,7 +24,7 @@ mod squash;
 mod status;
 mod sync;
 
-pub fn run_command(cli: &Cli) -> Result<(), Error> {
+pub async fn run_command(cli: &Cli) -> Result<(), Error> {
     let ctx = init_ctx().map_err(|_| Error::from_str("Unable to load ctx"))?;
 
     match &cli.command {

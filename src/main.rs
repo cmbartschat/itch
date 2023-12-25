@@ -11,7 +11,8 @@ mod diff;
 mod path;
 mod reset;
 
-fn main() {
+#[tokio::main]
+async fn main() {
     env_logger::builder()
         .filter_level(LevelFilter::Debug)
         .init();
@@ -20,7 +21,7 @@ fn main() {
 
     let res = run_command(&cli);
 
-    if let Err(e) = res {
+    if let Err(e) = res.await {
         eprintln!("Failed with error: {}", e.message());
     }
 }
