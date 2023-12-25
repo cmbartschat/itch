@@ -23,6 +23,7 @@
 | diff    | 👀 |   |   | Compare branches and historical changes
 | cleanup | ✍️ |   |   | Delete branches with no changes
 | undo    |   |   | ✍️ | Undo a change
+| ui      | ✍️ | ✍️ | ✍️ | Interactive UI for making commands
 
 ## Natural language commands
 
@@ -63,12 +64,17 @@ itch sync to c001e5
     - [x] Save
 - [ ] Make long output print with `less`
 - [ ] More advanced merge resolution during sync
-- [ ] Fix diff not diffing from fork point
+- [x] Fix diff not diffing from fork point
 - [ ] Fix status showing renamed files as modified
+- [ ] Prevent CSRF for ui
+- [ ] Make ui not use unwrap
+- [ ] Add status/diff to ui
+- [ ] Show diffs for unsaved portions
+- [ ] Make diff look better when piped to code
 
 ### Mapping from git
 
-- **git clone** -> `itch init https://something.git`
+-  **git clone** -> `itch init https://something.git`
 -  **git init** -> `itch init`
 -  **git add** -> Not needed - there is no staging area
 -  **git commit** -> `itch save`
