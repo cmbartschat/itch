@@ -136,6 +136,12 @@ fn sync_branch(repo: &Repository, branch_name: &str) -> Result<(), Error> {
 }
 
 pub fn sync_command(ctx: &Ctx, args: &SyncArgs) -> Result<(), Error> {
+    if args.names.len() == 0 {
+        let repo_head = ctx.repo.head()?;
+        let head_name_str = repo_head.name().unwrap();
+        let head_name = head_name_str[head_name_str.rfind("/").map_or(0, |e| e + 1)..].to_owned();
+        return sync_branch(&ctx.repo, &head_name);
+    }
     for branch in &args.names {
         sync_branch(&ctx.repo, &branch)?;
     }

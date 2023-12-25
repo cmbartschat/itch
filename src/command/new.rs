@@ -9,7 +9,13 @@ use crate::{
 
 pub fn new_command(ctx: &Ctx, args: &NewArgs) -> Result<(), Error> {
     let name = match &args.name {
-        Some(n) => Ok(n.to_string()),
+        Some(n) => {
+            if n.len() > 0 {
+                Ok(n.to_string())
+            } else {
+                choose_random_branch_name(&ctx)
+            }
+        }
         None => choose_random_branch_name(&ctx),
     }?;
 
