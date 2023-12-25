@@ -1,0 +1,110 @@
+* {
+  box-sizing: inherit;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, avenir next, avenir, segoe ui, helvetica neue, helvetica, Cantarell, Ubuntu, roboto, noto, arial, sans-serif;
+  box-sizing: border-box;
+
+  --border: black;
+  --bg: white;
+  --fg: black;
+  --dec: #bbb;
+
+  color: var(--fg);
+  background: var(--bg);
+}
+
+@media (prefers-color-scheme: dark) {
+  body {
+    --border: white;
+    --bg: black;
+    --fg: white;
+    --dec: #4f4f4f;
+  }
+}
+
+
+.inline-form {
+  display: inline-block;
+}
+
+.btn {
+  font-weight: bold;
+  border: 1px solid var(--border);
+  font-family: inherit;
+  font-size: 1rem;
+  background: none;
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+  color: inherit;
+}
+
+.btn:disabled {
+  cursor: default;
+  opacity: 0.5; 
+}
+
+.in {
+  /* font-weight: bold; */
+  border: 1px solid var(--border);
+  border-bottom-width: 2px;
+  font-family: inherit;
+  font-size: 1rem;
+  background: none;
+  padding: 0.5rem 0.75rem;
+  padding-bottom: calc(0.5rem - 1px);
+  line-height: 1;
+  /* cursor: pointer; */
+  color: inherit;
+}
+
+.spaced-down {
+  display: flex;
+  gap: 0.5rem;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.spaced-across {
+  display: flex;
+  gap: 0.5rem;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.start {
+  align-items: flex-start;
+}
+
+.end {
+  align-items: flex-end;
+}
+
+
+a:link {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: var(--dec);
+  text-decoration-thickness: 2px;
+  text-decoration-skip: none;
+}
+
+a:visited {
+  color: inherit;
+}
+
+a:hover {
+  text-decoration-thickness: 3px;
+}
+
+a:active {
+  text-decoration: none;
+}
+
+.box {
+  padding: 1rem;
+  border: 1px solid var(--border);
+  box-shadow: 0 6px 0 -3px var(--dec);
+}

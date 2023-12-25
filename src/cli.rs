@@ -46,6 +46,9 @@ pub enum Commands {
 
     #[command(about = "Prune unneeded branches")]
     Prune,
+
+    #[command(about = "Show interactive UI")]
+    Ui,
 }
 
 #[derive(Args, Deserialize, Debug)]

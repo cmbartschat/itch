@@ -8,7 +8,7 @@ use crate::{
 use self::{
     delete::delete_command, diff::diff_command, list::list_command, load::load_command,
     log::log_command, merge::merge_command, new::new_command, prune::prune_command,
-    save::save_command, squash::squash_command, status::status_command, sync::sync_command,
+    save::save_command, squash::squash_command, status::status_command, sync::sync_command, ui::ui_command,
 };
 
 mod delete;
@@ -23,6 +23,7 @@ mod save;
 mod squash;
 mod status;
 mod sync;
+mod ui;
 
 pub async fn run_command(cli: &Cli) -> Result<(), Error> {
     let ctx = init_ctx().map_err(|_| Error::from_str("Unable to load ctx"))?;
@@ -40,5 +41,6 @@ pub async fn run_command(cli: &Cli) -> Result<(), Error> {
         Commands::Status(args) => status_command(&ctx, &args),
         Commands::Squash => squash_command(&ctx),
         Commands::Sync(args) => sync_command(&ctx, &args),
+        Commands::Ui => ui_command(&ctx).await,
     }
 }
