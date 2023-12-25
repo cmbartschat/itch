@@ -14,7 +14,7 @@ pub fn diff_command(ctx: &Ctx, args: &DiffArgs) -> Result<(), Error> {
 
     let diff_options = Some(&mut options);
 
-    let mut diff = match &args.target {
+    let mut diff = match &args.name {
         Some(branch) => {
             let target_id = ctx
                 .repo

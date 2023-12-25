@@ -69,15 +69,15 @@ pub struct SaveArgs {
 
 #[derive(Args)]
 pub struct LoadArgs {
-    pub target: String,
+    pub name: String,
 }
 
 #[derive(Args)]
 pub struct StatusArgs {
-    pub target: Option<String>,
+    pub name: Option<String>,
 }
 
 #[derive(Args)]
 pub struct DiffArgs {
-    pub target: Option<String>,
+    pub name: Option<String>,
 }

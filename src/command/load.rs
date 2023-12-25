@@ -9,7 +9,7 @@ use crate::{
 pub fn _load_command(ctx: &Ctx, args: &LoadArgs) -> Result<(), Error> {
     let target_ref = ctx
         .repo
-        .find_branch(&args.target, git2::BranchType::Local)?
+        .find_branch(&args.name, git2::BranchType::Local)?
         .into_reference();
 
     if let Some(target) = target_ref.name() {
@@ -26,7 +26,7 @@ pub fn _load_command(ctx: &Ctx, args: &LoadArgs) -> Result<(), Error> {
 }
 
 pub fn load_command(ctx: &Ctx, args: &LoadArgs) -> Result<(), Error> {
-    let message_vec = vec!["Save before switching to".to_string(), args.target.clone()];
+    let message_vec = vec!["Save before switching to".to_string(), args.name.clone()];
     save_command(
         ctx,
         &SaveArgs {

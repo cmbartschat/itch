@@ -19,7 +19,7 @@ pub fn new_command(ctx: &Ctx, args: &NewArgs) -> Result<(), Error> {
 
     ctx.repo.branch(&name, &base_commit, false)?;
 
-    load_command(&ctx, &LoadArgs { target: name })?;
+    load_command(&ctx, &LoadArgs { name })?;
 
     Ok(())
 }

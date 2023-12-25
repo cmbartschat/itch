@@ -300,7 +300,7 @@ file1.txt
  */
 pub fn status_command(ctx: &Ctx, args: &StatusArgs) -> Result<(), Error> {
     let repo_head = ctx.repo.head()?;
-    let head_name: &str = match &args.target {
+    let head_name: &str = match &args.name {
         Some(name) => name.as_str(),
         None => repo_head.shorthand().unwrap(),
     };
