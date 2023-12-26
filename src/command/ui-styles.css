@@ -13,6 +13,14 @@ body {
 
   color: var(--fg);
   background: var(--bg);
+
+  margin: 0 1rem;
+}
+
+ul, li {
+  margin: 0;
+  width: 100%;
+  padding: 0;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -40,9 +48,17 @@ body {
   color: inherit;
 }
 
-.btn:disabled {
+.btn:disabled, .in:disabled {
   cursor: default;
-  opacity: 0.5; 
+  opacity: 0.5;
+}
+
+.box label {
+  width: 100%;
+}
+
+.big-col {
+  min-width: 20rem;
 }
 
 .in {
@@ -57,6 +73,8 @@ body {
   line-height: 1;
   /* cursor: pointer; */
   color: inherit;
+  width: 100%;
+  display: inline-block;
 }
 
 .spaced-down {
@@ -104,7 +122,22 @@ a:active {
 }
 
 .box {
-  padding: 1rem;
-  border: 1px solid var(--border);
-  box-shadow: 0 6px 0 -3px var(--dec);
+  width: 15rem;
+}
+
+h2 {
+  margin: 0;
+}
+
+.box p {
+  margin: 0;
+}
+
+.box .btn {
+  display: block;
+  width: 100%;
+}
+
+.grow {
+  flex-grow: 1;
 }

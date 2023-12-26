@@ -63,15 +63,13 @@ fn named(name: &str) -> HashMap<String, String> {
     map
 }
 
-fn branch_entry(name: &str) -> Markup {
+fn branch_entry(info: &DashboardInfo, name: &str) -> Markup {
     html! {
         li.spaced-across {
-          span style="min-width: 8rem" { (name)}
-        (action_btn("POST", &format!("/api/load"), "Load", &Some(named(name)), false))
-        @if name != "main" {
-          (action_btn("POST", &format!("/api/delete"), "Delete", &Some(named(name)), false))
+            span.grow { (name)}
+            (action_btn("POST", &format!("/api/load"), "Load", &Some(named(name)), info.current_branch == name))
+            (action_btn("POST", &format!("/api/delete"), "Delete", &Some(named(name)), name == "main" || info.current_branch == name))
         }
-      }
     }
 }
 
@@ -80,7 +78,8 @@ struct DashboardInfo {
     unsaved_changes: usize,
     commits_ahead: usize,
     commits_behind: usize,
-    other_branches: Vec<String>,
+    branches: Vec<String>,
+    workspace: String,
 }
 
 async fn render_404() -> Markup {
@@ -143,12 +142,13 @@ fn load_dashboard_info() -> Result<DashboardInfo, Error> {
     let base_past_fork = count_commits_since(&ctx, &fork_point, &base_commit)?;
     let head_past_fork = count_commits_since(&ctx, &fork_point, &head_commit)?;
 
-    let other_branches = ctx
+    let mut branches = ctx
         .repo
         .branches(Some(git2::BranchType::Local))?
         .map(|e| e.unwrap().0.name().unwrap().unwrap().to_owned())
-        .filter(|e| e != &head_name)
         .collect::<Vec<String>>();
+
+    branches.sort_unstable();
 
     let unsaved_diff = ctx
         .repo
@@ -159,7 +159,15 @@ fn load_dashboard_info() -> Result<DashboardInfo, Error> {
         commits_behind: base_past_fork,
         current_branch: head_name.to_owned(),
         unsaved_changes: unsaved_diff.deltas().count(),
-        other_branches: other_branches,
+        branches: branches,
+        workspace: ctx
+            .repo
+            .workdir()
+            .unwrap()
+            .file_name()
+            .unwrap()
+            .to_string_lossy()
+            .into_owned(),
     })
 }
 
@@ -168,74 +176,74 @@ fn render_dashboard(info: &DashboardInfo) -> Markup {
         (DOCTYPE)
         head {
             title {
-               "itch ui"
+               (info.workspace) " | itch ui"
             }
+            meta name="viewport" content="width=device-width, initial-scale=1.0";
             meta charset="utf-8";
             style {(STYLES)}
         }
         body.spaced-down {
             header.spaced-across {
-                h1 { "itch ui" }
+                h1 { (info.workspace) }
                 (action_btn("GET", "/", "Refresh", &None, false))
             }
 
-            p {"On branch " (info.current_branch)}
-
             div.spaced-across.start {
-                div.spaced-across {
-                    (action_btn("POST", "/api/merge", "Merge", &None, info.commits_ahead ==0 || info.commits_behind > 0))
-                    (info.commits_ahead)
-                    " commits ahead"
-                    (action_btn("POST", "/api/squash", "Squash", &None, info.commits_ahead < 2))
-                }
+                div.spaced-down.big-col {
+                    h2 { "Branch: " (info.current_branch) }
+                    div.spaced-across {
+                        (action_btn("POST", "/api/merge", "Merge", &None, info.commits_ahead ==0 || info.commits_behind > 0))
+                        (info.commits_ahead)
+                        " commits ahead"
+                    }
 
-                div.spaced-across {
-                    (action_btn("POST", "/api/sync", "Sync", &None, info.commits_behind == 0))
-                    (info.commits_behind)
-                    " commits behind"
-                }
-            }
+                    div.spaced-across {
+                        (action_btn("POST", "/api/squash", "Squash", &None, info.commits_ahead < 2))
+                        "to single commit"
+                    }
 
-            @if info.unsaved_changes > 0 {
-                form method="POST" action="/api/save" .inline-form.box {
-                    div.spaced-across.end {
-                        label {
-                            "Message"
-                            br;
-                            input .in name="message";
+                    div.spaced-across {
+                        (action_btn("POST", "/api/sync", "Sync", &None, info.commits_behind == 0))
+                        (info.commits_behind)
+                        " commits behind"
+                    }
+
+                    form method="POST" action="/api/save" {
+                        div.spaced-across.end {
+                            label {
+                                "Save message"
+                                br;
+                                input .in name="message" placeholder="(optional)" disabled[info.unsaved_changes == 0];
+                            }
+                            (btn("submit", "Save", info.unsaved_changes == 0))
                         }
-                        (btn("submit", "Save", false))
+
+                        p {(info.unsaved_changes) " changes"}
+                    }
+                }
+
+                div.spaced-down.big-col {
+                    div.spaced-across {
+                        h2 {"All Branches"}
+                        (action_btn("POST", "/api/prune", "Prune empty", &None, false))
                     }
 
-                    p {(info.unsaved_changes) " changes"}
-
-                }
-            }
-
-            h2 {"New Branch" }
-
-            form method="POST" action="/api/new" .inline-form.box  {
-                div.spaced-across.end {
-                    label {
-                        "Name (optional)"
-                        br;
-                        input .in name="name";
+                    form method="POST" action="/api/new" .inline-form.spaced-across.end  {
+                        label.grow {
+                            "New branch"
+                            br;
+                            input .in name="name" placeholder="(optional)";
+                        }
+                        (btn("submit", "New branch", false))
                     }
-                    (btn("submit", "New branch", false))
-                }
-            }
 
-
-            @if info.other_branches.len() > 0 {
-                h2 {"Other branches"}
-                ul.spaced-down {
-                    @for b in &info.other_branches {
-                        (branch_entry(&b))
+                    ul.spaced-down {
+                        @for b in &info.branches {
+                            (branch_entry(&info, &b))
+                        }
                     }
                 }
             }
-
-            (action_btn("POST", "/api/prune", "Prune empty branches", &None, false))
         }
     }
 }
