@@ -47,6 +47,7 @@ itch sync to c001e5
 - [ ] Add rename
 - [ ] Add copy
 - [ ] Add undo
+- [ ] Add remote pull/push
 
 ### Tweaks
 
@@ -71,6 +72,10 @@ itch sync to c001e5
 - [ ] Add status/diff to ui
 - [ ] Show diffs for unsaved portions
 - [ ] Make diff look better when piped to code
+- [ ] Show trailing whitespace in diff
+- [ ] Diff unsaved
+- [ ] Handle plural/disabled states in ui buttons
+- [ ] Hash something to generate port for ui
 
 ### Mapping from git
 
