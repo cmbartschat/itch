@@ -8,7 +8,8 @@ use crate::{
 use self::{
     delete::delete_command, diff::diff_command, list::list_command, load::load_command,
     log::log_command, merge::merge_command, new::new_command, prune::prune_command,
-    save::save_command, squash::squash_command, status::status_command, sync::sync_command, ui::ui_command,
+    save::save_command, squash::squash_command, status::status_command, sync::sync_command,
+    ui::ui_command,
 };
 
 mod delete;
