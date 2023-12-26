@@ -22,7 +22,7 @@ use maud::{html, Markup, DOCTYPE};
 
 use super::{
     delete::delete_command, load::load_command, merge::merge_command, prune::prune_command,
-    save::save_command, sync::sync_command,
+    save::save_command, squash::squash_command, sync::sync_command,
 };
 
 const STYLES: &'static str = include_str!("ui-styles.css");
@@ -185,13 +185,14 @@ fn render_dashboard(info: &DashboardInfo) -> Markup {
                 div.spaced-across {
                     (action_btn("POST", "/api/merge", "Merge", &None, info.commits_ahead ==0 || info.commits_behind > 0))
                     (info.commits_ahead)
-                    " commits ahead of main"
+                    " commits ahead"
+                    (action_btn("POST", "/api/squash", "Squash", &None, info.commits_ahead < 2))
                 }
 
                 div.spaced-across {
                     (action_btn("POST", "/api/sync", "Sync", &None, info.commits_behind == 0))
                     (info.commits_behind)
-                    " commits behind main"
+                    " commits behind"
                 }
             }
 
@@ -248,6 +249,12 @@ async fn dashboard() -> impl IntoResponse {
 async fn handle_merge() -> impl IntoResponse {
     let ctx = init_ctx().unwrap();
     merge_command(&ctx).unwrap();
+    Redirect::to("/")
+}
+
+async fn handle_squash() -> impl IntoResponse {
+    let ctx = init_ctx().unwrap();
+    squash_command(&ctx).unwrap();
     Redirect::to("/")
 }
 
@@ -315,6 +322,7 @@ pub async fn ui_command(_ctx: &Ctx) -> Result<(), Error> {
     let app = Router::new()
         .route("/", get(dashboard))
         .route("/api/merge", post(handle_merge))
+        .route("/api/squash", post(handle_squash))
         .route("/api/sync", post(handle_sync))
         .route("/api/save", post(handle_save))
         .route("/api/load", post(handle_load))
