@@ -6,7 +6,12 @@ use std::{
     rc::Rc,
 };
 
+use axum_extra::extract::{
+    cookie::{Cookie, SameSite},
+    CookieJar,
+};
 use git2::{Commit, Error};
+use rand::rngs::OsRng;
 use serde::Deserialize;
 
 use crate::{
@@ -16,6 +21,9 @@ use crate::{
 };
 
 use axum::{
+    extract::State,
+    http::{Request, StatusCode},
+    middleware::Next,
     response::{IntoResponse, Redirect},
     routing::{get, post},
     Form, Router,
@@ -26,6 +34,11 @@ use super::{
     delete::delete_command, load::load_command, merge::merge_command, prune::prune_command,
     save::save_command, squash::squash_command, sync::sync_command,
 };
+
+#[derive(Clone)]
+struct CsrfState {
+    token: String,
+}
 
 const STYLES: &'static str = include_str!("ui-styles.css");
 
@@ -250,10 +263,11 @@ fn render_dashboard(info: &DashboardInfo) -> Markup {
     }
 }
 
-async fn dashboard() -> impl IntoResponse {
+async fn dashboard(jar: CookieJar, State(state): State<CsrfState>) -> impl IntoResponse {
     let info = load_dashboard_info().unwrap();
-
-    return render_dashboard(&info);
+    let mut csrf = Cookie::new("_csrf", state.token);
+    csrf.set_same_site(SameSite::Strict);
+    (jar.add(csrf), render_dashboard(&info))
 }
 
 async fn handle_merge() -> impl IntoResponse {
@@ -328,17 +342,47 @@ async fn handle_prune() -> impl IntoResponse {
     Redirect::to("/")
 }
 
+async fn csrf_check<B>(
+    State(state): State<CsrfState>,
+    jar: CookieJar,
+    request: Request<B>,
+    next: Next<B>,
+) -> impl IntoResponse {
+    match jar.get("_csrf") {
+        Some(cookie) if cookie.value() == state.token => next.run(request).await.into_response(),
+        _ => return (StatusCode::BAD_REQUEST, "Insecure request.").into_response(),
+    }
+}
+
+use base64::Engine;
+use rand::RngCore;
+
 pub async fn ui_command(_ctx: &Ctx) -> Result<(), Error> {
+    let mut key = [0u8; 32];
+    OsRng.fill_bytes(&mut key);
+
+    let state = CsrfState {
+        token: base64::engine::general_purpose::STANDARD_NO_PAD.encode(&key),
+    };
+
+    let api = Router::new()
+        .route("/merge", post(handle_merge))
+        .route("/squash", post(handle_squash))
+        .route("/sync", post(handle_sync))
+        .route("/save", post(handle_save))
+        .route("/load", post(handle_load))
+        .route("/delete", post(handle_delete))
+        .route("/prune", post(handle_prune))
+        .route("/new", post(handle_new))
+        .layer(axum::middleware::from_fn_with_state(
+            state.clone(),
+            csrf_check,
+        ));
+
     let app = Router::new()
         .route("/", get(dashboard))
-        .route("/api/merge", post(handle_merge))
-        .route("/api/squash", post(handle_squash))
-        .route("/api/sync", post(handle_sync))
-        .route("/api/save", post(handle_save))
-        .route("/api/load", post(handle_load))
-        .route("/api/delete", post(handle_delete))
-        .route("/api/prune", post(handle_prune))
-        .route("/api/new", post(handle_new))
+        .nest("/api", api)
+        .with_state(state)
         .fallback(render_404);
 
     let mut hasher = DefaultHasher::new();

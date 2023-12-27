@@ -7,11 +7,15 @@ edition = "2021"
 
 [dependencies]
 axum = "0.6.20"
+axum-extra = { version = "0.8.0", features = ["cookie"] }
+base64 = "0.21.5"
 clap = { version = "4.4.8", features = ["derive"] }
 env_logger = "0.10.1"
 git2 = "0.18.1"
 log = "0.4.20"
 maud = { version = "0.25.0", features = ["axum"] }
 open = "5.0.1"
+rand = "0.8.5"
+rng = "0.1.0"
 serde = { version = "1.0.193", features = ["std", "derive"] }
 tokio = { version = "1.35.1", features = ["full"] }
