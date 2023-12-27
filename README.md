@@ -76,6 +76,8 @@ itch sync to c001e5
 - [ ] Diff unsaved
 - [ ] Handle plural/disabled states in ui buttons
 - [ ] Hash something to generate port for ui
+- [ ] Compare trees for pruning
+- [ ] Refresh ui on blur
 
 ### Mapping from git
 
