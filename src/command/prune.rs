@@ -5,10 +5,12 @@ use crate::{cli::DeleteArgs, command::delete::delete_command, ctx::Ctx};
 pub fn prune_command(ctx: &Ctx) -> Result<(), Error> {
     let mut branches_to_delete: Vec<String> = vec![];
 
-    let main_ref = ctx
+    let main_id = ctx
         .repo
         .find_branch("main", git2::BranchType::Local)?
-        .into_reference();
+        .into_reference()
+        .peel_to_commit()?
+        .id();
 
     for branch in ctx.repo.branches(Some(git2::BranchType::Local))? {
         match branch {
@@ -23,15 +25,19 @@ pub fn prune_command(ctx: &Ctx) -> Result<(), Error> {
                     continue;
                 }
 
-                let branch_id = ctx.repo.reference_to_annotated_commit(
-                    &ctx.repo
-                        .find_branch(name, BranchType::Local)?
-                        .into_reference(),
-                )?;
+                let branch_id = ctx
+                    .repo
+                    .find_branch(name, BranchType::Local)?
+                    .into_reference()
+                    .peel_to_commit()?
+                    .id();
 
-                let analysis = ctx.repo.merge_analysis_for_ref(&main_ref, &[&branch_id])?.0;
+                let fork_id = ctx.repo.merge_base(main_id, branch_id)?;
 
-                if analysis.is_up_to_date() {
+                let branch_tree_id = ctx.repo.find_commit(branch_id)?.tree_id();
+                let fork_tree_id = ctx.repo.find_commit(fork_id)?.tree_id();
+
+                if branch_tree_id == fork_tree_id {
                     branches_to_delete.push(name.into());
                 }
             }
