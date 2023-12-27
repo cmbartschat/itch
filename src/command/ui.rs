@@ -1,5 +1,7 @@
 use std::{
-    collections::HashMap,
+    collections::{hash_map::DefaultHasher, HashMap},
+    env,
+    hash::{Hash, Hasher},
     net::{IpAddr, Ipv4Addr, SocketAddr},
     rc::Rc,
 };
@@ -339,8 +341,12 @@ pub async fn ui_command(_ctx: &Ctx) -> Result<(), Error> {
         .route("/api/new", post(handle_new))
         .fallback(render_404);
 
+    let mut hasher = DefaultHasher::new();
+    env::current_dir().unwrap().hash(&mut hasher);
+    let start_port = 8000 + (hasher.finish() % 100) as u16;
+
     let builder = (|| {
-        for port in 8000..9000 {
+        for port in start_port..9000 {
             let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), port);
             match axum::Server::try_bind(&addr) {
                 Ok(l) => {
