@@ -97,22 +97,31 @@ struct DashboardInfo {
     workspace: String,
 }
 
-async fn render_404() -> Markup {
+fn render_message(title: &str, text: Option<&str>) -> impl IntoResponse {
     html! {
         (DOCTYPE)
         head {
-          title {
-            "404 | itch ui"
-          }
-          meta charset="utf-8";
-         style {(STYLES)}
+            title {
+                (title) " | itch ui"
+            }
+            meta name="viewport" content="width=device-width, initial-scale=1.0";
+            meta charset="utf-8";
+            style {(STYLES)}
         }
         body.spaced-down {
-        h1 { "Not found" }
+            h1 { (title) }
 
-        a href="/" {"Home"}
+            @if let Some(text) = text {
+                p { (text) }
+            }
+
+            a href="/" {"Back"}
+        }
     }
-    }
+}
+
+async fn render_404() -> impl IntoResponse {
+    (StatusCode::NOT_FOUND, render_message("Not found", None))
 }
 
 fn count_commits_since(_ctx: &Ctx, older: &Commit, newer: &Commit) -> Result<usize, Error> {
@@ -133,7 +142,7 @@ fn count_commits_since(_ctx: &Ctx, older: &Commit, newer: &Commit) -> Result<usi
 }
 
 fn load_dashboard_info() -> Result<DashboardInfo, Error> {
-    let ctx = init_ctx().unwrap();
+    let ctx = init_ctx()?;
 
     let repo_head = ctx.repo.head()?;
 
@@ -264,22 +273,51 @@ fn render_dashboard(info: &DashboardInfo) -> Markup {
 }
 
 async fn dashboard(jar: CookieJar, State(state): State<CsrfState>) -> impl IntoResponse {
-    let info = load_dashboard_info().unwrap();
-    let mut csrf = Cookie::new("_csrf", state.token);
-    csrf.set_same_site(SameSite::Strict);
-    (jar.add(csrf), render_dashboard(&info))
+    load_dashboard_info()
+        .map(|info| {
+            let mut csrf = Cookie::new("_csrf", state.token);
+            csrf.set_same_site(SameSite::Strict);
+            (jar.add(csrf), render_dashboard(&info))
+        })
+        .map_err(|err| map_error_to_response(err))
+}
+
+fn with_ctx<R, T>(callback: T) -> Result<(), Error>
+where
+    T: FnOnce(&Ctx) -> Result<R, Error>,
+{
+    let ctx = init_ctx()?;
+    callback(&ctx)?;
+    Ok(())
+}
+
+fn api_handler<R, T>(callback: T) -> impl IntoResponse
+where
+    T: FnOnce(&Ctx) -> Result<R, Error>,
+{
+    map_result_to_response(with_ctx(callback))
+}
+
+fn map_error_to_response(err: Error) -> impl IntoResponse {
+    (
+        StatusCode::INTERNAL_SERVER_ERROR,
+        render_message("Error", Some(err.message())),
+    )
+}
+
+fn map_result_to_response<T>(res: Result<T, Error>) -> impl IntoResponse {
+    match res {
+        Ok(_) => Redirect::to("/").into_response(),
+        Err(e) => map_error_to_response(e).into_response(),
+    }
 }
 
 async fn handle_merge() -> impl IntoResponse {
-    let ctx = init_ctx().unwrap();
-    merge_command(&ctx).unwrap();
-    Redirect::to("/")
+    api_handler(merge_command)
 }
 
 async fn handle_squash() -> impl IntoResponse {
-    let ctx = init_ctx().unwrap();
-    squash_command(&ctx).unwrap();
-    Redirect::to("/")
+    api_handler(squash_command)
 }
 
 #[derive(Deserialize, Debug)]
@@ -288,35 +326,27 @@ struct SaveForm {
 }
 
 async fn handle_save(Form(body): Form<SaveForm>) -> impl IntoResponse {
-    let ctx = init_ctx().unwrap();
-    save_command(
-        &ctx,
-        &SaveArgs {
-            message: vec![body.message],
-        },
-        true,
-    )
-    .unwrap();
-    Redirect::to("/")
+    api_handler(|ctx| {
+        save_command(
+            ctx,
+            &SaveArgs {
+                message: vec![body.message],
+            },
+            true,
+        )
+    })
 }
 
 async fn handle_sync() -> impl IntoResponse {
-    let ctx = init_ctx().unwrap();
-    sync_command(&ctx, &SyncArgs { names: vec![] }).unwrap();
-    Redirect::to("/")
+    api_handler(|ctx| sync_command(&ctx, &SyncArgs { names: vec![] }))
 }
 
 async fn handle_new(Form(body): Form<NewArgs>) -> impl IntoResponse {
-    let ctx = init_ctx().unwrap();
-    new_command(&ctx, &body).unwrap();
-
-    Redirect::to("/")
+    api_handler(move |ctx| new_command(&ctx, &body))
 }
 
 async fn handle_load(Form(body): Form<LoadArgs>) -> impl IntoResponse {
-    let ctx = init_ctx().unwrap();
-    load_command(&ctx, &body).unwrap();
-    Redirect::to("/")
+    api_handler(move |ctx| load_command(&ctx, &body))
 }
 
 #[derive(Deserialize, Debug)]
@@ -325,21 +355,18 @@ struct DeleteForm {
 }
 
 async fn handle_delete(Form(body): Form<DeleteForm>) -> impl IntoResponse {
-    let ctx = init_ctx().unwrap();
-    delete_command(
-        &ctx,
-        &DeleteArgs {
-            names: vec![body.name],
-        },
-    )
-    .unwrap();
-    Redirect::to("/")
+    api_handler(|ctx| {
+        delete_command(
+            &ctx,
+            &DeleteArgs {
+                names: vec![body.name],
+            },
+        )
+    })
 }
 
 async fn handle_prune() -> impl IntoResponse {
-    let ctx = init_ctx().unwrap();
-    prune_command(&ctx).unwrap();
-    Redirect::to("/")
+    api_handler(|ctx| prune_command(&ctx))
 }
 
 async fn csrf_check<B>(
@@ -350,7 +377,14 @@ async fn csrf_check<B>(
 ) -> impl IntoResponse {
     match jar.get("_csrf") {
         Some(cookie) if cookie.value() == state.token => next.run(request).await.into_response(),
-        _ => return (StatusCode::BAD_REQUEST, "Insecure request.").into_response(),
+        _ => (
+            StatusCode::UNAUTHORIZED,
+            render_message(
+                "Invalid Session",
+                Some("This can happen after a restart. Please return to the dashboard and retry."),
+            ),
+        )
+            .into_response(),
     }
 }
 

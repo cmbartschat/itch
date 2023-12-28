@@ -27,7 +27,7 @@ mod sync;
 mod ui;
 
 pub async fn run_command(cli: &Cli) -> Result<(), Error> {
-    let ctx = init_ctx().map_err(|_| Error::from_str("Unable to load ctx"))?;
+    let ctx = init_ctx()?;
 
     match &cli.command {
         Commands::Prune => prune_command(&ctx),
