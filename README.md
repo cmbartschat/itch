@@ -48,6 +48,8 @@ itch sync to c001e5
 - [ ] Add copy
 - [ ] Add undo
 - [ ] Add remote pull/push
+- [ ] Add unsave
+- [ ] Add fork
 
 ### Tweaks
 
@@ -63,21 +65,24 @@ itch sync to c001e5
 - [x] Add changed files to status
 - [ ] Make the index reset at times that make sense
     - [x] Save
+    - [ ] Load, if the previous save was a "switch"
 - [ ] Make long output print with `less`
 - [ ] More advanced merge resolution during sync
 - [x] Fix diff not diffing from fork point
 - [ ] Fix status showing renamed files as modified
-- [ ] Prevent CSRF for ui
+- [x] Prevent CSRF for ui
 - [ ] Make ui not use unwrap
 - [ ] Add status/diff to ui
-- [ ] Show diffs for unsaved portions
 - [ ] Make diff look better when piped to code
 - [ ] Show trailing whitespace in diff
 - [ ] Diff unsaved
 - [ ] Handle plural/disabled states in ui buttons
-- [ ] Hash something to generate port for ui
-- [ ] Compare trees for pruning
+- [x] Hash something to generate port for ui
+- [x] Compare trees for pruning
 - [ ] Refresh ui on blur
+- [ ] Favicon for ui
+- [ ] Open ui process as daemon
+- [ ] Conflict resolution in ui
 
 ### Mapping from git
 
