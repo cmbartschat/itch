@@ -28,7 +28,7 @@ use axum::{
     routing::{get, post},
     Form, Router,
 };
-use maud::{html, Markup, DOCTYPE};
+use maud::{html, Markup, PreEscaped, DOCTYPE};
 
 use super::{
     delete::delete_command, load::load_command, merge::merge_command, prune::prune_command,
@@ -40,7 +40,7 @@ struct CsrfState {
     token: String,
 }
 
-const STYLES: &'static str = include_str!("ui-styles.css");
+const STYLES: PreEscaped<&'static str> = PreEscaped(include_str!("ui-styles.css"));
 
 fn btn(t: &str, content: &str, disabled: bool) -> Markup {
     html! {
@@ -81,7 +81,7 @@ fn named(name: &str) -> HashMap<String, String> {
 fn branch_entry(info: &DashboardInfo, name: &str) -> Markup {
     html! {
         li.spaced-across {
-            span.grow { (name)}
+            span.grow .selected[info.current_branch == name] { (name) }
             (action_btn("POST", &format!("/api/load"), "Load", &Some(named(name)), info.current_branch == name))
             (action_btn("POST", &format!("/api/delete"), "Delete", &Some(named(name)), name == "main" || info.current_branch == name))
         }

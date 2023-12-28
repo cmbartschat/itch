@@ -23,6 +23,10 @@ ul, li {
   padding: 0;
 }
 
+ul {
+  padding-left: 1rem; 
+}
+
 @media (prefers-color-scheme: dark) {
   body {
     --border: white;
@@ -140,4 +144,14 @@ h2 {
 
 .grow {
   flex-grow: 1;
+}
+
+.selected {
+  position: relative;
+}
+
+.selected:before {
+  content: '>';
+  position: absolute;
+  right: calc(100% + 0.25rem);
 }
