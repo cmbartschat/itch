@@ -6,6 +6,7 @@ use log::LevelFilter;
 mod branch;
 mod cli;
 mod command;
+mod consts;
 mod ctx;
 mod diff;
 mod path;

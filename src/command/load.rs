@@ -3,7 +3,9 @@ use git2::Error;
 use crate::{
     cli::{LoadArgs, SaveArgs},
     command::save::save_command,
+    consts::TEMP_COMMIT_PREFIX,
     ctx::Ctx,
+    reset::pop_and_reset,
 };
 
 pub fn _load_command(ctx: &Ctx, args: &LoadArgs) -> Result<(), Error> {
@@ -19,6 +21,7 @@ pub fn _load_command(ctx: &Ctx, args: &LoadArgs) -> Result<(), Error> {
             git2::ResetType::Hard,
             None,
         )?;
+        pop_and_reset(ctx)?;
         Ok(())
     } else {
         Err(Error::from_str("Invalid branch name"))
@@ -26,7 +29,11 @@ pub fn _load_command(ctx: &Ctx, args: &LoadArgs) -> Result<(), Error> {
 }
 
 pub fn load_command(ctx: &Ctx, args: &LoadArgs) -> Result<(), Error> {
-    let message_vec = vec!["Save before switching to".to_string(), args.name.clone()];
+    let message_vec = vec![
+        TEMP_COMMIT_PREFIX.to_string(),
+        "Save before switching to".to_string(),
+        args.name.clone(),
+    ];
     save_command(
         ctx,
         &SaveArgs {
