@@ -209,7 +209,7 @@ fn render_dashboard(info: &DashboardInfo) -> Markup {
         body.spaced-down {
             header.spaced-across {
                 h1 { (info.workspace) }
-                (action_btn("GET", "/", "Refresh", &None, false))
+                a href="/" { "Refresh" }
             }
 
             div.spaced-across.start {
