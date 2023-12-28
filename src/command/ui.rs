@@ -216,9 +216,16 @@ fn render_dashboard(info: &DashboardInfo) -> Markup {
                 div.spaced-down.big-col {
                     h2 { "Branch: " (info.current_branch) }
                     div.spaced-across {
-                        (action_btn("POST", "/api/merge", "Merge", &None, info.commits_ahead ==0 || info.commits_behind > 0))
-                        (info.commits_ahead)
-                        " commits ahead"
+                        (action_btn("POST", "/api/merge", "Merge", &None, info.commits_ahead == 0 || info.commits_behind > 0))
+                        @if info.commits_ahead == 0 {
+                           "nothing to merge"
+                        } @else if info.commits_behind > 0 {
+                            "sync before merging"
+                        } @else if info.commits_ahead == 1 {
+                            "1 commit"
+                        } @else {
+                            (info.commits_ahead) " commits"
+                        }
                     }
 
                     div.spaced-across {
@@ -228,8 +235,11 @@ fn render_dashboard(info: &DashboardInfo) -> Markup {
 
                     div.spaced-across {
                         (action_btn("POST", "/api/sync", "Sync", &None, info.commits_behind == 0))
-                        (info.commits_behind)
-                        " commits behind"
+                        @match info.commits_behind {
+                            0 => ("already synced"),
+                            1 => ("1 commit behind"),
+                            n => {(n) " commits behind"},
+                         }
                     }
 
                     form method="POST" action="/api/save" {
