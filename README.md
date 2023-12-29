@@ -63,26 +63,29 @@ itch sync to c001e5
 - [x] Line up diff lines with context lines
 - [x] Trim whitespace when truncating commit messages
 - [x] Add changed files to status
-- [ ] Make the index reset at times that make sense
+- [x] Make the index reset at times that make sense
     - [x] Save
-    - [ ] Load, if the previous save was a "switch"
+    - [x] Load, if the previous save was a "switch"
+    - [x] Sync
 - [ ] Make long output print with `less`
 - [ ] More advanced merge resolution during sync
 - [x] Fix diff not diffing from fork point
-- [ ] Fix status showing renamed files as modified
+- [x] Fix status showing renamed files as modified
 - [x] Prevent CSRF for ui
-- [ ] Make ui not use unwrap
+- [x] Make ui not use unwrap
 - [ ] Add status/diff to ui
 - [ ] Make diff look better when piped to code
 - [ ] Show trailing whitespace in diff
 - [ ] Diff unsaved
-- [ ] Handle plural/disabled states in ui buttons
+- [x] Handle plural/disabled states in ui buttons
 - [x] Hash something to generate port for ui
 - [x] Compare trees for pruning
-- [ ] Refresh ui on blur
+- [ ] Refresh ui on focus
 - [ ] Favicon for ui
 - [ ] Open ui process as daemon
 - [ ] Conflict resolution in ui
+- [ ] Prevent autosave on main
+- [x] Fix sync throwing away unsaved changes
 
 ### Mapping from git
 
