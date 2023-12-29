@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use git2::{Commit, DiffDelta, DiffFile, Error};
+use git2::{Commit, Delta, DiffDelta, DiffFile, Error};
 
 use crate::{
     cli::StatusArgs,
@@ -90,7 +90,7 @@ struct ForkInfo<'a> {
 struct FileStatus {
     from: Option<String>,
     to: Option<String>,
-    changed: bool,
+    status: Delta,
 }
 
 impl FileStatus {
@@ -98,24 +98,21 @@ impl FileStatus {
         Self {
             from: extract_optional_path(&delta.old_file()),
             to: extract_optional_path(&delta.new_file()),
-            changed: delta.old_file().id() != delta.new_file().id(),
+            status: delta.status(),
         }
     }
 
     fn char(&self) -> char {
-        match (&self.from, &self.to) {
-            (None, None) => ' ',
-            (None, Some(_)) => 'A',
-            (Some(_), None) => 'D',
-            (Some(a), Some(b)) => {
-                if self.changed {
-                    'M'
-                } else if a != b {
-                    'R'
-                } else {
-                    ' '
-                }
-            }
+        match self.status {
+            Delta::Unmodified => ' ',
+            Delta::Added => 'A',
+            Delta::Deleted => 'D',
+            Delta::Modified => 'M',
+            Delta::Renamed => 'R',
+            Delta::Copied => 'C',
+            Delta::Typechange => 'T',
+            Delta::Untracked => 'A',
+            _ => '?',
         }
     }
 }
