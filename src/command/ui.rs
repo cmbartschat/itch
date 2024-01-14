@@ -210,6 +210,9 @@ fn render_dashboard(info: &DashboardInfo) -> Markup {
                (info.workspace) " | itch ui"
             }
             (common_head_contents())
+            script {
+                (PreEscaped(include_str!("ui.js")))
+            }
         }
         body.spaced-down {
             header.spaced-across {
