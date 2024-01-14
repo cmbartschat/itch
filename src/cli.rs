@@ -83,5 +83,5 @@ pub struct StatusArgs {
 
 #[derive(Args, Deserialize, Debug)]
 pub struct DiffArgs {
-    pub name: Option<String>,
+    pub args: Vec<String>,
 }
