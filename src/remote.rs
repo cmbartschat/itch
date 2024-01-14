@@ -33,7 +33,7 @@ pub fn sync_remote(ctx: &Ctx) -> Result<(), Error> {
             Cred::ssh_key(
                 username_from_url.unwrap(),
                 None,
-                std::path::Path::new(&format!("{}/.ssh/id_rsa", env::var("HOME").unwrap())),
+                std::path::Path::new(&format!("{}/.ssh/id_ed25519", env::var("HOME").unwrap())),
                 None,
             )
         });
