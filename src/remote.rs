@@ -1,4 +1,6 @@
-use git2::{Error, RemoteCallbacks};
+use std::env;
+
+use git2::{Cred, Error, RemoteCallbacks};
 
 use crate::ctx::Ctx;
 
@@ -25,6 +27,15 @@ pub fn sync_remote(ctx: &Ctx) -> Result<(), Error> {
             Ok({
                 println!("Reference status for {name}, {status:?}");
             })
+        });
+
+        callbacks.credentials(|_url, username_from_url, _allowed_types| {
+            Cred::ssh_key(
+                username_from_url.unwrap(),
+                None,
+                std::path::Path::new(&format!("{}/.ssh/id_rsa", env::var("HOME").unwrap())),
+                None,
+            )
         });
 
         let branch_spec = branch.into_reference().name().unwrap().to_string();
