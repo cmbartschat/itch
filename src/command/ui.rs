@@ -97,6 +97,15 @@ struct DashboardInfo {
     workspace: String,
 }
 
+fn common_head_contents() -> Markup {
+    html! {
+        link rel="shortcut icon" href=(PreEscaped(&format!("data:image/svg+xml,{}", quick_xml::escape::escape(include_str!("ui-favicon.svg"))))) type="image/svg+xml";
+        meta name="viewport" content="width=device-width, initial-scale=1.0";
+        meta charset="utf-8";
+        style {(STYLES)}
+    }
+}
+
 fn render_message(title: &str, text: Option<&str>) -> impl IntoResponse {
     html! {
         (DOCTYPE)
@@ -104,9 +113,7 @@ fn render_message(title: &str, text: Option<&str>) -> impl IntoResponse {
             title {
                 (title) " | itch ui"
             }
-            meta name="viewport" content="width=device-width, initial-scale=1.0";
-            meta charset="utf-8";
-            style {(STYLES)}
+            (common_head_contents())
         }
         body.spaced-down {
             h1 { (title) }
@@ -202,9 +209,7 @@ fn render_dashboard(info: &DashboardInfo) -> Markup {
             title {
                (info.workspace) " | itch ui"
             }
-            meta name="viewport" content="width=device-width, initial-scale=1.0";
-            meta charset="utf-8";
-            style {(STYLES)}
+            (common_head_contents())
         }
         body.spaced-down {
             header.spaced-across {

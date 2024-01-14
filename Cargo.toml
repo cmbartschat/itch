@@ -15,6 +15,7 @@ git2 = "0.18.1"
 log = "0.4.20"
 maud = { version = "0.25.0", features = ["axum"] }
 open = "5.0.1"
+quick-xml = "0.31.0"
 rand = "0.8.5"
 rng = "0.1.0"
 serde = { version = "1.0.193", features = ["std", "derive"] }
