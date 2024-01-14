@@ -7,6 +7,9 @@ use serde::Deserialize;
 pub struct Cli {
     #[command(subcommand)]
     pub command: Commands,
+
+    #[arg(short = 'v', long = "verbose", global = true, help = "Show debug logs")]
+    pub verbose: bool,
 }
 
 #[derive(Subcommand)]

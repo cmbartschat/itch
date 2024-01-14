@@ -14,11 +14,13 @@ mod reset;
 
 #[tokio::main]
 async fn main() {
-    env_logger::builder()
-        .filter_level(LevelFilter::Debug)
-        .init();
-
     let cli = Cli::parse();
+
+    if cli.verbose {
+        env_logger::builder()
+            .filter_level(LevelFilter::Debug)
+            .init();
+    }
 
     let res = run_command(&cli);
 
