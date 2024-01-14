@@ -41,7 +41,7 @@ pub fn _save_command(ctx: &Ctx, args: &SaveArgs, silent: bool) -> Result<(), Err
 
 pub fn save_command(ctx: &Ctx, args: &SaveArgs, silent: bool) -> Result<(), Error> {
     _save_command(ctx, args, silent)?;
-    sync_remote(ctx);
+    sync_remote(ctx)?;
     reset_repo(&ctx)?;
     Ok(())
 }
