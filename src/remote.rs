@@ -1,0 +1,37 @@
+use git2::{Error, RemoteCallbacks};
+
+use crate::ctx::Ctx;
+
+pub fn sync_remote(ctx: &Ctx) -> Result<(), Error> {
+    let remotes = ctx.repo.remotes()?;
+    if remotes.len() != 1 {
+        return Err(Error::from_str("Expected exactly 1 remote."));
+    }
+    let mut remote = ctx.repo.find_remote(remotes.get(0).unwrap())?;
+
+    let head_branch = ctx
+        .repo
+        .branches(Some(git2::BranchType::Local))?
+        .find(|x| x.as_ref().is_ok_and(|f| (&f.0).is_head()));
+
+    if let Some(Ok((branch, _))) = head_branch {
+        // let branch = ctx.repo.head("blah", git2::BranchType::Local)?;
+        // branch.
+        // ctx.repo
+
+        let mut callbacks = RemoteCallbacks::new();
+
+        callbacks.push_update_reference(|name, status| {
+            Ok({
+                println!("Reference status for {name}, {status:?}");
+            })
+        });
+
+        let branch_spec = branch.into_reference().name().unwrap().to_string();
+        remote.push(&[branch_spec], None)?;
+
+        return Ok(());
+    } else {
+        return Err(Error::from_str("Unable to resolve active branch."));
+    }
+}

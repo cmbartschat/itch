@@ -1,6 +1,6 @@
 use git2::{Error, IndexAddOption};
 
-use crate::{cli::SaveArgs, ctx::Ctx, reset::reset_repo};
+use crate::{cli::SaveArgs, ctx::Ctx, remote::sync_remote, reset::reset_repo};
 
 pub fn _save_command(ctx: &Ctx, args: &SaveArgs, silent: bool) -> Result<(), Error> {
     let repo = &ctx.repo;
@@ -41,6 +41,7 @@ pub fn _save_command(ctx: &Ctx, args: &SaveArgs, silent: bool) -> Result<(), Err
 
 pub fn save_command(ctx: &Ctx, args: &SaveArgs, silent: bool) -> Result<(), Error> {
     _save_command(ctx, args, silent)?;
+    sync_remote(ctx);
     reset_repo(&ctx)?;
     Ok(())
 }

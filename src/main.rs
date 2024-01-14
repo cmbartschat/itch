@@ -10,6 +10,7 @@ mod consts;
 mod ctx;
 mod diff;
 mod path;
+mod remote;
 mod reset;
 
 #[tokio::main]
