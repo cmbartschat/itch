@@ -1,6 +1,6 @@
 use std::env;
 
-use git2::{Cred, Error, RemoteCallbacks};
+use git2::{Cred, Error, PushOptions, RemoteCallbacks};
 
 use crate::ctx::Ctx;
 
@@ -39,7 +39,12 @@ pub fn sync_remote(ctx: &Ctx) -> Result<(), Error> {
         });
 
         let branch_spec = branch.into_reference().name().unwrap().to_string();
-        remote.push(&[branch_spec], None)?;
+
+        let mut options = PushOptions::new();
+
+        options.remote_callbacks(callbacks);
+
+        remote.push(&[branch_spec], Some(&mut options))?;
 
         return Ok(());
     } else {
