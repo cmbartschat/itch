@@ -29,28 +29,21 @@ pub fn sync_remote(ctx: &Ctx) -> Result<(), Error> {
             })
         });
 
-        callbacks.credentials(
-            |url, username_from_url, allowed_types| match allowed_types {
-                CredentialType::USER_PASS_PLAINTEXT => {
-                    Cred::credential_helper(&ctx.repo.config()?, url, username_from_url)
-                }
-                CredentialType::SSH_CUSTOM
-                | CredentialType::SSH_INTERACTIVE
-                | CredentialType::SSH_KEY => {
-                    println!("{url}, {username_from_url:?}, {allowed_types:?}");
-                    Cred::ssh_key(
-                        username_from_url.unwrap(),
-                        None,
-                        std::path::Path::new(&format!(
-                            "{}/.ssh/id_ed25519",
-                            env::var("HOME").unwrap()
-                        )),
-                        Some("git2023"),
-                    )
-                }
-                _ => todo!("Unknown allowed type."),
-            },
-        );
+        callbacks.credentials(|url, username_from_url, allowed_types| {
+            if allowed_types.contains(CredentialType::USER_PASS_PLAINTEXT) {
+                Cred::credential_helper(&ctx.repo.config()?, url, username_from_url)
+            } else if allowed_types.contains(CredentialType::SSH_KEY) {
+                println!("{url}, {username_from_url:?}, {allowed_types:?}");
+                Cred::ssh_key(
+                    username_from_url.unwrap(),
+                    None,
+                    std::path::Path::new(&format!("{}/.ssh/id_ed25519", env::var("HOME").unwrap())),
+                    Some("git2023"),
+                )
+            } else {
+                todo!("Unknown allowed type: {allowed_types:?}");
+            }
+        });
 
         let branch_spec = branch.into_reference().name().unwrap().to_string();
 
