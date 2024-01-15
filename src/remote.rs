@@ -29,7 +29,8 @@ pub fn sync_remote(ctx: &Ctx) -> Result<(), Error> {
             })
         });
 
-        callbacks.credentials(|_url, username_from_url, _allowed_types| {
+        callbacks.credentials(|url, username_from_url, allowed_types| {
+            println!("{url}, {username_from_url:?}, {allowed_types:?}");
             Cred::ssh_key(
                 username_from_url.unwrap(),
                 None,
