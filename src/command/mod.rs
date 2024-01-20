@@ -1,11 +1,22 @@
+<<<<<<< HEAD
 use std::io::IsTerminal;
 use std::{env, io::stdout};
 
+=======
+use std::vec;
+
+use axum::body::Full;
+>>>>>>> 6f31449 (Save)
 use git2::Error;
 
 use crate::{
     cli::{Cli, Commands},
+<<<<<<< HEAD
     ctx::{init_ctx, Mode},
+=======
+    ctx::init_ctx,
+    sync::FullSyncArgs,
+>>>>>>> 6f31449 (Save)
 };
 
 use self::{
@@ -41,7 +52,7 @@ pub async fn run_command(cli: &Cli) -> Result<(), Error> {
         ctx.disable_color();
     }
 
-    match &cli.command {
+    match cli.command {
         Commands::Prune => prune_command(&ctx),
         Commands::Delete(args) => delete_command(&ctx, &args),
         Commands::Diff(args) => diff_command(&ctx, &args),
@@ -53,7 +64,13 @@ pub async fn run_command(cli: &Cli) -> Result<(), Error> {
         Commands::Save(args) => save_command(&ctx, &args, false),
         Commands::Status(args) => status_command(&ctx, &args),
         Commands::Squash => squash_command(&ctx),
-        Commands::Sync(args) => sync_command(&ctx, &args),
+        Commands::Sync(args) => sync_command(
+            &ctx,
+            &FullSyncArgs {
+                names: args.names,
+                resolutions: vec![],
+            },
+        ),
         Commands::Ui => ui_command(&ctx).await,
         Commands::Unsave => unsave_command(&ctx),
     }
