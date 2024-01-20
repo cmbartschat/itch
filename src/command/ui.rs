@@ -18,7 +18,7 @@ use crate::{
     cli::{DeleteArgs, LoadArgs, NewArgs, SaveArgs},
     command::new::new_command,
     ctx::{init_ctx, Ctx},
-    sync::{FullSyncArgs, ResolutionChoice, ResolutionMap},
+    sync::{Conflict, FullSyncArgs, ResolutionChoice, ResolutionMap},
 };
 
 use axum::{
@@ -307,7 +307,7 @@ async fn dashboard(jar: CookieJar, State(state): State<CsrfState>) -> impl IntoR
         .map_err(|err| map_error_to_response(err))
 }
 
-fn render_sync(conflicts: Vec<String>) -> impl IntoResponse {
+fn render_sync(conflicts: &Vec<Conflict>) -> impl IntoResponse {
     html! {
         (DOCTYPE)
         head {
@@ -320,12 +320,56 @@ fn render_sync(conflicts: Vec<String>) -> impl IntoResponse {
             h1 { "Sync" }
 
             form method="POST" action="/api/sync"  {
-                @for path in &conflicts {
-                    fieldset {
-                        (path)
-                            input type="radio" name=(path) value="yours" checked;
-                            input type="radio" name=(path) value="mine";
-                    }
+                @for conflict in conflicts {
+                    @match conflict {
+                      Conflict::MainDeletion(path) => {
+                        fieldset {
+                            (path) "has changes, but was deleted on main." br;
+                        input type="radio" name=(path) value="keep" checked;
+                        input type="radio" name=(path) value="delete";
+                        }
+                      },
+                      Conflict::BranchDeletion(path) => {
+                        fieldset {
+                            (path)
+                             "was deleted on your branch, but was modified on main."
+                             br;
+                        input type="radio" name=(path) value="keep" checked;
+                        input type="radio" name=(path) value="delete";
+                        }
+                        },
+                        Conflict::Merge(info) => {
+                            fieldset {
+                                (info.branch_path) "has conflicts." br;
+                                input type="radio" name=(info.branch_path) value="yours" checked;
+                                input type="radio" name=(info.branch_path) value="theirs";
+
+                                details {
+                                    p {"main content:"}
+                                pre {
+                                    code {
+                                        (info.main_content)
+                                    }
+                                }
+                                p {"branch content:"}
+                                pre {
+                                    code {
+                                        (info.branch_content)
+                                    }
+                                }
+                                }
+
+                            }
+                        }
+                        Conflict::OpaqueMerge(_, path) => {
+                            fieldset {
+                                (path) "has conflicts." br;
+                                input type="radio" name=(path) value="yours" checked;
+                                input type="radio" name=(path) value="theirs";
+                            }
+                        }
+
+                      }
                 }
 
                 (btn("submit", "Sync", false))
@@ -337,14 +381,15 @@ fn render_sync(conflicts: Vec<String>) -> impl IntoResponse {
 }
 
 async fn sync() -> impl IntoResponse {
-    render_sync(vec!["example1".to_string(), "example2".to_string()])
+    render_sync(&vec![])
 }
 
 fn with_ctx<R, T>(callback: T) -> Result<(), Error>
 where
     T: FnOnce(&Ctx) -> Result<R, Error>,
 {
-    let ctx = init_ctx()?;
+    let mut ctx = init_ctx()?;
+    ctx.set_mode(crate::ctx::Mode::Background);
     callback(&ctx)?;
     Ok(())
 }

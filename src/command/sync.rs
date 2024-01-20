@@ -15,7 +15,10 @@ use crate::{
     ctx::Ctx,
     path::bytes2path,
     reset::pop_and_reset,
-    sync::{FullSyncArgs, ResolutionChoice, ResolutionMap},
+    sync::{
+        Conflict, FullSyncArgs, MergeConflict, ResolutionChoice, ResolutionMap, SyncDetails,
+        SyncResult,
+    },
 };
 
 fn yes_or_no(prompt: &str, by_default: Option<bool>) -> bool {
@@ -48,11 +51,12 @@ fn entry_without_conflicts(mut entry: IndexEntry) -> IndexEntry {
 }
 
 fn resolve_conflict(
-    repo: &Repository,
+    ctx: &Ctx,
     index: &mut Index,
     conflict: IndexConflict,
     resolutions: Option<&ResolutionMap>,
-) -> Result<(), Error> {
+) -> Result<Option<Conflict>, Error> {
+    let repo = &ctx.repo;
     match (conflict.their, conflict.our) {
         (Some(branch_entry), Some(main_entry)) => {
             let current_path = bytes2path(&branch_entry.path)?;
@@ -63,17 +67,39 @@ fn resolve_conflict(
                 match resolution {
                     ResolutionChoice::Yours => {
                         index.add(&entry_without_conflicts(branch_entry))?;
-                        return Ok(());
+                        return Ok(None);
                     }
                     ResolutionChoice::Theirs => {
                         index.add(&entry_without_conflicts(main_entry))?;
-                        return Ok(());
+                        return Ok(None);
                     }
                     ResolutionChoice::Manual(str) => {
                         let mut new_entry = IndexEntry::from(branch_entry);
                         new_entry.id = repo.blob(str.as_bytes())?;
                         index.add(&entry_without_conflicts(new_entry))?;
-                        return Ok(());
+                        return Ok(None);
+                    }
+                }
+            }
+
+            if (!ctx.can_prompt()) {
+                let main_file: String = main_path.to_string_lossy().into();
+                let branch_file: String = current_path.to_string_lossy().into();
+                let main_blob = repo.find_blob(main_entry.id)?;
+                let branch_blob = repo.find_blob(branch_entry.id)?;
+
+                match (main_blob.is_binary(), branch_blob.is_binary()) {
+                    (false, false) => {
+                        return Ok(Some(Conflict::Merge(MergeConflict {
+                            main_path: main_file,
+                            branch_path: branch_file,
+                            main_content: String::from_utf8_lossy(main_blob.content()).into(),
+                            branch_content: String::from_utf8_lossy(branch_blob.content()).into(),
+                            merge_content: String::from(""),
+                        })));
+                    }
+                    _ => {
+                        return Ok(Some(Conflict::OpaqueMerge(main_file, branch_file)));
                     }
                 }
             }
@@ -100,15 +126,22 @@ fn resolve_conflict(
                 match resolution {
                     ResolutionChoice::Yours => {
                         index.add(&entry_without_conflicts(branch_entry))?;
-                        return Ok(());
+                        return Ok(None);
                     }
                     ResolutionChoice::Theirs => {
                         index.remove_path(&current_path)?;
-                        return Ok(());
+                        return Ok(None);
                     }
                     _ => todo!("More types of resolution"),
                 }
             }
+
+            if (!ctx.can_prompt()) {
+                return Ok(Some(Conflict::MainDeletion(
+                    current_path.to_string_lossy().into(),
+                )));
+            }
+
             let prompt = format!(
                 "{} was deleted on main. Keep your changes?",
                 current_path.to_string_lossy()
@@ -128,15 +161,22 @@ fn resolve_conflict(
                 match resolution {
                     ResolutionChoice::Yours => {
                         index.remove_path(&current_path)?;
-                        return Ok(());
+                        return Ok(None);
                     }
                     ResolutionChoice::Theirs => {
                         index.add(&entry_without_conflicts(main_entry))?;
-                        return Ok(());
+                        return Ok(None);
                     }
                     _ => todo!("More types of resolution"),
                 }
             }
+
+            if (!ctx.can_prompt()) {
+                return Ok(Some(Conflict::BranchDeletion(
+                    current_path.to_string_lossy().into(),
+                )));
+            }
+
             let prompt = format!(
                 "{} was modified on main. Keep your delete?",
                 current_path.to_string_lossy()
@@ -147,17 +187,18 @@ fn resolve_conflict(
                 index.add(&entry_without_conflicts(main_entry))?;
             }
         }
-        _ => {}
+        (None, None) => {}
     };
 
-    Ok(())
+    Ok(None)
 }
 
 fn sync_branch(
-    repo: &Repository,
+    ctx: &Ctx,
     branch_name: &str,
     resolutions: Option<&ResolutionMap>,
-) -> Result<(), Error> {
+) -> Result<SyncDetails, Error> {
+    let repo = &ctx.repo;
     let branch_ref = repo
         .find_branch(&branch_name, git2::BranchType::Local)?
         .into_reference();
@@ -177,6 +218,8 @@ fn sync_branch(
 
     let mut final_id: Oid = upstream_id.id();
 
+    let mut details: Vec<Conflict> = vec![];
+
     while let Some(Ok(operation)) = rebase.next() {
         match operation.kind() {
             Some(RebaseOperationType::Pick) => {
@@ -185,12 +228,16 @@ fn sync_branch(
                     let conflicts = index.conflicts()?;
                     println!("\nWe have some conflicts to resolve: {}", conflicts.count());
 
-                    rebase
-                        .inmemory_index()?
-                        .conflicts()?
-                        .try_for_each(|conflict| {
-                            resolve_conflict(repo, &mut index, conflict?, resolutions)
-                        })?;
+                    rebase.inmemory_index()?.conflicts()?.try_for_each(
+                        |conflict| -> Result<(), Error> {
+                            if let Some(conflict) =
+                                resolve_conflict(ctx, &mut index, conflict?, resolutions)?
+                            {
+                                details.push(conflict);
+                            }
+                            Ok(())
+                        },
+                    )?;
                 }
             }
             Some(RebaseOperationType::Fixup) => {
@@ -204,6 +251,10 @@ fn sync_branch(
                 todo!("Handle: {:?}", operation);
             }
         };
+
+        if details.len() > 0 {
+            return Ok(SyncDetails::Conflicted(details));
+        }
 
         match rebase.commit(None, &repo.signature()?, None) {
             Ok(id) => {
@@ -229,10 +280,12 @@ fn sync_branch(
         repo.branch(&branch_name, &final_commit, true)?;
     }
 
-    Ok(())
+    Ok(SyncDetails::Complete)
 }
 
-pub fn sync_command(ctx: &Ctx, args: &FullSyncArgs) -> Result<(), Error> {
+pub fn sync_command(ctx: &Ctx, args: &FullSyncArgs) -> Result<SyncResult, Error> {
+    let mut results: SyncResult = vec![];
+
     save_command(
         ctx,
         &SaveArgs {
@@ -248,12 +301,14 @@ pub fn sync_command(ctx: &Ctx, args: &FullSyncArgs) -> Result<(), Error> {
         let repo_head = ctx.repo.head()?;
         let head_name_str = repo_head.name().unwrap();
         let head_name = head_name_str[head_name_str.rfind("/").map_or(0, |e| e + 1)..].to_owned();
-        sync_branch(&ctx.repo, &head_name, args.resolutions.get(0))?;
+        results.push(sync_branch(&ctx, &head_name, args.resolutions.get(0))?);
     }
 
     for (index, branch) in args.names.iter().enumerate() {
-        sync_branch(&ctx.repo, &branch, args.resolutions.get(index))?;
+        results.push(sync_branch(&ctx, &branch, args.resolutions.get(index))?);
     }
 
-    pop_and_reset(ctx)
+    pop_and_reset(ctx)?;
+
+    Ok(results)
 }

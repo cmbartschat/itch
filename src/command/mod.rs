@@ -44,13 +44,16 @@ pub async fn run_command(cli: Cli) -> Result<(), Error> {
         Commands::Save(args) => save_command(&ctx, &args, false),
         Commands::Status(args) => status_command(&ctx, &args),
         Commands::Squash => squash_command(&ctx),
-        Commands::Sync(args) => sync_command(
-            &ctx,
-            &FullSyncArgs {
-                names: args.names,
-                resolutions: vec![],
-            },
-        ),
+        Commands::Sync(args) => {
+            sync_command(
+                &ctx,
+                &FullSyncArgs {
+                    names: args.names,
+                    resolutions: vec![],
+                },
+            )?;
+            Ok(())
+        }
         Commands::Ui => ui_command(&ctx).await,
     }
 }
