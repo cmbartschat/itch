@@ -104,7 +104,7 @@ fn resolve_conflict(
                 }
             }
 
-            if (!ctx.can_prompt()) {
+            if !ctx.can_prompt() {
                 let main_file: String = main_path.to_string_lossy().into();
                 let branch_file: String = current_path.to_string_lossy().into();
                 let main_blob = repo.find_blob(main_entry.id)?;
@@ -161,7 +161,7 @@ fn resolve_conflict(
                 }
             }
 
-            if (!ctx.can_prompt()) {
+            if !ctx.can_prompt() {
                 return Ok(Some(Conflict::MainDeletion(
                     current_path.to_string_lossy().into(),
                 )));
@@ -199,7 +199,7 @@ fn resolve_conflict(
                 }
             }
 
-            if (!ctx.can_prompt()) {
+            if !ctx.can_prompt() {
                 return Ok(Some(Conflict::BranchDeletion(
                     current_path.to_string_lossy().into(),
                 )));
