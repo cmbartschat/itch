@@ -11,12 +11,9 @@ use git2::Error;
 
 use crate::{
     cli::{Cli, Commands},
-<<<<<<< HEAD
     ctx::{init_ctx, Mode},
-=======
     ctx::init_ctx,
     sync::FullSyncArgs,
->>>>>>> 6f31449 (Save)
 };
 
 use self::{

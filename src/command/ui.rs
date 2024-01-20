@@ -319,25 +319,43 @@ fn render_sync(conflicts: &Vec<Conflict>) -> Markup {
                     @match conflict {
                       Conflict::MainDeletion(path) => {
                         fieldset {
-                            (path) "has changes, but was deleted on main." br;
-                        input type="radio" name=(path) value="keep" checked;
-                        input type="radio" name=(path) value="delete";
+                            (path) " has changes, but was deleted on main." br;
+                            label {
+                                "Keep"
+                                input type="radio" name=(path) value="yours" checked;
+                            }
+                            label {
+                                "Delete"
+                                input type="radio" name=(path) value="theirs";
+                            }
                         }
                       },
                       Conflict::BranchDeletion(path) => {
                         fieldset {
                             (path)
-                             "was deleted on your branch, but was modified on main."
+                             " was deleted on your branch, but was modified on main."
                              br;
-                        input type="radio" name=(path) value="keep" checked;
-                        input type="radio" name=(path) value="delete";
+                             label {
+                                "Keep"
+                                input type="radio" name=(path) value="theirs" checked;
+                            }
+                            label {
+                                "Delete"
+                                input type="radio" name=(path) value="yours";
+                            }
                         }
                         },
                         Conflict::Merge(info) => {
                             fieldset {
-                                (info.branch_path) "has conflicts." br;
-                                input type="radio" name=(info.branch_path) value="yours" checked;
-                                input type="radio" name=(info.branch_path) value="theirs";
+                                (info.branch_path) " has conflicts." br;
+                                label {
+                                    "Your version"
+                                    input type="radio" name=(info.branch_path) value="yours" checked;
+                                }
+                                label {
+                                    "Their version"
+                                    input type="radio" name=(info.branch_path) value="theirs";
+                                }
 
                                 details {
                                     p {"main content:"}
@@ -367,10 +385,10 @@ fn render_sync(conflicts: &Vec<Conflict>) -> Markup {
                       }
                 }
 
-                (btn("submit", "Sync", false))
+                (btn("submit", "Submit", false))
             }
 
-            a href="/" {"Back"}
+            a href="/" {"Cancel"}
         }
     }
 }
