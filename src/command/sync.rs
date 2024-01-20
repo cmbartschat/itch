@@ -9,12 +9,8 @@ use git2::{
 };
 
 use crate::{
-    cli::{SaveArgs, SyncArgs},
-    command::save::save_command,
-    consts::TEMP_COMMIT_PREFIX,
-    ctx::Ctx,
-    path::bytes2path,
-    reset::pop_and_reset,
+    cli::SaveArgs, command::save::save_command, consts::TEMP_COMMIT_PREFIX, ctx::Ctx,
+    path::bytes2path, reset::pop_and_reset, sync::FullSyncArgs,
 };
 
 fn yes_or_no(prompt: &str, by_default: Option<bool>) -> bool {
@@ -170,7 +166,7 @@ fn sync_branch(repo: &Repository, branch_name: &str) -> Result<(), Error> {
     Ok(())
 }
 
-pub fn sync_command(ctx: &Ctx, args: &SyncArgs) -> Result<(), Error> {
+pub fn sync_command(ctx: &Ctx, args: &FullSyncArgs) -> Result<(), Error> {
     save_command(
         ctx,
         &SaveArgs {

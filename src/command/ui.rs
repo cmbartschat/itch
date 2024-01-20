@@ -15,9 +15,10 @@ use rand::rngs::OsRng;
 use serde::Deserialize;
 
 use crate::{
-    cli::{DeleteArgs, LoadArgs, NewArgs, SaveArgs, SyncArgs},
+    cli::{DeleteArgs, LoadArgs, NewArgs, SaveArgs},
     command::new::new_command,
     ctx::{init_ctx, Ctx},
+    sync::{FullSyncArgs, ResolutionChoice, ResolutionMap},
 };
 
 use axum::{
@@ -355,8 +356,45 @@ async fn handle_save(Form(body): Form<SaveForm>) -> impl IntoResponse {
     })
 }
 
-async fn handle_sync() -> impl IntoResponse {
-    api_handler(|ctx| sync_command(&ctx, &SyncArgs { names: vec![] }))
+#[derive(Deserialize, Debug)]
+struct SyncDecision {
+    path: String,
+    yours: Option<bool>,
+    theirs: Option<bool>,
+    edit: Option<String>,
+}
+
+#[derive(Deserialize, Debug)]
+struct SyncForm {
+    resolutions: Option<Vec<SyncDecision>>,
+}
+
+fn convert_sync_form(body: &SyncForm) -> Result<FullSyncArgs, Error> {
+    let mut resolutions: ResolutionMap = HashMap::new();
+
+    if let Some(res) = &body.resolutions {
+        for decision in res {
+            let resolution = match (decision.yours, decision.theirs, &decision.edit) {
+                (Some(true), None, None) => ResolutionChoice::Yours,
+                (None, Some(true), None) => ResolutionChoice::Theirs,
+                (None, None, Some(str)) => ResolutionChoice::Manual(str.clone()),
+                _ => return Err(Error::from_str("Invalid decision specified.")),
+            };
+            resolutions.insert(decision.path.clone(), resolution);
+        }
+    }
+
+    return Ok(FullSyncArgs {
+        names: vec![],
+        resolutions: vec![resolutions],
+    });
+}
+
+async fn handle_sync(Form(body): Form<SyncForm>) -> impl IntoResponse {
+    api_handler(move |ctx| {
+        let args = convert_sync_form(&body)?;
+        sync_command(&ctx, &args)
+    })
 }
 
 async fn handle_new(Form(body): Form<NewArgs>) -> impl IntoResponse {

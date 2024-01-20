@@ -11,6 +11,7 @@ mod ctx;
 mod diff;
 mod path;
 mod reset;
+mod sync;
 
 #[tokio::main]
 async fn main() {
@@ -22,7 +23,7 @@ async fn main() {
             .init();
     }
 
-    let res = run_command(&cli);
+    let res = run_command(cli);
 
     if let Err(e) = res.await {
         eprintln!("Failed with error: {}", e.message());
