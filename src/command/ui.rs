@@ -302,6 +302,39 @@ async fn dashboard(jar: CookieJar, State(state): State<CsrfState>) -> impl IntoR
         .map_err(|err| map_error_to_response(err))
 }
 
+fn render_sync(conflicts: Vec<String>) -> impl IntoResponse {
+    html! {
+        (DOCTYPE)
+        head {
+            title {
+                "Sync | itch ui"
+            }
+            (common_head_contents())
+        }
+        body.spaced-down {
+            h1 { "Sync" }
+
+            form method="POST" action="/api/sync"  {
+                @for path in &conflicts {
+                    fieldset {
+                        (path)
+                            input type="radio" name=(path) value="yours" checked;
+                            input type="radio" name=(path) value="mine";
+                    }
+                }
+
+                (btn("submit", "Sync", false))
+            }
+
+            a href="/" {"Back"}
+        }
+    }
+}
+
+async fn sync() -> impl IntoResponse {
+    render_sync(vec!["example1".to_string(), "example2".to_string()])
+}
+
 fn with_ctx<R, T>(callback: T) -> Result<(), Error>
 where
     T: FnOnce(&Ctx) -> Result<R, Error>,
@@ -473,6 +506,7 @@ pub async fn ui_command(_ctx: &Ctx) -> Result<(), Error> {
 
     let app = Router::new()
         .route("/", get(dashboard))
+        .route("/sync", get(sync))
         .nest("/api", api)
         .with_state(state)
         .fallback(render_404);
