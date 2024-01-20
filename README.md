@@ -21,7 +21,7 @@
 | log     | 👀 | 👀 |   | Show the checkpoints along a branch
 | squash  | ✍️ | 📍 |   | Combine all the save commits into one commit
 | diff    | 👀 |   |   | Compare branches and historical changes
-| cleanup | ✍️ |   |   | Delete branches with no changes
+| prune   | ✍️ |   |   | Delete branches with no changes
 | undo    |   |   | ✍️ | Undo a change
 | ui      | ✍️ | ✍️ | ✍️ | Interactive UI for making commands
 
@@ -44,7 +44,9 @@ itch sync to c001e5
 - [x] Add merge
 - [x] Add squash
 - [x] Add clean
+- [ ] Add init
 - [ ] Add rename
+- [ ] Add revert
 - [ ] Add copy
 - [ ] Add undo
 - [ ] Add remote pull/push
@@ -76,16 +78,21 @@ itch sync to c001e5
 - [ ] Add status/diff to ui
 - [ ] Make diff look better when piped to code
 - [ ] Show trailing whitespace in diff
-- [ ] Diff unsaved
+- [x] Diff unsaved
 - [x] Handle plural/disabled states in ui buttons
 - [x] Hash something to generate port for ui
 - [x] Compare trees for pruning
-- [ ] Refresh ui on focus
-- [ ] Favicon for ui
+- [x] Refresh ui on focus
+- [x] Favicon for ui
 - [ ] Open ui process as daemon
 - [ ] Conflict resolution in ui
 - [ ] Prevent autosave on main
 - [x] Fix sync throwing away unsaved changes
+- [ ] Fix the .into() on windows/get compiler working
+- [ ] Make sure LFS works
+- [ ] Detect and propagate info around interactivity/verbose/escape characters
+- [ ] Check if commands can be made more atomic
+- [ ] Specify squash message?
 
 ### Mapping from git
 
@@ -93,7 +100,7 @@ itch sync to c001e5
 -  **git init** -> `itch init`
 -  **git add** -> Not needed - there is no staging area
 -  **git commit** -> `itch save`
--  **git status** -> todo
+-  **git status** -> `itch status`
 -  **git pull** -> `itch sync`
 -  **git push** -> `itch merge` ?? 
 -  **git branch** `itch new` / `itch delete` / `itch list`
