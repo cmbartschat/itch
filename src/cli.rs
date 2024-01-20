@@ -52,6 +52,9 @@ pub enum Commands {
 
     #[command(about = "Show interactive UI")]
     Ui,
+
+    #[command(about = "Clear out all save commits without reverting changes")]
+    Unsave,
 }
 
 #[derive(Args, Deserialize, Debug)]
