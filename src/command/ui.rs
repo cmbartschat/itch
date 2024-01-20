@@ -251,6 +251,12 @@ fn render_dashboard(info: &DashboardInfo) -> Markup {
                          }
                     }
 
+                    form method="POST" action="/api/sync"  {
+                        input type="radio" name="example.txt" value="yours" checked;
+                        input type="radio" name="example.txt" value="mine";
+                        (btn("submit", "Sync", false))
+                    }
+
                     form method="POST" action="/api/save" {
                         div.spaced-across.end {
                             label {
@@ -356,33 +362,57 @@ async fn handle_save(Form(body): Form<SaveForm>) -> impl IntoResponse {
     })
 }
 
-#[derive(Deserialize, Debug)]
-struct SyncDecision {
-    path: String,
-    yours: Option<bool>,
-    theirs: Option<bool>,
-    edit: Option<String>,
-}
+// #[derive(Deserialize, Debug)]
+// struct SyncDecision {
+//     path: String,
+//     yours: Option<bool>,
+//     theirs: Option<bool>,
+//     edit: Option<String>,
+// }
 
-#[derive(Deserialize, Debug)]
-struct SyncForm {
-    resolutions: Option<Vec<SyncDecision>>,
-}
+// #[derive(Deserialize, Debug)]
+// struct SyncForm {
+//     resolutions: Vec<SyncDecision>,
+// }
+
+type SyncForm = HashMap<String, String>;
+
+// fn convert_sync_form(body: &SyncForm) -> Result<FullSyncArgs, Error> {
+//     let mut resolutions: ResolutionMap = HashMap::new();
+
+//     // if let Some(res) = &body.resolutions {
+//     for decision in &body.resolutions {
+//         let resolution = match (decision.yours, decision.theirs, &decision.edit) {
+//             (Some(true), None, None) => ResolutionChoice::Yours,
+//             (None, Some(true), None) => ResolutionChoice::Theirs,
+//             (None, None, Some(str)) => ResolutionChoice::Manual(str.clone()),
+//             _ => return Err(Error::from_str("Invalid decision specified.")),
+//         };
+//         resolutions.insert(decision.path.clone(), resolution);
+//     }
+//     // }
+
+//     return Ok(FullSyncArgs {
+//         names: vec![],
+//         resolutions: vec![resolutions],
+//     });
+// }
 
 fn convert_sync_form(body: &SyncForm) -> Result<FullSyncArgs, Error> {
     let mut resolutions: ResolutionMap = HashMap::new();
 
-    if let Some(res) = &body.resolutions {
-        for decision in res {
-            let resolution = match (decision.yours, decision.theirs, &decision.edit) {
-                (Some(true), None, None) => ResolutionChoice::Yours,
-                (None, Some(true), None) => ResolutionChoice::Theirs,
-                (None, None, Some(str)) => ResolutionChoice::Manual(str.clone()),
-                _ => return Err(Error::from_str("Invalid decision specified.")),
-            };
-            resolutions.insert(decision.path.clone(), resolution);
-        }
+    // if let Some(res) = &body.resolutions {
+    for (key, value) in body.iter() {
+        let value = if value == "yours" {
+            ResolutionChoice::Yours
+        } else if value == "theirs" {
+            ResolutionChoice::Theirs
+        } else {
+            return Err(Error::from_str("Unable to parse choice."));
+        };
+        resolutions.insert(key.clone(), value);
     }
+    // }
 
     return Ok(FullSyncArgs {
         names: vec![],
@@ -392,6 +422,7 @@ fn convert_sync_form(body: &SyncForm) -> Result<FullSyncArgs, Error> {
 
 async fn handle_sync(Form(body): Form<SyncForm>) -> impl IntoResponse {
     api_handler(move |ctx| {
+        println!("body: {body:?}");
         let args = convert_sync_form(&body)?;
         sync_command(&ctx, &args)
     })
@@ -495,7 +526,7 @@ pub async fn ui_command(_ctx: &Ctx) -> Result<(), Error> {
 
     let server = builder.serve(app.into_make_service());
 
-    open::that(format!("http://localhost:{}", server.local_addr().port())).unwrap();
+    // open::that(format!("http://localhost:{}", server.local_addr().port())).unwrap();
 
     server.await.unwrap();
 

@@ -9,8 +9,13 @@ use git2::{
 };
 
 use crate::{
-    cli::SaveArgs, command::save::save_command, consts::TEMP_COMMIT_PREFIX, ctx::Ctx,
-    path::bytes2path, reset::pop_and_reset, sync::FullSyncArgs,
+    cli::SaveArgs,
+    command::save::save_command,
+    consts::TEMP_COMMIT_PREFIX,
+    ctx::Ctx,
+    path::bytes2path,
+    reset::pop_and_reset,
+    sync::{FullSyncArgs, ResolutionChoice, ResolutionMap},
 };
 
 fn yes_or_no(prompt: &str, by_default: Option<bool>) -> bool {
@@ -42,11 +47,36 @@ fn entry_without_conflicts(mut entry: IndexEntry) -> IndexEntry {
     entry
 }
 
-fn resolve_conflict(index: &mut Index, conflict: IndexConflict) -> Result<(), Error> {
+fn resolve_conflict(
+    repo: &Repository,
+    index: &mut Index,
+    conflict: IndexConflict,
+    resolutions: Option<&ResolutionMap>,
+) -> Result<(), Error> {
     match (conflict.their, conflict.our) {
         (Some(branch_entry), Some(main_entry)) => {
             let current_path = bytes2path(&branch_entry.path)?;
             let main_path = bytes2path(&main_entry.path)?;
+            if let Some(resolution) =
+                resolutions.and_then(|f| f.get(current_path.to_string_lossy().as_ref()))
+            {
+                match resolution {
+                    ResolutionChoice::Yours => {
+                        index.add(&entry_without_conflicts(branch_entry))?;
+                        return Ok(());
+                    }
+                    ResolutionChoice::Theirs => {
+                        index.add(&entry_without_conflicts(main_entry))?;
+                        return Ok(());
+                    }
+                    ResolutionChoice::Manual(str) => {
+                        let mut new_entry = IndexEntry::from(branch_entry);
+                        new_entry.id = repo.blob(str.as_bytes())?;
+                        index.add(&entry_without_conflicts(new_entry))?;
+                        return Ok(());
+                    }
+                }
+            }
 
             let prompt = format!(
                 "{} is conflicted. Keep your changes?",
@@ -64,6 +94,21 @@ fn resolve_conflict(index: &mut Index, conflict: IndexConflict) -> Result<(), Er
         // File deleted on main
         (Some(branch_entry), None) => {
             let current_path = bytes2path(&branch_entry.path)?;
+            if let Some(resolution) =
+                resolutions.and_then(|f| f.get(current_path.to_string_lossy().as_ref()))
+            {
+                match resolution {
+                    ResolutionChoice::Yours => {
+                        index.add(&entry_without_conflicts(branch_entry))?;
+                        return Ok(());
+                    }
+                    ResolutionChoice::Theirs => {
+                        index.remove_path(&current_path)?;
+                        return Ok(());
+                    }
+                    _ => todo!("More types of resolution"),
+                }
+            }
             let prompt = format!(
                 "{} was deleted on main. Keep your changes?",
                 current_path.to_string_lossy()
@@ -77,6 +122,21 @@ fn resolve_conflict(index: &mut Index, conflict: IndexConflict) -> Result<(), Er
         // File deleted on branch
         (None, Some(main_entry)) => {
             let current_path = bytes2path(&main_entry.path)?;
+            if let Some(resolution) =
+                resolutions.and_then(|f| f.get(current_path.to_string_lossy().as_ref()))
+            {
+                match resolution {
+                    ResolutionChoice::Yours => {
+                        index.remove_path(&current_path)?;
+                        return Ok(());
+                    }
+                    ResolutionChoice::Theirs => {
+                        index.add(&entry_without_conflicts(main_entry))?;
+                        return Ok(());
+                    }
+                    _ => todo!("More types of resolution"),
+                }
+            }
             let prompt = format!(
                 "{} was modified on main. Keep your delete?",
                 current_path.to_string_lossy()
@@ -93,7 +153,11 @@ fn resolve_conflict(index: &mut Index, conflict: IndexConflict) -> Result<(), Er
     Ok(())
 }
 
-fn sync_branch(repo: &Repository, branch_name: &str) -> Result<(), Error> {
+fn sync_branch(
+    repo: &Repository,
+    branch_name: &str,
+    resolutions: Option<&ResolutionMap>,
+) -> Result<(), Error> {
     let branch_ref = repo
         .find_branch(&branch_name, git2::BranchType::Local)?
         .into_reference();
@@ -124,7 +188,9 @@ fn sync_branch(repo: &Repository, branch_name: &str) -> Result<(), Error> {
                     rebase
                         .inmemory_index()?
                         .conflicts()?
-                        .try_for_each(|conflict| resolve_conflict(&mut index, conflict?))?;
+                        .try_for_each(|conflict| {
+                            resolve_conflict(repo, &mut index, conflict?, resolutions)
+                        })?;
                 }
             }
             Some(RebaseOperationType::Fixup) => {
@@ -182,10 +248,11 @@ pub fn sync_command(ctx: &Ctx, args: &FullSyncArgs) -> Result<(), Error> {
         let repo_head = ctx.repo.head()?;
         let head_name_str = repo_head.name().unwrap();
         let head_name = head_name_str[head_name_str.rfind("/").map_or(0, |e| e + 1)..].to_owned();
-        sync_branch(&ctx.repo, &head_name)?;
+        sync_branch(&ctx.repo, &head_name, args.resolutions.get(0))?;
     }
-    for branch in &args.names {
-        sync_branch(&ctx.repo, &branch)?;
+
+    for (index, branch) in args.names.iter().enumerate() {
+        sync_branch(&ctx.repo, &branch, args.resolutions.get(index))?;
     }
 
     pop_and_reset(ctx)

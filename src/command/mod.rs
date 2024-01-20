@@ -1,6 +1,5 @@
 use std::vec;
 
-use axum::body::Full;
 use git2::Error;
 
 use crate::{
