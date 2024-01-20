@@ -307,7 +307,7 @@ async fn dashboard(jar: CookieJar, State(state): State<CsrfState>) -> impl IntoR
         .map_err(|err| map_error_to_response(err))
 }
 
-fn render_sync(conflicts: &Vec<Conflict>) -> impl IntoResponse {
+fn render_sync(conflicts: &Vec<Conflict>) -> Markup {
     html! {
         (DOCTYPE)
         head {
@@ -384,14 +384,13 @@ async fn sync() -> impl IntoResponse {
     render_sync(&vec![])
 }
 
-fn with_ctx<R, T>(callback: T) -> Result<(), Error>
+fn with_ctx<R, T>(callback: T) -> Result<R, Error>
 where
     T: FnOnce(&Ctx) -> Result<R, Error>,
 {
     let mut ctx = init_ctx()?;
     ctx.set_mode(crate::ctx::Mode::Background);
-    callback(&ctx)?;
-    Ok(())
+    callback(&ctx)
 }
 
 fn api_handler<R, T>(callback: T) -> impl IntoResponse
@@ -499,10 +498,19 @@ fn convert_sync_form(body: &SyncForm) -> Result<FullSyncArgs, Error> {
 }
 
 async fn handle_sync(Form(body): Form<SyncForm>) -> impl IntoResponse {
-    api_handler(move |ctx| {
+    match with_ctx(|ctx| {
         let args = convert_sync_form(&body)?;
         sync_command(&ctx, &args)
-    })
+    }) {
+        Ok(details) => {
+            if let Some(crate::sync::SyncDetails::Conflicted(d)) = details.get(0) {
+                render_sync(&d).into_response()
+            } else {
+                Redirect::to("/").into_response()
+            }
+        }
+        Err(e) => map_error_to_response(e).into_response(),
+    }
 }
 
 async fn handle_new(Form(body): Form<NewArgs>) -> impl IntoResponse {
