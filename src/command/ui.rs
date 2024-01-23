@@ -149,7 +149,8 @@ fn count_commits_since(_ctx: &Ctx, older: &Commit, newer: &Commit) -> Result<usi
 }
 
 fn load_dashboard_info() -> Result<DashboardInfo, Error> {
-    let ctx = init_ctx()?;
+    let mut ctx = init_ctx()?;
+    ctx.set_mode(crate::ctx::Mode::Background);
 
     let repo_head = ctx.repo.head()?;
 
@@ -304,7 +305,8 @@ fn with_ctx<R, T>(callback: T) -> Result<(), Error>
 where
     T: FnOnce(&Ctx) -> Result<R, Error>,
 {
-    let ctx = init_ctx()?;
+    let mut ctx = init_ctx()?;
+    ctx.set_mode(crate::ctx::Mode::Background);
     callback(&ctx)?;
     Ok(())
 }

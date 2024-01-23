@@ -1,8 +1,11 @@
+use std::io::IsTerminal;
+use std::{env, io::stdout};
+
 use git2::Error;
 
 use crate::{
     cli::{Cli, Commands},
-    ctx::init_ctx,
+    ctx::{init_ctx, Mode},
 };
 
 use self::{
@@ -28,7 +31,15 @@ mod ui;
 mod unsave;
 
 pub async fn run_command(cli: &Cli) -> Result<(), Error> {
-    let ctx = init_ctx()?;
+    let mut ctx = init_ctx()?;
+    ctx.set_mode(if stdout().lock().is_terminal() {
+        Mode::Cli
+    } else {
+        Mode::Pipe
+    });
+    if env::var_os("NO_COLOR").is_some() {
+        ctx.disable_color();
+    }
 
     match &cli.command {
         Commands::Prune => prune_command(&ctx),

@@ -5,7 +5,6 @@ use std::{
 
 use git2::{
     Error, ErrorCode, Index, IndexConflict, IndexEntry, Oid, RebaseOperationType, RebaseOptions,
-    Repository,
 };
 
 use crate::{
@@ -46,7 +45,13 @@ fn entry_without_conflicts(mut entry: IndexEntry) -> IndexEntry {
     entry
 }
 
-fn resolve_conflict(index: &mut Index, conflict: IndexConflict) -> Result<(), Error> {
+fn resolve_conflict(ctx: &Ctx, index: &mut Index, conflict: IndexConflict) -> Result<(), Error> {
+    if !ctx.can_prompt() {
+        return Err(Error::from_str(
+            "Cannot resolve conflict without user input.",
+        ));
+    }
+
     match (conflict.their, conflict.our) {
         (Some(branch_entry), Some(main_entry)) => {
             let current_path = bytes2path(&branch_entry.path)?;
@@ -97,7 +102,8 @@ fn resolve_conflict(index: &mut Index, conflict: IndexConflict) -> Result<(), Er
     Ok(())
 }
 
-fn sync_branch(repo: &Repository, branch_name: &str) -> Result<(), Error> {
+fn sync_branch(ctx: &Ctx, branch_name: &str) -> Result<(), Error> {
+    let repo = &ctx.repo;
     let branch_ref = repo
         .find_branch(&branch_name, git2::BranchType::Local)?
         .into_reference();
@@ -128,7 +134,7 @@ fn sync_branch(repo: &Repository, branch_name: &str) -> Result<(), Error> {
                     rebase
                         .inmemory_index()?
                         .conflicts()?
-                        .try_for_each(|conflict| resolve_conflict(&mut index, conflict?))?;
+                        .try_for_each(|conflict| resolve_conflict(ctx, &mut index, conflict?))?;
                 }
             }
             Some(RebaseOperationType::Fixup) => {
@@ -186,10 +192,10 @@ pub fn sync_command(ctx: &Ctx, args: &SyncArgs) -> Result<(), Error> {
         let repo_head = ctx.repo.head()?;
         let head_name_str = repo_head.name().unwrap();
         let head_name = head_name_str[head_name_str.rfind("/").map_or(0, |e| e + 1)..].to_owned();
-        sync_branch(&ctx.repo, &head_name)?;
+        sync_branch(ctx, &head_name)?;
     }
     for branch in &args.names {
-        sync_branch(&ctx.repo, &branch)?;
+        sync_branch(ctx, &branch)?;
     }
 
     pop_and_reset(ctx)

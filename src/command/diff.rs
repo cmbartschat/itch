@@ -1,4 +1,4 @@
-use git2::{Error, IntoCString};
+use git2::Error;
 
 use crate::{
     cli::DiffArgs,
@@ -169,17 +169,25 @@ pub fn diff_command(ctx: &Ctx, args: &DiffArgs) -> Result<(), Error> {
 
     diff.print(git2::DiffFormat::Patch, |_, _, line| {
         let origin = line.origin();
-        let color_code = match origin {
-            '+' => "\x1b[32m+",
-            '-' => "\x1b[31m-",
+        let (color_code, clear_code) = match (ctx.color_enabled(), origin) {
+            (true, '+') => ("\x1b[32m", "\x1b[0m"),
+            (true, '-') => ("\x1b[31m", "\x1b[0m"),
+            _ => ("", ""),
+        };
+
+        let char = match origin {
+            '+' => "+",
+            '-' => "-",
             ' ' => " ",
             _ => "",
         };
 
         print!(
-            "{}{}\x1b[0m",
+            "{}{}{}{}",
             color_code,
-            line.content().into_c_string().unwrap().to_str().unwrap()
+            char,
+            String::from_utf8_lossy(line.content()),
+            clear_code,
         );
         return true;
     })?;
