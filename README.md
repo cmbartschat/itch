@@ -50,7 +50,7 @@ itch sync to c001e5
 - [ ] Add copy
 - [ ] Add undo
 - [ ] Add remote pull/push
-- [ ] Add unsave
+- [x] Add unsave
 - [ ] Add fork
 
 ### Tweaks
@@ -69,14 +69,14 @@ itch sync to c001e5
     - [x] Save
     - [x] Load, if the previous save was a "switch"
     - [x] Sync
-- [ ] Make long output print with `less`
+- [x] Make long output print with `less`
 - [ ] More advanced merge resolution during sync
 - [x] Fix diff not diffing from fork point
 - [x] Fix status showing renamed files as modified
 - [x] Prevent CSRF for ui
 - [x] Make ui not use unwrap
 - [ ] Add status/diff to ui
-- [ ] Make diff look better when piped to code
+- [x] Make diff look better when piped to code
 - [ ] Show trailing whitespace in diff
 - [x] Diff unsaved
 - [x] Handle plural/disabled states in ui buttons
@@ -90,7 +90,7 @@ itch sync to c001e5
 - [x] Fix sync throwing away unsaved changes
 - [ ] Fix the .into() on windows/get compiler working
 - [ ] Make sure LFS works
-- [ ] Detect and propagate info around interactivity/verbose/escape characters
+- [x] Detect and propagate info around interactivity/verbose/escape characters
 - [ ] Check if commands can be made more atomic
 - [ ] Specify squash message?
 
