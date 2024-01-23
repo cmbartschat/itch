@@ -15,7 +15,7 @@ pub fn unsave_command(ctx: &Ctx) -> Result<(), Error> {
         .find_commit(ctx.repo.merge_base(base_commit.id(), head_commit.id())?)?;
 
     ctx.repo
-        .reset(&fork_commit.into_object(), ResetType::Soft, None)?;
+        .reset(&fork_commit.into_object(), ResetType::Mixed, None)?;
 
     Ok(())
 }
