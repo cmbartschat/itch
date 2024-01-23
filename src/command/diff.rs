@@ -4,7 +4,10 @@ use crate::{
     cli::DiffArgs,
     ctx::Ctx,
     diff::{collapse_renames, good_diff_options},
+    output::OutputTarget,
 };
+
+use std::fmt::Write;
 
 #[derive(Debug)]
 enum DiffPoint {
@@ -167,6 +170,8 @@ pub fn diff_command(ctx: &Ctx, args: &DiffArgs) -> Result<(), Error> {
 
     collapse_renames(&mut diff)?;
 
+    let mut output = OutputTarget::new()?;
+
     diff.print(git2::DiffFormat::Patch, |_, _, line| {
         let origin = line.origin();
         let (color_code, clear_code) = match (ctx.color_enabled(), origin) {
@@ -182,15 +187,19 @@ pub fn diff_command(ctx: &Ctx, args: &DiffArgs) -> Result<(), Error> {
             _ => "",
         };
 
-        print!(
+        write!(
+            output,
             "{}{}{}{}",
             color_code,
             char,
             String::from_utf8_lossy(line.content()),
             clear_code,
-        );
+        )
+        .unwrap();
         return true;
     })?;
+
+    output.finish();
 
     Ok(())
 }

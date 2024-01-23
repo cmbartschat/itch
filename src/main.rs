@@ -9,6 +9,7 @@ mod command;
 mod consts;
 mod ctx;
 mod diff;
+mod output;
 mod path;
 mod reset;
 
