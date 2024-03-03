@@ -13,6 +13,7 @@ use crate::{
     consts::TEMP_COMMIT_PREFIX,
     ctx::Ctx,
     path::bytes2path,
+    remote::pull_main,
     reset::pop_and_reset,
 };
 
@@ -187,6 +188,8 @@ pub fn sync_command(ctx: &Ctx, args: &SyncArgs) -> Result<(), Error> {
         },
         true,
     )?;
+
+    pull_main(ctx)?;
 
     if args.names.len() == 0 {
         let repo_head = ctx.repo.head()?;

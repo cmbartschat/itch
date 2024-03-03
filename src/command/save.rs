@@ -1,6 +1,6 @@
 use git2::{Error, IndexAddOption};
 
-use crate::{cli::SaveArgs, ctx::Ctx, reset::reset_repo};
+use crate::{cli::SaveArgs, ctx::Ctx, remote::push_branch, reset::reset_repo};
 
 pub fn _save_command(ctx: &Ctx, args: &SaveArgs, silent: bool) -> Result<(), Error> {
     let repo = &ctx.repo;
@@ -41,6 +41,15 @@ pub fn _save_command(ctx: &Ctx, args: &SaveArgs, silent: bool) -> Result<(), Err
 
 pub fn save_command(ctx: &Ctx, args: &SaveArgs, silent: bool) -> Result<(), Error> {
     _save_command(ctx, args, silent)?;
+    let branch_name = ctx
+        .repo
+        .branches(Some(git2::BranchType::Local))?
+        .find(|c| c.as_ref().is_ok_and(|b| b.0.is_head()));
+
+    push_branch(
+        ctx,
+        branch_name.unwrap().unwrap().0.name().unwrap().unwrap(),
+    )?;
     reset_repo(&ctx)?;
     Ok(())
 }

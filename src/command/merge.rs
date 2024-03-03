@@ -1,6 +1,6 @@
 use git2::{Error, Oid};
 
-use crate::ctx::Ctx;
+use crate::{ctx::Ctx, remote::push_main};
 
 fn combine_branches(ctx: &Ctx) -> Result<Oid, Error> {
     let repo = &ctx.repo;
@@ -36,6 +36,8 @@ pub fn merge_command(ctx: &Ctx) -> Result<(), Error> {
         .find_branch("main", git2::BranchType::Local)?
         .into_reference()
         .set_target(resolved_commit, &reflog_message)?;
+
+    push_main(ctx)?;
 
     Ok(())
 }

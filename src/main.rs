@@ -11,6 +11,7 @@ mod ctx;
 mod diff;
 mod output;
 mod path;
+mod remote;
 mod reset;
 
 #[tokio::main]
