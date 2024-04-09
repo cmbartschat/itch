@@ -1,11 +1,12 @@
 use std::rc::Rc;
 
-use git2::{Commit, Delta, DiffDelta, DiffFile, Error};
+use git2::{Commit, Delta, DiffDelta, DiffFile, Error, StatusOptions};
 
 use crate::{
     cli::StatusArgs,
     ctx::Ctx,
     diff::{collapse_renames, good_diff_options},
+    reset::reset_repo,
 };
 
 #[derive(Debug)]
@@ -344,26 +345,33 @@ pub fn status_command(ctx: &Ctx, args: &StatusArgs) -> Result<(), Error> {
     let mut head_dirty = false;
 
     if is_head {
-        let mut unsaved_diff = ctx
-            .repo
-            .diff_tree_to_workdir(Some(&new_index), Some(&mut options))?;
+        reset_repo(ctx)?;
 
-        collapse_renames(&mut unsaved_diff)?;
+        let unsaved_statuses = ctx.repo.statuses(Some(
+            StatusOptions::new()
+                .show(git2::StatusShow::Workdir)
+                .include_untracked(true)
+                .renames_index_to_workdir(true),
+        ))?;
 
-        head_dirty = unsaved_diff.deltas().len() > 0;
-
-        unsaved_diff.deltas().for_each(|d| {
-            let mut found = false;
-
-            for change in statuses.iter_mut() {
-                if change.maybe_add_work(&d) {
-                    found = true;
-                    break;
+        unsaved_statuses.into_iter().for_each(|unsaved_status| {
+            if let Some(d) = unsaved_status.index_to_workdir() {
+                if d.status() == Delta::Ignored {
+                    return;
                 }
-            }
+                head_dirty = true;
+                let mut found = false;
 
-            if !found {
-                statuses.push(SegmentedStatus::from_work_delta(&d));
+                for change in statuses.iter_mut() {
+                    if change.maybe_add_work(&d) {
+                        found = true;
+                        break;
+                    }
+                }
+
+                if !found {
+                    statuses.push(SegmentedStatus::from_work_delta(&d));
+                }
             }
         });
     }
