@@ -8,22 +8,22 @@
 
 ## Command Breakdown
 
-| command | branches | current | files | description
-| :- | :- | :- | :- | :- |
-| init    |   |   |   | Start a new repo
-| new     | ✍️ | ✍️ | ✍️ | Start a new branch
-| load    | ✍️ | ✍️ | ✍️ | Switch to an existing branch
-| delete  | ✍️ |   |   | Delete a branch
-| save    | ✍️ | 📍 |   | Checkpoint the current work
-| merge   | ✍️ | 📍 | ✍️ | Integrate the current changes into the main branch
-| sync    | ✍️ | 📍 | ✍️ | Pull new changes from the main branch into the current branch
-| list    | 👀 | 👀 |   |  List branches
-| log     | 👀 | 👀 |   | Show the checkpoints along a branch
-| squash  | ✍️ | 📍 |   | Combine all the save commits into one commit
-| diff    | 👀 |   |   | Compare branches and historical changes
-| prune   | ✍️ |   |   | Delete branches with no changes
-| undo    |   |   | ✍️ | Undo a change
-| ui      | ✍️ | ✍️ | ✍️ | Interactive UI for making commands
+| command | branches | current | files | description                                                   |
+| :------ | :------- | :------ | :---- | :------------------------------------------------------------ |
+| init    |          |         |       | Start a new repo                                              |
+| new     | ✍️       | ✍️      | ✍️    | Start a new branch                                            |
+| load    | ✍️       | ✍️      | ✍️    | Switch to an existing branch                                  |
+| delete  | ✍️       |         |       | Delete a branch                                               |
+| save    | ✍️       | 📍      |       | Checkpoint the current work                                   |
+| merge   | ✍️       | 📍      | ✍️    | Integrate the current changes into the main branch            |
+| sync    | ✍️       | 📍      | ✍️    | Pull new changes from the main branch into the current branch |
+| list    | 👀       | 👀      |       | List branches                                                 |
+| log     | 👀       | 👀      |       | Show the checkpoints along a branch                           |
+| squash  | ✍️       | 📍      |       | Combine all the save commits into one commit                  |
+| diff    | 👀       |         |       | Compare branches and historical changes                       |
+| prune   | ✍️       |         |       | Delete branches with no changes                               |
+| undo    |          |         | ✍️    | Undo a change                                                 |
+| ui      | ✍️       | ✍️      | ✍️    | Interactive UI for making commands                            |
 
 ## Natural language commands
 
@@ -49,7 +49,7 @@ itch sync to c001e5
 - [ ] Add revert
 - [ ] Add copy
 - [ ] Add undo
-- [ ] Add remote pull/push
+- [x] Add remote pull/push
 - [x] Add unsave
 - [ ] Add fork
 
@@ -66,9 +66,9 @@ itch sync to c001e5
 - [x] Trim whitespace when truncating commit messages
 - [x] Add changed files to status
 - [x] Make the index reset at times that make sense
-    - [x] Save
-    - [x] Load, if the previous save was a "switch"
-    - [x] Sync
+  - [x] Save
+  - [x] Load, if the previous save was a "switch"
+  - [x] Sync
 - [x] Make long output print with `less`
 - [ ] More advanced merge resolution during sync
 - [x] Fix diff not diffing from fork point
@@ -93,24 +93,26 @@ itch sync to c001e5
 - [x] Detect and propagate info around interactivity/verbose/escape characters
 - [ ] Check if commands can be made more atomic
 - [ ] Specify squash message?
+- [ ] Specify remote prefix
+- [ ] Unsave specific files
 
 ### Mapping from git
 
--  **git clone** -> `itch init https://something.git`
--  **git init** -> `itch init`
--  **git add** -> Not needed - there is no staging area
--  **git commit** -> `itch save`
--  **git status** -> `itch status`
--  **git pull** -> `itch sync`
--  **git push** -> `itch merge` ?? 
--  **git branch** `itch new` / `itch delete` / `itch list`
--  **git checkout** `itch load`
--  **git merge** `itch merge`
--  **git log** `itch log`
--  **git diff** `itch diff`
--  **git remote** -> todo
--  **git fetch** -> todo
--  **git stash** -> `itch save`
+- **git clone** -> `itch init https://something.git`
+- **git init** -> `itch init`
+- **git add** -> Not needed - there is no staging area
+- **git commit** -> `itch save`
+- **git status** -> `itch status`
+- **git pull** -> `itch sync`
+- **git push** -> `itch merge` ??
+- **git branch** `itch new` / `itch delete` / `itch list`
+- **git checkout** `itch load`
+- **git merge** `itch merge`
+- **git log** `itch log`
+- **git diff** `itch diff`
+- **git remote** -> todo
+- **git fetch** -> todo
+- **git stash** -> `itch save`
 
 ## Internals
 
