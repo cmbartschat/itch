@@ -46,10 +46,14 @@ pub fn save_command(ctx: &Ctx, args: &SaveArgs, silent: bool) -> Result<(), Erro
         .branches(Some(git2::BranchType::Local))?
         .find(|c| c.as_ref().is_ok_and(|b| b.0.is_head()));
 
-    push_branch(
+    match push_branch(
         ctx,
         branch_name.unwrap().unwrap().0.name().unwrap().unwrap(),
-    )?;
+    ) {
+        Err(e) => println!("Skipping remote push due to: {}", e.message()),
+        _ => {}
+    }
+
     reset_repo(&ctx)?;
     Ok(())
 }

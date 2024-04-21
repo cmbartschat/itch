@@ -37,7 +37,10 @@ pub fn merge_command(ctx: &Ctx) -> Result<(), Error> {
         .into_reference()
         .set_target(resolved_commit, &reflog_message)?;
 
-    push_main(ctx)?;
+    match push_main(ctx) {
+        Err(e) => println!("Skipping remote push due to: {}", e.message()),
+        _ => {}
+    }
 
     Ok(())
 }

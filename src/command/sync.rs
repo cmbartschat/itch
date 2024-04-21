@@ -189,7 +189,10 @@ pub fn sync_command(ctx: &Ctx, args: &SyncArgs) -> Result<(), Error> {
         true,
     )?;
 
-    pull_main(ctx)?;
+    match pull_main(ctx) {
+        Err(e) => println!("Skipping pull from remote due to: {}", e.message()),
+        _ => {}
+    }
 
     if args.names.len() == 0 {
         let repo_head = ctx.repo.head()?;
