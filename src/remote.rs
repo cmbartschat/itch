@@ -6,6 +6,14 @@ use git2::{
 
 use crate::ctx::Ctx;
 
+fn get_remote_prefix() -> Result<String, Error> {
+    match env::var("ITCH_REMOTE_PREFIX") {
+        Ok(v) => Ok(v),
+        Err(env::VarError::NotPresent) => Ok(whoami::username()),
+        Err(env::VarError::NotUnicode(str)) => Ok(str.to_string_lossy().to_string()),
+    }
+}
+
 fn setup_remote_callbacks<'a>(ctx: &'a Ctx) -> RemoteCallbacks<'a> {
     let mut callbacks = RemoteCallbacks::new();
 
@@ -69,7 +77,7 @@ fn get_remote(ctx: &Ctx) -> Result<Option<Remote>, Error> {
 pub fn push_branch(ctx: &Ctx, branch: &str) -> Result<(), Error> {
     let remote = get_remote(ctx)?;
     if let Some(mut remote) = remote {
-        let remote_prefix = "cmb-";
+        let remote_prefix = get_remote_prefix()?;
         let refspec = format!(
             "+refs/heads/{}:refs/heads/{}{}",
             branch, remote_prefix, branch
