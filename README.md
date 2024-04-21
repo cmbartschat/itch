@@ -93,8 +93,9 @@ itch sync to c001e5
 - [x] Detect and propagate info around interactivity/verbose/escape characters
 - [ ] Check if commands can be made more atomic
 - [ ] Specify squash message?
-- [ ] Specify remote prefix
+- [x] Specify remote prefix
 - [ ] Unsave specific files
+- [ ] Delete branch when deleting client
 
 ### Mapping from git
 
