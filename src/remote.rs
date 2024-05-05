@@ -68,12 +68,16 @@ fn get_remote(ctx: &Ctx) -> Result<Option<Remote>, Error> {
     if remotes.is_empty() {
         return Ok(None);
     }
-    if remotes.len() != 1 {
-        return Err(Error::from_str("Expected exactly 1 remote."));
+    if remotes.len() == 1 {
+        return Ok(Some(ctx.repo.find_remote(remotes.get(0).unwrap())?));
     }
-    let remote = ctx.repo.find_remote(remotes.get(0).unwrap())?;
-
-    return Ok(Some(remote));
+    let origin = ctx.repo.find_remote("origin");
+    if let Ok(origin) = origin {
+        return Ok(Some(origin));
+    }
+    return Err(Error::from_str(
+        "Unable to resolve default remote ('origin') out of multiple options",
+    ));
 }
 
 pub fn push_branch(ctx: &Ctx, branch: &str) -> Result<(), Error> {
