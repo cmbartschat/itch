@@ -351,6 +351,7 @@ pub fn status_command(ctx: &Ctx, args: &StatusArgs) -> Result<(), Error> {
             StatusOptions::new()
                 .show(git2::StatusShow::Workdir)
                 .include_untracked(true)
+                .recurse_untracked_dirs(true)
                 .renames_index_to_workdir(true),
         ))?;
 
