@@ -96,6 +96,9 @@ itch sync to c001e5
 - [x] Specify remote prefix
 - [ ] Unsave specific files
 - [ ] Delete branch when deleting client
+- [ ] Prevent saving "prefix-main"
+- [ ] Include files in untracked folders in status
+- [ ] Make ui refresh faster
 
 ### Mapping from git
 
