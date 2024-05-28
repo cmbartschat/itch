@@ -16,6 +16,7 @@ use crate::{
     consts::TEMP_COMMIT_PREFIX,
     ctx::Ctx,
     ctx::Ctx,
+    editor::edit_text,
     path::bytes2path,
     path::bytes2path,
     remote::pull_main,
@@ -174,7 +175,15 @@ fn resolve_conflict(
                 }
 
                 "edit" => {
-                    todo!("Edit conflict");
+                    // todo!("Edit conflict");
+                    eprintln!("Editing conflict.");
+                    let edited_string = edit_text("my text", None)?;
+
+                    eprintln!("Resolved to {}", edited_string);
+                    index.remove_path(&main_path)?;
+                    let mut new_entry = IndexEntry::from(branch_entry);
+                    new_entry.id = repo.blob(edited_string.as_bytes())?;
+                    index.add(&entry_without_conflicts(new_entry))?;
                 }
                 _ => panic!("Unhandled option"),
             };
