@@ -70,6 +70,7 @@ fn ask_option(prompt: &str, options: &[&str], default: Option<&str>) -> String {
         io::stdout().flush().unwrap();
         let mut input = String::new();
         io::stdin().read_line(&mut input).unwrap();
+        input = input.trim().to_string();
         if let Some(default_result) = default {
             if input.len() == 0 {
                 return default_result.into();
