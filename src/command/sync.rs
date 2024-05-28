@@ -55,6 +55,33 @@ fn yes_or_no(prompt: &str, by_default: Option<bool>) -> bool {
     }
 }
 
+fn ask_option(prompt: &str, options: &[&str], default: Option<&str>) -> String {
+    print!("{prompt} ");
+
+    for option in options {
+        if default.is_some_and(|f| &f == option) {
+            print!("{}", option.to_string().to_ascii_uppercase());
+        } else {
+            print!("{}", option);
+        }
+    }
+
+    loop {
+        io::stdout().flush().unwrap();
+        let mut input = String::new();
+        io::stdin().read_line(&mut input).unwrap();
+        if let Some(default_result) = default {
+            if input.len() == 0 {
+                return default_result.into();
+            }
+        }
+        if options.contains(&&input.as_str()) {
+            return input;
+        }
+        println!("Unrecognized option. Try again:");
+    }
+}
+
 fn entry_without_conflicts(mut entry: IndexEntry) -> IndexEntry {
     entry.flags = entry.flags.bitand(0x3000_u16.reverse_bits());
     entry
@@ -128,16 +155,27 @@ fn resolve_conflict(
 >>>>>>> 1c4f679 (Save)
 
             let prompt = format!(
-                "{} is conflicted. Keep your changes?",
+                "{} is conflicted. What would you like to do?",
                 current_path.to_string_lossy(),
             );
 
-            if yes_or_no(&prompt, None) {
-                index.remove_path(&main_path)?;
-                index.add(&entry_without_conflicts(branch_entry))?;
-            } else {
-                index.remove_path(&current_path)?;
-                index.add(&entry_without_conflicts(main_entry))?;
+            let options = ["keep", "reset", "edit"];
+
+            match ask_option(&prompt, &options, Some("edit")).as_str() {
+                "keep" => {
+                    index.remove_path(&main_path)?;
+                    index.add(&entry_without_conflicts(branch_entry))?;
+                }
+
+                "reset" => {
+                    index.remove_path(&current_path)?;
+                    index.add(&entry_without_conflicts(main_entry))?;
+                }
+
+                "edit" => {
+                    todo!("Edit conflict");
+                }
+                _ => panic!("Unhandled option"),
             };
         }
         // File deleted on main
