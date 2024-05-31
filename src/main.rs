@@ -9,6 +9,7 @@ mod command;
 mod consts;
 mod ctx;
 mod diff;
+mod editor;
 mod output;
 mod path;
 mod remote;

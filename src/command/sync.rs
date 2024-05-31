@@ -1,6 +1,8 @@
 use std::{
+    collections::HashMap,
     io::{self, Write},
     ops::BitAnd,
+    path::PathBuf,
 };
 
 use git2::{
@@ -12,38 +14,80 @@ use crate::{
     command::save::save_command,
     consts::TEMP_COMMIT_PREFIX,
     ctx::Ctx,
+    diff::get_merge_text,
+    editor::edit_temp_text,
     path::bytes2path,
     remote::pull_main,
     reset::pop_and_reset,
 };
 
-fn yes_or_no(prompt: &str, by_default: Option<bool>) -> bool {
+fn ask_option(prompt: &str, options: &[&str], default: Option<&str>) -> String {
     print!("{prompt} ");
 
-    match by_default {
-        Some(true) => print!("Y/n "),
-        Some(false) => print!("y/N "),
-        None => print!("y/n "),
-    };
+    let last_index = options.len() - 1;
+    let second_to_last_index = options.len() - 2;
+
+    let mut shortcut_map: HashMap<String, String> = HashMap::new();
+    let mut fullform_map: HashMap<String, String> = HashMap::new();
+
+    if let Some(default) = default {
+        shortcut_map.insert("".into(), default.into());
+    }
+
+    options.iter().for_each(|f| {
+        for i in 1..f.len() {
+            let possible_shortcut = &f[0..i];
+            if !shortcut_map.contains_key(possible_shortcut) {
+                shortcut_map.insert(possible_shortcut.into(), f.to_string());
+                fullform_map.insert(f.to_string(), possible_shortcut.into());
+                break;
+            }
+        }
+    });
+
+    for (index, option) in options.iter().enumerate() {
+        if default == Some(option) {
+            print!("{} (default)", option.to_string());
+        } else if let Some(shortcut) = fullform_map.get(*option) {
+            print!("({}){}", shortcut, &option[shortcut.len()..]);
+        }
+        if index != last_index {
+            if last_index == 1 {
+                print!(" ");
+            } else {
+                print!(", ");
+            }
+        }
+        if index == second_to_last_index {
+            print!("or ");
+        }
+    }
+
+    print!(": ");
 
     loop {
         io::stdout().flush().unwrap();
         let mut input = String::new();
         io::stdin().read_line(&mut input).unwrap();
-        match (input.trim(), by_default) {
-            ("y", _) => return true,
-            ("n", _) => return false,
-            ("", Some(r)) => return r,
-            _ => {
-                println!("Unrecognized option. Try again:");
-            }
+        input = input.trim().to_string();
+        if options.contains(&&input.as_str()) {
+            return input;
         }
+        if let Some(input) = shortcut_map.get_mut(&input) {
+            return input.clone();
+        }
+        println!("Unrecognized option. Try again:");
     }
 }
 
-fn entry_without_conflicts(mut entry: IndexEntry) -> IndexEntry {
+fn delete_entry(index: &mut Index, path: &PathBuf) -> Result<(), Error> {
+    index.remove_path(path)
+}
+
+fn select_entry(index: &mut Index, old_path: &PathBuf, mut entry: IndexEntry) -> Result<(), Error> {
+    index.remove_path(old_path)?;
     entry.flags = entry.flags.bitand(0x3000_u16.reverse_bits());
-    entry
+    index.add(&entry)
 }
 
 fn resolve_conflict(ctx: &Ctx, index: &mut Index, conflict: IndexConflict) -> Result<(), Error> {
@@ -52,55 +96,78 @@ fn resolve_conflict(ctx: &Ctx, index: &mut Index, conflict: IndexConflict) -> Re
             "Cannot resolve conflict without user input.",
         ));
     }
-
+    let repo = &ctx.repo;
     match (conflict.their, conflict.our) {
         (Some(branch_entry), Some(main_entry)) => {
             let current_path = bytes2path(&branch_entry.path)?;
             let main_path = bytes2path(&main_entry.path)?;
 
             let prompt = format!(
-                "{} is conflicted. Keep your changes?",
+                "{} is conflicted. What would you like to do?",
                 current_path.to_string_lossy(),
             );
 
-            if yes_or_no(&prompt, None) {
-                index.remove_path(&main_path)?;
-                index.add(&entry_without_conflicts(branch_entry))?;
-            } else {
-                index.remove_path(&current_path)?;
-                index.add(&entry_without_conflicts(main_entry))?;
-            };
+            let options = ["keep", "reset", "edit"];
+
+            match ask_option(&prompt, &options, Some("edit")).as_str() {
+                "keep" => select_entry(index, &main_path, branch_entry),
+                "reset" => select_entry(index, &current_path, main_entry),
+                "edit" => {
+                    let path = bytes2path(&branch_entry.path)?;
+
+                    let original_id = conflict
+                        .ancestor
+                        .map(|e| e.id)
+                        .unwrap_or_else(|| repo.blob("".as_bytes()).unwrap());
+                    let patch_text =
+                        get_merge_text(&ctx.repo, &original_id, &main_entry.id, &branch_entry.id)?;
+                    let edited_string = edit_temp_text(&patch_text, path.extension())?;
+                    index.remove_path(&main_path)?;
+                    let mut new_entry = IndexEntry::from(branch_entry);
+                    new_entry.id = repo.blob(edited_string.as_bytes())?;
+                    select_entry(index, &main_path, new_entry)
+                }
+                _ => panic!("Unhandled option"),
+            }
         }
         // File deleted on main
         (Some(branch_entry), None) => {
             let current_path = bytes2path(&branch_entry.path)?;
-            let prompt = format!(
-                "{} was deleted on main. Keep your changes?",
-                current_path.to_string_lossy()
-            );
-            if yes_or_no(&prompt, Some(true)) {
-                index.add(&entry_without_conflicts(branch_entry))?;
-            } else {
-                index.remove_path(&current_path)?;
+            match ask_option(
+                &format!(
+                    "{} was deleted on main. What would you like to do?",
+                    current_path.to_string_lossy(),
+                ),
+                &["delete", "keep"],
+                Some("keep"),
+            )
+            .as_str()
+            {
+                "keep" => select_entry(index, &current_path, branch_entry),
+                "delete" => delete_entry(index, &current_path),
+                _ => panic!("Unhandled option"),
             }
         }
         // File deleted on branch
         (None, Some(main_entry)) => {
             let current_path = bytes2path(&main_entry.path)?;
-            let prompt = format!(
-                "{} was modified on main. Keep your delete?",
-                current_path.to_string_lossy()
-            );
-            if yes_or_no(&prompt, Some(true)) {
-                index.remove_path(&current_path)?;
-            } else {
-                index.add(&entry_without_conflicts(main_entry))?;
+            match ask_option(
+                &format!(
+                    "{} was deleted, but has been modified on main. What would you like to do?",
+                    current_path.to_string_lossy(),
+                ),
+                &["delete", "keep"],
+                Some("keep"),
+            )
+            .as_str()
+            {
+                "delete" => delete_entry(index, &current_path),
+                "keep" => select_entry(index, &current_path, main_entry),
+                _ => panic!("Unhandled option"),
             }
         }
-        _ => {}
-    };
-
-    Ok(())
+        (None, None) => Ok(()),
+    }
 }
 
 fn sync_branch(ctx: &Ctx, branch_name: &str) -> Result<(), Error> {
@@ -129,13 +196,28 @@ fn sync_branch(ctx: &Ctx, branch_name: &str) -> Result<(), Error> {
             Some(RebaseOperationType::Pick) => {
                 let mut index = rebase.inmemory_index()?;
                 if index.has_conflicts() {
-                    let conflicts = index.conflicts()?;
-                    println!("\nWe have some conflicts to resolve: {}", conflicts.count());
+                    let mut conflicts: Vec<IndexConflict> = vec![];
 
-                    rebase
-                        .inmemory_index()?
-                        .conflicts()?
-                        .try_for_each(|conflict| resolve_conflict(ctx, &mut index, conflict?))?;
+                    rebase.inmemory_index()?.conflicts()?.try_for_each(
+                        |c| -> Result<(), Error> {
+                            conflicts.push(c?);
+                            Ok(())
+                        },
+                    )?;
+
+                    println!(
+                        "\nWe have {} {} to resolve",
+                        conflicts.len(),
+                        if conflicts.len() == 1 {
+                            "conflict"
+                        } else {
+                            "conflicts"
+                        }
+                    );
+
+                    conflicts
+                        .into_iter()
+                        .try_for_each(|conflict| resolve_conflict(ctx, &mut index, conflict))?;
                 }
             }
             Some(RebaseOperationType::Fixup) => {

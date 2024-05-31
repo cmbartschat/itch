@@ -70,7 +70,7 @@ itch sync to c001e5
   - [x] Load, if the previous save was a "switch"
   - [x] Sync
 - [x] Make long output print with `less`
-- [ ] More advanced merge resolution during sync
+- [x] More advanced merge resolution during sync
 - [x] Fix diff not diffing from fork point
 - [x] Fix status showing renamed files as modified
 - [x] Prevent CSRF for ui
@@ -99,6 +99,7 @@ itch sync to c001e5
 - [ ] Prevent saving "prefix-main"
 - [x] Include files in untracked folders in status
 - [ ] Make ui refresh faster
+- [ ] Make sure to use eprintln
 
 ### Mapping from git
 

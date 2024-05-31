@@ -20,5 +20,6 @@ quick-xml = "0.31.0"
 rand = "0.8.5"
 rng = "0.1.0"
 serde = { version = "1.0.193", features = ["std", "derive"] }
+tempfile = "3.10.1"
 tokio = { version = "1.35.1", features = ["full"] }
 whoami = "1.5.1"
