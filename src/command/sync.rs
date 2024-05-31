@@ -21,15 +21,10 @@ use crate::{
     path::bytes2path,
     remote::pull_main,
     reset::pop_and_reset,
-<<<<<<< HEAD
-    reset::pop_and_reset,
-    sync::FullSyncArgs,
-=======
     sync::{
         Conflict, FullSyncArgs, MergeConflict, ResolutionChoice, ResolutionMap, SyncDetails,
         SyncResult,
     },
->>>>>>> 1c4f679 (Save)
 };
 
 fn yes_or_no(prompt: &str, by_default: Option<bool>) -> bool {
@@ -89,15 +84,6 @@ fn entry_without_conflicts(mut entry: IndexEntry) -> IndexEntry {
     entry
 }
 
-<<<<<<< HEAD
-fn resolve_conflict(ctx: &Ctx, index: &mut Index, conflict: IndexConflict) -> Result<(), Error> {
-    if !ctx.can_prompt() {
-        return Err(Error::from_str(
-            "Cannot resolve conflict without user input.",
-        ));
-    }
-
-=======
 fn resolve_conflict(
     ctx: &Ctx,
     index: &mut Index,
@@ -105,13 +91,10 @@ fn resolve_conflict(
     resolutions: Option<&ResolutionMap>,
 ) -> Result<Option<Conflict>, Error> {
     let repo = &ctx.repo;
->>>>>>> 1c4f679 (Save)
     match (conflict.their, conflict.our) {
         (Some(branch_entry), Some(main_entry)) => {
             let current_path = bytes2path(&branch_entry.path)?;
             let main_path = bytes2path(&main_entry.path)?;
-<<<<<<< HEAD
-=======
             if let Some(resolution) =
                 resolutions.and_then(|f| f.get(current_path.to_string_lossy().as_ref()))
             {
@@ -154,7 +137,6 @@ fn resolve_conflict(
                     }
                 }
             }
->>>>>>> 1c4f679 (Save)
 
             let prompt = format!(
                 "{} is conflicted. What would you like to do?",
@@ -191,8 +173,6 @@ fn resolve_conflict(
         // File deleted on main
         (Some(branch_entry), None) => {
             let current_path = bytes2path(&branch_entry.path)?;
-<<<<<<< HEAD
-=======
             if let Some(resolution) =
                 resolutions.and_then(|f| f.get(current_path.to_string_lossy().as_ref()))
             {
@@ -215,7 +195,6 @@ fn resolve_conflict(
                 )));
             }
 
->>>>>>> 1c4f679 (Save)
             let prompt = format!(
                 "{} was deleted on main. Keep your changes?",
                 current_path.to_string_lossy()
@@ -229,8 +208,6 @@ fn resolve_conflict(
         // File deleted on branch
         (None, Some(main_entry)) => {
             let current_path = bytes2path(&main_entry.path)?;
-<<<<<<< HEAD
-=======
             if let Some(resolution) =
                 resolutions.and_then(|f| f.get(current_path.to_string_lossy().as_ref()))
             {
@@ -253,7 +230,6 @@ fn resolve_conflict(
                 )));
             }
 
->>>>>>> 1c4f679 (Save)
             let prompt = format!(
                 "{} was modified on main. Keep your delete?",
                 current_path.to_string_lossy()
@@ -270,15 +246,11 @@ fn resolve_conflict(
     Ok(None)
 }
 
-<<<<<<< HEAD
-fn sync_branch(ctx: &Ctx, branch_name: &str) -> Result<(), Error> {
-=======
 fn sync_branch(
     ctx: &Ctx,
     branch_name: &str,
     resolutions: Option<&ResolutionMap>,
 ) -> Result<SyncDetails, Error> {
->>>>>>> 1c4f679 (Save)
     let repo = &ctx.repo;
     let branch_ref = repo
         .find_branch(&branch_name, git2::BranchType::Local)?
@@ -309,12 +281,6 @@ fn sync_branch(
                     let conflicts = index.conflicts()?;
                     println!("\nWe have some conflicts to resolve: {}", conflicts.count());
 
-<<<<<<< HEAD
-                    rebase
-                        .inmemory_index()?
-                        .conflicts()?
-                        .try_for_each(|conflict| resolve_conflict(ctx, &mut index, conflict?))?;
-=======
                     rebase.inmemory_index()?.conflicts()?.try_for_each(
                         |conflict| -> Result<(), Error> {
                             if let Some(conflict) =
@@ -325,7 +291,6 @@ fn sync_branch(
                             Ok(())
                         },
                     )?;
->>>>>>> 1c4f679 (Save)
                 }
             }
             Some(RebaseOperationType::Fixup) => {
@@ -394,18 +359,11 @@ pub fn sync_command(ctx: &Ctx, args: &FullSyncArgs) -> Result<SyncResult, Error>
         let repo_head = ctx.repo.head()?;
         let head_name_str = repo_head.name().unwrap();
         let head_name = head_name_str[head_name_str.rfind("/").map_or(0, |e| e + 1)..].to_owned();
-<<<<<<< HEAD
-        sync_branch(ctx, &head_name)?;
-    }
-    for branch in &args.names {
-        sync_branch(ctx, &branch)?;
-=======
         results.push(sync_branch(&ctx, &head_name, args.resolutions.get(0))?);
     }
 
     for (index, branch) in args.names.iter().enumerate() {
         results.push(sync_branch(&ctx, &branch, args.resolutions.get(index))?);
->>>>>>> 1c4f679 (Save)
     }
 
     pop_and_reset(ctx)?;

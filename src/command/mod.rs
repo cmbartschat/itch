@@ -1,18 +1,15 @@
-<<<<<<< HEAD
 use std::io::IsTerminal;
 use std::{env, io::stdout};
 
-=======
 use std::vec;
 
 use axum::body::Full;
->>>>>>> 6f31449 (Save)
 use git2::Error;
 
 use crate::{
     cli::{Cli, Commands},
-    ctx::{init_ctx, Mode},
     ctx::init_ctx,
+    ctx::{init_ctx, Mode},
     sync::FullSyncArgs,
 };
 
