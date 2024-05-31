@@ -119,6 +119,8 @@ itch sync to c001e5
 - **git fetch** -> todo
 - **git stash** -> `itch save`
 
+also boom
+
 ## Internals
 
 - Git user metadata - uses as normal, supports code signing
