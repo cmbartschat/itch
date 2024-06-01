@@ -1,14 +1,13 @@
-use git2::Error;
-
 use crate::{
     cli::{LoadArgs, SaveArgs},
     command::save::save_command,
     consts::TEMP_COMMIT_PREFIX,
     ctx::Ctx,
+    error::{fail, Attempt},
     reset::pop_and_reset,
 };
 
-pub fn _load_command(ctx: &Ctx, args: &LoadArgs) -> Result<(), Error> {
+pub fn _load_command(ctx: &Ctx, args: &LoadArgs) -> Attempt {
     let target_ref = ctx
         .repo
         .find_branch(&args.name, git2::BranchType::Local)?
@@ -24,11 +23,11 @@ pub fn _load_command(ctx: &Ctx, args: &LoadArgs) -> Result<(), Error> {
         pop_and_reset(ctx)?;
         Ok(())
     } else {
-        Err(Error::from_str("Invalid branch name"))
+        fail("Invalid branch name")
     }
 }
 
-pub fn load_command(ctx: &Ctx, args: &LoadArgs) -> Result<(), Error> {
+pub fn load_command(ctx: &Ctx, args: &LoadArgs) -> Attempt {
     let message_vec = vec![
         TEMP_COMMIT_PREFIX.to_string(),
         "Save before switching to".to_string(),

@@ -1,8 +1,7 @@
 use std::io::IsTerminal;
 use std::{env, io::stdout};
 
-use git2::Error;
-
+use crate::error::Attempt;
 use crate::{
     cli::{Cli, Commands},
     ctx::{init_ctx, Mode},
@@ -30,7 +29,7 @@ mod sync;
 mod ui;
 mod unsave;
 
-pub async fn run_command(cli: &Cli) -> Result<(), Error> {
+pub async fn run_command(cli: &Cli) -> Attempt {
     let mut ctx = init_ctx()?;
     ctx.set_mode(if stdout().lock().is_terminal() {
         Mode::Cli

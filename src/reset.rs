@@ -1,8 +1,8 @@
-use git2::{Commit, Error, ResetType};
+use git2::{Commit, ResetType};
 
-use crate::{consts::TEMP_COMMIT_PREFIX, ctx::Ctx};
+use crate::{consts::TEMP_COMMIT_PREFIX, ctx::Ctx, error::Attempt};
 
-pub fn reset_repo(ctx: &Ctx) -> Result<(), Error> {
+pub fn reset_repo(ctx: &Ctx) -> Attempt {
     let object = ctx.repo.head()?.peel_to_commit()?.into_object();
     ctx.repo.reset(&object, ResetType::Mixed, None)?;
     Ok(())
@@ -14,7 +14,7 @@ fn is_temp_commit(c: &Commit) -> bool {
             .map_or(false, |m| m.starts_with(TEMP_COMMIT_PREFIX))
 }
 
-pub fn pop_and_reset(ctx: &Ctx) -> Result<(), Error> {
+pub fn pop_and_reset(ctx: &Ctx) -> Attempt {
     let mut commit = ctx.repo.head()?.peel_to_commit()?;
 
     while is_temp_commit(&commit) {

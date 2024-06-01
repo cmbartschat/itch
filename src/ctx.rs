@@ -1,4 +1,6 @@
-use git2::{Error, Repository};
+use git2::Repository;
+
+use crate::error::Maybe;
 
 #[derive(PartialEq)]
 pub enum Mode {
@@ -41,7 +43,7 @@ impl Ctx {
     }
 }
 
-pub fn init_ctx() -> Result<Ctx, Error> {
+pub fn init_ctx() -> Maybe<Ctx> {
     let repo = Repository::open_from_env()?;
     return Ok(Ctx {
         repo,

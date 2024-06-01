@@ -1,7 +1,9 @@
 use git2::{Diff, DiffFindOptions, DiffOptions, Oid, Repository};
 use std::io::Read;
 
-pub fn collapse_renames(diff: &mut Diff) -> Result<(), git2::Error> {
+use crate::error::{Attempt, Maybe};
+
+pub fn collapse_renames(diff: &mut Diff) -> Attempt {
     let mut options = DiffFindOptions::new();
     options.all(true);
     options.break_rewrites(false);
@@ -16,7 +18,7 @@ pub fn good_diff_options() -> DiffOptions {
     options
 }
 
-fn blob_to_string(blob: &git2::Blob) -> Result<String, git2::Error> {
+fn blob_to_string(blob: &git2::Blob) -> Maybe<String> {
     let mut original_content = String::new();
     blob.content()
         .read_to_string(&mut original_content)
@@ -128,7 +130,7 @@ pub fn get_merge_text(
     original_id: &Oid,
     upstream_id: &Oid,
     branch_id: &Oid,
-) -> Result<String, git2::Error> {
+) -> Maybe<String> {
     let original_blob = repo.find_blob(*original_id)?;
     let original_string = blob_to_string(&original_blob)?;
     let original_lines = get_lines(&original_string);

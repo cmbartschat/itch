@@ -1,11 +1,12 @@
 use std::rc::Rc;
 
-use git2::{Commit, Delta, DiffDelta, DiffFile, Error, StatusOptions};
+use git2::{Commit, Delta, DiffDelta, DiffFile, StatusOptions};
 
 use crate::{
     cli::StatusArgs,
     ctx::Ctx,
     diff::{collapse_renames, good_diff_options},
+    error::{fail, Attempt, Maybe},
     reset::reset_repo,
 };
 
@@ -265,7 +266,7 @@ fn draw_fork_diagram(info: &ForkInfo) {
     println!("─ o ─ {base_display} ← {base_name}{main_dirty_indicator}")
 }
 
-fn count_commits_since(_ctx: &Ctx, older: &Commit, newer: &Commit) -> Result<usize, Error> {
+fn count_commits_since(_ctx: &Ctx, older: &Commit, newer: &Commit) -> Maybe<usize> {
     let mut count: usize = 0;
     let mut current = Rc::from(newer.clone());
     while current.id() != older.id() {
@@ -275,7 +276,7 @@ fn count_commits_since(_ctx: &Ctx, older: &Commit, newer: &Commit) -> Result<usi
                 count += 1;
                 current = Rc::from(c);
             }
-            None => return Err(Error::from_str("Unable to navigate to fork point.")),
+            None => return fail("Unable to navigate to fork point."),
         }
     }
 
@@ -296,7 +297,7 @@ file1.txt
 + a
 - b
  */
-pub fn status_command(ctx: &Ctx, args: &StatusArgs) -> Result<(), Error> {
+pub fn status_command(ctx: &Ctx, args: &StatusArgs) -> Attempt {
     let repo_head = ctx.repo.head()?;
     let head_name: &str = match &args.name {
         Some(name) => name.as_str(),

@@ -6,7 +6,7 @@ use std::{
 };
 
 use git2::{
-    Error, ErrorCode, Index, IndexConflict, IndexEntry, Oid, RebaseOperationType, RebaseOptions,
+    ErrorCode, Index, IndexConflict, IndexEntry, Oid, RebaseOperationType, RebaseOptions,
     Repository,
 };
 
@@ -18,6 +18,7 @@ use crate::{
     ctx::Ctx,
     diff::get_merge_text,
     editor::edit_temp_text,
+    error::{fail, Attempt, Maybe},
     path::bytes2path,
     remote::pull_main,
     reset::pop_and_reset,
@@ -83,7 +84,7 @@ fn ask_option(prompt: &str, options: &[&str], default: Option<&str>) -> String {
     }
 }
 
-fn delete_entry(index: &mut Index, path: &PathBuf) -> Result<(), Error> {
+fn delete_entry(index: &mut Index, path: &PathBuf) -> Attempt {
     index.remove_path(path)
 }
 
@@ -104,14 +105,14 @@ fn clone_entry(entry: &IndexEntry) -> IndexEntry {
     }
 }
 
-fn select_entry(index: &mut Index, old_path: &PathBuf, entry: &IndexEntry) -> Result<(), Error> {
+fn select_entry(index: &mut Index, old_path: &PathBuf, entry: &IndexEntry) -> Attempt {
     index.remove_path(old_path)?;
     let mut new_entry = clone_entry(entry);
     new_entry.flags = new_entry.flags.bitand(0x3000_u16.reverse_bits());
     index.add(&new_entry)
 }
 
-fn extract_path(conflict: &IndexConflict) -> Result<PathBuf, Error> {
+fn extract_path(conflict: &IndexConflict) -> Maybe<PathBuf> {
     if let Some(our) = conflict.our.as_ref() {
         bytes2path(&our.path)
     } else {
@@ -124,7 +125,7 @@ fn apply_resolution(
     index: &mut Index,
     conflict: &IndexConflict,
     resolution: &ResolutionChoice,
-) -> Result<(), Error> {
+) -> Attempt {
     let current_path = extract_path(&conflict)?;
 
     match (resolution, conflict.our.as_ref(), conflict.their.as_ref()) {
@@ -145,7 +146,7 @@ fn resolve_conflict(
     index: &mut Index,
     conflict: &IndexConflict,
     resolutions: Option<&ResolutionMap>,
-) -> Result<Option<Conflict>, Error> {
+) -> Maybe<Option<Conflict>> {
     let repo = &ctx.repo;
     let current_path = extract_path(&conflict)?;
     let current_path_string: String = current_path.to_string_lossy().into();
@@ -267,7 +268,7 @@ pub fn try_sync_branch(
     ctx: &Ctx,
     branch_name: &str,
     resolutions: Option<&ResolutionMap>,
-) -> Result<SyncDetails, Error> {
+) -> Maybe<SyncDetails> {
     let repo = &ctx.repo;
     let branch_ref = repo
         .find_branch(&branch_name, git2::BranchType::Local)?
@@ -297,12 +298,13 @@ pub fn try_sync_branch(
                 if index.has_conflicts() {
                     let mut conflicts: Vec<IndexConflict> = vec![];
 
-                    rebase.inmemory_index()?.conflicts()?.try_for_each(
-                        |c| -> Result<(), Error> {
+                    rebase
+                        .inmemory_index()?
+                        .conflicts()?
+                        .try_for_each(|c| -> Attempt {
                             conflicts.push(c?);
                             Ok(())
-                        },
-                    )?;
+                        })?;
 
                     println!(
                         "\nWe have {} {} to resolve",
@@ -314,16 +316,13 @@ pub fn try_sync_branch(
                         }
                     );
 
-                    conflicts
-                        .into_iter()
-                        .try_for_each(|conflict| -> Result<(), Error> {
-                            if let Some(r) =
-                                resolve_conflict(ctx, &mut index, &conflict, resolutions)?
-                            {
-                                details.push(r);
-                            }
-                            Ok(())
-                        })?;
+                    conflicts.into_iter().try_for_each(|conflict| -> Attempt {
+                        if let Some(r) = resolve_conflict(ctx, &mut index, &conflict, resolutions)?
+                        {
+                            details.push(r);
+                        }
+                        Ok(())
+                    })?;
                 }
             }
             Some(RebaseOperationType::Fixup) => {
@@ -369,14 +368,14 @@ pub fn try_sync_branch(
     Ok(SyncDetails::Complete)
 }
 
-fn sync_branch(ctx: &Ctx, branch_name: &str) -> Result<(), Error> {
+fn sync_branch(ctx: &Ctx, branch_name: &str) -> Attempt {
     match try_sync_branch(ctx, branch_name, None)? {
         SyncDetails::Complete => Ok(()),
-        SyncDetails::Conflicted(_) => Err(Error::from_str("Still conflicted after sync.")),
+        SyncDetails::Conflicted(_) => fail("Still conflicted after sync."),
     }
 }
 
-pub fn sync_command(ctx: &Ctx, args: &SyncArgs) -> Result<(), Error> {
+pub fn sync_command(ctx: &Ctx, args: &SyncArgs) -> Attempt {
     save_command(
         ctx,
         &SaveArgs {

@@ -1,13 +1,12 @@
-use git2::Error;
-
 use crate::{
     branch::choose_random_branch_name,
     cli::{LoadArgs, NewArgs},
     command::load::load_command,
     ctx::Ctx,
+    error::Attempt,
 };
 
-pub fn new_command(ctx: &Ctx, args: &NewArgs) -> Result<(), Error> {
+pub fn new_command(ctx: &Ctx, args: &NewArgs) -> Attempt {
     let name = match &args.name {
         Some(n) => {
             if n.len() > 0 {

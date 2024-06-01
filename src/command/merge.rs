@@ -1,8 +1,12 @@
-use git2::{Error, Oid};
+use git2::Oid;
 
-use crate::{ctx::Ctx, remote::push_main};
+use crate::{
+    ctx::Ctx,
+    error::{fail, Attempt, Maybe},
+    remote::push_main,
+};
 
-fn combine_branches(ctx: &Ctx) -> Result<Oid, Error> {
+fn combine_branches(ctx: &Ctx) -> Maybe<Oid> {
     let repo = &ctx.repo;
 
     let main_ref = repo
@@ -17,15 +21,15 @@ fn combine_branches(ctx: &Ctx) -> Result<Oid, Error> {
         return Ok(branch_id.id());
     }
 
-    return Err(Error::from_str("Must be synced on main"));
+    fail("Must be synced on main")
 }
 
-pub fn merge_command(ctx: &Ctx) -> Result<(), Error> {
+pub fn merge_command(ctx: &Ctx) -> Attempt {
     let head = ctx.repo.head()?;
     let head_name = head.name().expect("No valid head name.");
 
     if head_name == "refs/heads/main" {
-        return Err(Error::from_str("Cannot merge from main."));
+        return fail("Cannot merge from main.");
     }
 
     let resolved_commit = combine_branches(ctx)?;

@@ -10,7 +10,7 @@ use axum_extra::extract::{
     cookie::{Cookie, SameSite},
     CookieJar,
 };
-use git2::{Commit, Error};
+use git2::Commit;
 use rand::rngs::OsRng;
 use serde::Deserialize;
 
@@ -19,6 +19,7 @@ use crate::{
     cli::{DeleteArgs, LoadArgs, NewArgs, SaveArgs},
     command::new::new_command,
     ctx::{init_ctx, Ctx},
+    error::{fail, Attempt, Fail, Maybe},
     sync::{Conflict, ResolutionChoice, ResolutionMap, SyncDetails},
 };
 
@@ -146,7 +147,7 @@ async fn render_404() -> impl IntoResponse {
     (StatusCode::NOT_FOUND, render_message("Not found", None))
 }
 
-fn count_commits_since(_ctx: &Ctx, older: &Commit, newer: &Commit) -> Result<usize, Error> {
+fn count_commits_since(_ctx: &Ctx, older: &Commit, newer: &Commit) -> Maybe<usize> {
     let mut count: usize = 0;
     let mut current = Rc::from(newer.clone());
     while current.id() != older.id() {
@@ -156,14 +157,14 @@ fn count_commits_since(_ctx: &Ctx, older: &Commit, newer: &Commit) -> Result<usi
                 count += 1;
                 current = Rc::from(c);
             }
-            None => return Err(Error::from_str("Unable to navigate to fork point.")),
+            None => return fail("Unable to navigate to fork point."),
         }
     }
 
     Ok(count)
 }
 
-fn load_dashboard_info() -> Result<DashboardInfo, Error> {
+fn load_dashboard_info() -> Maybe<DashboardInfo> {
     let mut ctx = init_ctx()?;
     ctx.set_mode(crate::ctx::Mode::Background);
 
@@ -401,9 +402,9 @@ async fn sync() -> impl IntoResponse {
     render_sync(&vec![])
 }
 
-fn with_ctx<R, T>(callback: T) -> Result<R, Error>
+fn with_ctx<R, T>(callback: T) -> Maybe<R>
 where
-    T: FnOnce(&Ctx) -> Result<R, Error>,
+    T: FnOnce(&Ctx) -> Maybe<R>,
 {
     let mut ctx = init_ctx()?;
     ctx.set_mode(crate::ctx::Mode::Background);
@@ -412,19 +413,19 @@ where
 
 fn api_handler<R, T>(callback: T) -> impl IntoResponse
 where
-    T: FnOnce(&Ctx) -> Result<R, Error>,
+    T: FnOnce(&Ctx) -> Maybe<R>,
 {
     map_result_to_response(with_ctx(callback))
 }
 
-fn map_error_to_response(err: Error) -> impl IntoResponse {
+fn map_error_to_response(err: Fail) -> impl IntoResponse {
     (
         StatusCode::INTERNAL_SERVER_ERROR,
         render_message("Error", Some(err.message())),
     )
 }
 
-fn map_result_to_response<T>(res: Result<T, Error>) -> impl IntoResponse {
+fn map_result_to_response<T>(res: Maybe<T>) -> impl IntoResponse {
     match res {
         Ok(_) => Redirect::to("/").into_response(),
         Err(e) => map_error_to_response(e).into_response(),
@@ -458,7 +459,7 @@ async fn handle_save(Form(body): Form<SaveForm>) -> impl IntoResponse {
 
 type SyncForm = HashMap<String, String>;
 
-fn convert_sync_form(body: &SyncForm) -> Result<ResolutionMap, Error> {
+fn convert_sync_form(body: &SyncForm) -> Maybe<ResolutionMap> {
     let mut resolutions: ResolutionMap = HashMap::new();
 
     for (key, value) in body.iter() {
@@ -469,7 +470,7 @@ fn convert_sync_form(body: &SyncForm) -> Result<ResolutionMap, Error> {
         } else if let Some(("manual", value)) = value.split_once(":") {
             ResolutionChoice::Manual(value.into())
         } else {
-            return Err(Error::from_str("Unexpected selection"));
+            return fail("Unexpected selection");
         };
         resolutions.insert(key.clone(), value);
     }
@@ -543,7 +544,7 @@ async fn csrf_check<B>(
 use base64::Engine;
 use rand::RngCore;
 
-pub async fn ui_command(_ctx: &Ctx) -> Result<(), Error> {
+pub async fn ui_command(_ctx: &Ctx) -> Attempt {
     let mut key = [0u8; 32];
     OsRng.fill_bytes(&mut key);
 

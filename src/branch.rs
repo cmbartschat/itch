@@ -1,8 +1,11 @@
-use git2::{BranchType, Error, ErrorCode};
+use git2::{BranchType, ErrorCode};
 
-use crate::ctx::Ctx;
+use crate::{
+    ctx::Ctx,
+    error::{fail, Maybe},
+};
 
-pub fn local_branch_exists(ctx: &Ctx, branch: &str) -> Result<bool, Error> {
+pub fn local_branch_exists(ctx: &Ctx, branch: &str) -> Maybe<bool> {
     match ctx.repo.find_branch(branch, BranchType::Local) {
         Ok(_) => Ok(true),
         Err(err) => {
@@ -14,7 +17,7 @@ pub fn local_branch_exists(ctx: &Ctx, branch: &str) -> Result<bool, Error> {
     }
 }
 
-pub fn choose_random_branch_name(ctx: &Ctx) -> Result<String, Error> {
+pub fn choose_random_branch_name(ctx: &Ctx) -> Maybe<String> {
     for i in 1..100 {
         let new_name = format!("b{}", i);
         let exists = local_branch_exists(ctx, &new_name)?;
@@ -22,10 +25,10 @@ pub fn choose_random_branch_name(ctx: &Ctx) -> Result<String, Error> {
             return Ok(new_name);
         }
     }
-    return Err(Error::from_str("Could not autogenerate branch name."));
+    fail("Could not autogenerate branch name.")
 }
 
-pub fn get_head_name(ctx: &Ctx) -> Result<String, Error> {
+pub fn get_head_name(ctx: &Ctx) -> Maybe<String> {
     let repo_head = ctx.repo.head()?;
     let head_name_str = repo_head.name().unwrap();
     Ok(head_name_str[head_name_str.rfind("/").map_or(0, |e| e + 1)..].to_owned())

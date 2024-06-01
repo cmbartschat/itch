@@ -1,18 +1,19 @@
 use std::env;
 
 use git2::{
-    Cred, CredentialType, Error, FetchOptions, ProxyOptions, PushOptions, Remote, RemoteCallbacks,
+    Cred, CredentialType, FetchOptions, ProxyOptions, PushOptions, Remote, RemoteCallbacks,
 };
 
-use crate::ctx::Ctx;
+use crate::{
+    ctx::Ctx,
+    error::{fail, Attempt, Maybe},
+};
 
-fn get_remote_prefix() -> Result<String, Error> {
+fn get_remote_prefix() -> Maybe<String> {
     match env::var("ITCH_REMOTE_PREFIX") {
         Ok(v) => Ok(v),
         Err(env::VarError::NotPresent) => Ok(whoami::username() + "-"),
-        Err(env::VarError::NotUnicode(_)) => {
-            Err(Error::from_str("Non-unicode remote prefix specified"))
-        }
+        Err(env::VarError::NotUnicode(_)) => fail("Non-unicode remote prefix specified"),
     }
 }
 
@@ -22,7 +23,7 @@ fn setup_remote_callbacks<'a>(ctx: &'a Ctx) -> RemoteCallbacks<'a> {
     callbacks
         .push_update_reference(|_, status| {
             if let Some(error_message) = status {
-                Err(Error::from_str(error_message))
+                fail(error_message)
             } else {
                 Ok(())
             }
@@ -63,7 +64,7 @@ fn setup_fetch_options<'a>(ctx: &'a Ctx) -> FetchOptions<'a> {
     options
 }
 
-fn get_remote(ctx: &Ctx) -> Result<Option<Remote>, Error> {
+fn get_remote(ctx: &Ctx) -> Maybe<Option<Remote>> {
     let remotes = ctx.repo.remotes()?;
     if remotes.is_empty() {
         return Ok(None);
@@ -75,12 +76,10 @@ fn get_remote(ctx: &Ctx) -> Result<Option<Remote>, Error> {
     if let Ok(origin) = origin {
         return Ok(Some(origin));
     }
-    return Err(Error::from_str(
-        "Unable to resolve default remote ('origin') out of multiple options",
-    ));
+    fail("Unable to resolve default remote ('origin') out of multiple options")
 }
 
-pub fn push_branch(ctx: &Ctx, branch: &str) -> Result<(), Error> {
+pub fn push_branch(ctx: &Ctx, branch: &str) -> Attempt {
     let remote = get_remote(ctx)?;
     if let Some(mut remote) = remote {
         let remote_prefix = get_remote_prefix()?;
@@ -93,7 +92,7 @@ pub fn push_branch(ctx: &Ctx, branch: &str) -> Result<(), Error> {
     Ok(())
 }
 
-pub fn pull_main(ctx: &Ctx) -> Result<(), Error> {
+pub fn pull_main(ctx: &Ctx) -> Attempt {
     match get_remote(ctx)? {
         None => Ok(()),
         Some(mut remote) => {
@@ -125,13 +124,13 @@ pub fn pull_main(ctx: &Ctx) -> Result<(), Error> {
                 local_ref.set_target(remote_commit.id(), "Sync main")?;
                 Ok(())
             } else {
-                Err(Error::from_str("Local diverges from remote."))
+                fail("Local diverges from remote.")
             }
         }
     }
 }
 
-pub fn push_main(ctx: &Ctx) -> Result<(), Error> {
+pub fn push_main(ctx: &Ctx) -> Attempt {
     let remote = get_remote(ctx)?;
     if let Some(mut remote) = remote {
         remote.push(&["refs/heads/main"], Some(&mut setup_push_options(ctx)))?;

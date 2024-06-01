@@ -1,8 +1,8 @@
-use git2::{Error, IndexAddOption};
+use git2::IndexAddOption;
 
-use crate::{cli::SaveArgs, ctx::Ctx, remote::push_branch, reset::reset_repo};
+use crate::{cli::SaveArgs, ctx::Ctx, error::Attempt, remote::push_branch, reset::reset_repo};
 
-pub fn _save_command(ctx: &Ctx, args: &SaveArgs, silent: bool) -> Result<(), Error> {
+pub fn _save_command(ctx: &Ctx, args: &SaveArgs, silent: bool) -> Attempt {
     let repo = &ctx.repo;
 
     let mut index = repo.index()?;
@@ -39,7 +39,7 @@ pub fn _save_command(ctx: &Ctx, args: &SaveArgs, silent: bool) -> Result<(), Err
     Ok(())
 }
 
-pub fn save_command(ctx: &Ctx, args: &SaveArgs, silent: bool) -> Result<(), Error> {
+pub fn save_command(ctx: &Ctx, args: &SaveArgs, silent: bool) -> Attempt {
     _save_command(ctx, args, silent)?;
     let branch_name = ctx
         .repo

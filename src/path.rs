@@ -1,8 +1,8 @@
 use std::{ffi::OsStr, path::PathBuf};
 
-use git2::Error;
+use crate::error::Maybe;
 
-pub fn bytes2path(bytes: &[u8]) -> Result<PathBuf, Error> {
+pub fn bytes2path(bytes: &[u8]) -> Maybe<PathBuf> {
     #[cfg(unix)]
     {
         use std::os::unix::prelude::*;

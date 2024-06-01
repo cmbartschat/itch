@@ -1,9 +1,8 @@
-use git2::Error;
-
 use crate::{
     cli::DiffArgs,
     ctx::Ctx,
     diff::{collapse_renames, good_diff_options},
+    error::{fail, Attempt, Maybe},
     output::OutputTarget,
 };
 
@@ -52,7 +51,7 @@ itch diff main
 
 */
 
-fn parse_intent(parts: &Vec<String>) -> Result<DiffIntent, Error> {
+fn parse_intent(parts: &Vec<String>) -> Maybe<DiffIntent> {
     if parts.len() == 0 {
         return Ok(DiffIntent::FromFork);
     }
@@ -60,7 +59,7 @@ fn parse_intent(parts: &Vec<String>) -> Result<DiffIntent, Error> {
         if parts[0] == "unsaved" {
             return Ok(DiffIntent::FromSaved);
         } else {
-            return Err(Error::from_str("Unexpected arguments to diff."));
+            return fail("Unexpected arguments to diff.");
         }
     }
 
@@ -82,26 +81,24 @@ fn parse_intent(parts: &Vec<String>) -> Result<DiffIntent, Error> {
                 ));
             }
             _ => {
-                return Err(Error::from_str("Expected 'of', 'from', or 'to'."));
+                return fail("Expected 'of', 'from', or 'to'.");
             }
         };
     };
 
-    if parts.len() == 4 {
-        if parts[0] != "from" || parts[2] != "to" {
-            return Err(Error::from_str("Expected 'from x to y' format."));
-        }
-
-        return Ok(DiffIntent::Range(
+    if parts.len() != 4 {
+        fail("Unexpected argument format.")
+    } else if parts[0] != "from" || parts[2] != "to" {
+        fail("Expected 'from x to y' format.")
+    } else {
+        Ok(DiffIntent::Range(
             DiffPoint::Ref(parts[1].clone()),
             DiffPoint::Ref(parts[3].clone()),
-        ));
-    };
-
-    return Err(Error::from_str("Unexpected argument format."));
+        ))
+    }
 }
 
-pub fn diff_command(ctx: &Ctx, args: &DiffArgs) -> Result<(), Error> {
+pub fn diff_command(ctx: &Ctx, args: &DiffArgs) -> Attempt {
     let base_branch = ctx.repo.find_branch("main", git2::BranchType::Local)?;
     let base_commit = base_branch.into_reference().peel_to_commit()?;
 
@@ -154,10 +151,10 @@ pub fn diff_command(ctx: &Ctx, args: &DiffArgs) -> Result<(), Error> {
                     .diff_tree_to_tree(Some(&from_tree), Some(&to_tree), diff_options)?
             }
             (DiffPoint::Current, DiffPoint::Current) => {
-                return Err(Error::from_str("Cannot diff current to current."));
+                return fail("Cannot diff current to current.");
             }
             (DiffPoint::Current, DiffPoint::Ref(_)) => {
-                return Err(Error::from_str("Cannot diff in this direction."))
+                return fail("Cannot diff in this direction.")
             }
             (DiffPoint::Ref(from), DiffPoint::Current) => {
                 let from_tree = ctx.repo.revparse_single(&from)?.peel_to_tree()?;
@@ -196,7 +193,8 @@ pub fn diff_command(ctx: &Ctx, args: &DiffArgs) -> Result<(), Error> {
             clear_code,
         )
         .unwrap();
-        return true;
+
+        true
     })?;
 
     output.finish();

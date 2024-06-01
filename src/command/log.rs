@@ -1,9 +1,11 @@
-use git2::Error;
-
-use crate::{ctx::Ctx, output::OutputTarget};
+use crate::{
+    ctx::Ctx,
+    error::{fail, inner_fail, Attempt},
+    output::OutputTarget,
+};
 use std::fmt::Write;
 
-pub fn log_command(ctx: &Ctx) -> Result<(), Error> {
+pub fn log_command(ctx: &Ctx) -> Attempt {
     let mut output = OutputTarget::new()?;
 
     let mut repo_head = Some(ctx.repo.head()?.peel_to_commit()?);
@@ -22,12 +24,12 @@ pub fn log_command(ctx: &Ctx) -> Result<(), Error> {
             &current_commit.id().to_string()[0..8],
             truncated_message,
         )
-        .map_err(|_| Error::from_str("Failed to output data"))?;
+        .map_err(|_| inner_fail("Failed to output data"))?;
 
         repo_head = current_commit.parents().next();
         iterations += 1;
         if iterations > 1000 {
-            return Err(Error::from_str("Reached limit of 1000 commits printed."));
+            return fail("Reached limit of 1000 commits printed.");
         }
     }
 

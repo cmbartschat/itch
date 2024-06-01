@@ -10,6 +10,7 @@ mod consts;
 mod ctx;
 mod diff;
 mod editor;
+mod error;
 mod output;
 mod path;
 mod remote;

@@ -1,8 +1,6 @@
-use git2::Error;
+use crate::{ctx::Ctx, error::Attempt};
 
-use crate::ctx::Ctx;
-
-pub fn list_command(ctx: &Ctx) -> Result<(), Error> {
+pub fn list_command(ctx: &Ctx) -> Attempt {
     let (selected_color, clear_color) = if ctx.color_enabled() {
         ("\x1b[1;34m", "\x1b[0m")
     } else {

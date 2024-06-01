@@ -1,8 +1,8 @@
-use git2::{Error, ResetType};
+use git2::ResetType;
 
-use crate::ctx::Ctx;
+use crate::{ctx::Ctx, error::Attempt};
 
-pub fn unsave_command(ctx: &Ctx) -> Result<(), Error> {
+pub fn unsave_command(ctx: &Ctx) -> Attempt {
     let head_commit = ctx.repo.head()?.peel_to_commit()?;
     let base_commit = ctx
         .repo

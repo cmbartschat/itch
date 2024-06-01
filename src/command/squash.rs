@@ -1,8 +1,6 @@
-use git2::Error;
+use crate::{ctx::Ctx, error::Attempt};
 
-use crate::ctx::Ctx;
-
-pub fn squash_command(ctx: &Ctx) -> Result<(), Error> {
+pub fn squash_command(ctx: &Ctx) -> Attempt {
     let _head = ctx.repo.head()?;
 
     let signature = ctx.repo.signature()?;

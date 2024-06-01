@@ -3,7 +3,7 @@ use std::{
     fmt::{self},
 };
 
-use git2::Error;
+use crate::error::Maybe;
 
 pub enum OutputTarget {
     Pager(minus::Pager),
@@ -11,7 +11,7 @@ pub enum OutputTarget {
 }
 
 impl OutputTarget {
-    pub fn new() -> Result<Self, Error> {
+    pub fn new() -> Maybe<Self> {
         if env::var_os("NOPAGER").is_some() {
             Ok(OutputTarget::Stdout)
         } else {
