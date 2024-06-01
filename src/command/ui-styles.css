@@ -155,3 +155,10 @@ h2 {
   position: absolute;
   right: calc(100% + 0.25rem);
 }
+
+fieldset {
+  border: 1px solid var(--border);
+  margin: 0;
+  padding: 0.5rem 1rem;
+  width: 100%;
+}

@@ -15,9 +15,11 @@ use rand::rngs::OsRng;
 use serde::Deserialize;
 
 use crate::{
-    cli::{DeleteArgs, LoadArgs, NewArgs, SaveArgs, SyncArgs},
+    branch::get_head_name,
+    cli::{DeleteArgs, LoadArgs, NewArgs, SaveArgs},
     command::new::new_command,
     ctx::{init_ctx, Ctx},
+    sync::{Conflict, ResolutionChoice, ResolutionMap, SyncDetails},
 };
 
 use axum::{
@@ -32,7 +34,7 @@ use maud::{html, Markup, PreEscaped, DOCTYPE};
 
 use super::{
     delete::delete_command, load::load_command, merge::merge_command, prune::prune_command,
-    save::save_command, squash::squash_command, sync::sync_command,
+    save::save_command, squash::squash_command, sync::try_sync_branch,
 };
 
 #[derive(Clone)]
@@ -47,6 +49,19 @@ fn btn(t: &str, content: &str, disabled: bool) -> Markup {
       button.btn type=(t) disabled[disabled] {
          (content)
       }
+    }
+}
+
+fn radio(label: &str, name: &str, value: &str, checked: bool) -> Markup {
+    html! {
+        label {
+            (if checked {
+                html! {input type="radio" name=(name) value=(value) checked;}
+            } else {
+                html! {input type="radio" name=(name) value=(value);}
+            })
+            (label)
+        }
     }
 }
 
@@ -301,14 +316,98 @@ async fn dashboard(jar: CookieJar, State(state): State<CsrfState>) -> impl IntoR
         .map_err(|err| map_error_to_response(err))
 }
 
-fn with_ctx<R, T>(callback: T) -> Result<(), Error>
+fn render_sync(conflicts: &Vec<Conflict>) -> Markup {
+    html! {
+        (DOCTYPE)
+        head {
+            title {
+                "Sync | itch ui"
+            }
+            (common_head_contents())
+        }
+        body.spaced-down {
+            h1 { "Sync" }
+
+            form.spaced-down method="POST" action="/api/sync"  {
+                @for conflict in conflicts {
+                    @match conflict {
+                      Conflict::MainDeletion(path) => {
+                        fieldset {
+                            (path) " has changes, but was deleted on main." br;
+                            (radio("Keep", path, "incoming", true))
+                            (radio("Delete", path, "base", false))
+                        }
+                      },
+                      Conflict::BranchDeletion(path) => {
+                        fieldset {
+                            (path)
+                             " was deleted on your branch, but was modified on main."
+                             br;
+
+                            (radio("Keep", path, "base", true))
+                            (radio("Delete", path, "incoming", false))
+                        }
+                        },
+                        Conflict::Merge(info) => {
+                            fieldset {
+                                (info.path) " has conflicts." br;
+                                (radio("Keep your version", &info.path, "incoming", true))
+                                (radio("Reset to main version", &info.path, "base", false))
+
+                                details {
+                                    summary {"Your content"}
+                                    pre {
+                                        code {
+                                            (info.branch_content)
+                                        }
+                                    }
+                                }
+                                details {
+                                    summary {"Main content"}
+                                    pre {
+                                        code {
+                                            (info.main_content)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        Conflict::OpaqueMerge(path) => {
+                            fieldset {
+                                (path) "has conflicts." br;
+                                label {
+                                    "Your version"
+                                    input type="radio" name=(path) value="incoming" checked;
+                                }
+                                label {
+                                    "Their version"
+                                    input type="radio" name=(path) value="base";
+                                }
+                            }
+                        }
+
+                      }
+                }
+
+                (btn("submit", "Submit", false))
+            }
+
+            a href="/" {"Cancel"}
+        }
+    }
+}
+
+async fn sync() -> impl IntoResponse {
+    render_sync(&vec![])
+}
+
+fn with_ctx<R, T>(callback: T) -> Result<R, Error>
 where
     T: FnOnce(&Ctx) -> Result<R, Error>,
 {
     let mut ctx = init_ctx()?;
     ctx.set_mode(crate::ctx::Mode::Background);
-    callback(&ctx)?;
-    Ok(())
+    callback(&ctx)
 }
 
 fn api_handler<R, T>(callback: T) -> impl IntoResponse
@@ -357,8 +456,41 @@ async fn handle_save(Form(body): Form<SaveForm>) -> impl IntoResponse {
     })
 }
 
-async fn handle_sync() -> impl IntoResponse {
-    api_handler(|ctx| sync_command(&ctx, &SyncArgs { names: vec![] }))
+type SyncForm = HashMap<String, String>;
+
+fn convert_sync_form(body: &SyncForm) -> Result<ResolutionMap, Error> {
+    let mut resolutions: ResolutionMap = HashMap::new();
+
+    for (key, value) in body.iter() {
+        let value = if value == "incoming" {
+            ResolutionChoice::Incoming
+        } else if value == "base" {
+            ResolutionChoice::Base
+        } else if let Some(("manual", value)) = value.split_once(":") {
+            ResolutionChoice::Manual(value.into())
+        } else {
+            return Err(Error::from_str("Unexpected selection"));
+        };
+        resolutions.insert(key.clone(), value);
+    }
+
+    Ok(resolutions)
+}
+
+async fn handle_sync(Form(body): Form<SyncForm>) -> impl IntoResponse {
+    match with_ctx(|ctx| {
+        let args = convert_sync_form(&body)?;
+        try_sync_branch(&ctx, &get_head_name(ctx)?, Some(&args))
+    }) {
+        Ok(details) => {
+            if let SyncDetails::Conflicted(d) = details {
+                render_sync(&d).into_response()
+            } else {
+                Redirect::to("/").into_response()
+            }
+        }
+        Err(e) => map_error_to_response(e).into_response(),
+    }
 }
 
 async fn handle_new(Form(body): Form<NewArgs>) -> impl IntoResponse {
@@ -435,6 +567,7 @@ pub async fn ui_command(_ctx: &Ctx) -> Result<(), Error> {
 
     let app = Router::new()
         .route("/", get(dashboard))
+        .route("/sync", get(sync))
         .nest("/api", api)
         .with_state(state)
         .fallback(render_404);

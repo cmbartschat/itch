@@ -7,9 +7,11 @@ use std::{
 
 use git2::{
     Error, ErrorCode, Index, IndexConflict, IndexEntry, Oid, RebaseOperationType, RebaseOptions,
+    Repository,
 };
 
 use crate::{
+    branch::get_head_name,
     cli::{SaveArgs, SyncArgs},
     command::save::save_command,
     consts::TEMP_COMMIT_PREFIX,
@@ -19,6 +21,7 @@ use crate::{
     path::bytes2path,
     remote::pull_main,
     reset::pop_and_reset,
+    sync::{Conflict, MergeConflict, ResolutionChoice, ResolutionMap, SyncDetails},
 };
 
 fn ask_option(prompt: &str, options: &[&str], default: Option<&str>) -> String {
@@ -84,48 +87,128 @@ fn delete_entry(index: &mut Index, path: &PathBuf) -> Result<(), Error> {
     index.remove_path(path)
 }
 
-fn select_entry(index: &mut Index, old_path: &PathBuf, mut entry: IndexEntry) -> Result<(), Error> {
-    index.remove_path(old_path)?;
-    entry.flags = entry.flags.bitand(0x3000_u16.reverse_bits());
-    index.add(&entry)
+fn clone_entry(entry: &IndexEntry) -> IndexEntry {
+    IndexEntry {
+        ctime: entry.ctime,
+        mtime: entry.mtime,
+        dev: entry.dev,
+        ino: entry.ino,
+        mode: entry.mode,
+        uid: entry.uid,
+        gid: entry.gid,
+        file_size: entry.file_size,
+        id: entry.id,
+        flags: entry.flags,
+        flags_extended: entry.flags_extended,
+        path: entry.path.clone(),
+    }
 }
 
-fn resolve_conflict(ctx: &Ctx, index: &mut Index, conflict: IndexConflict) -> Result<(), Error> {
-    if !ctx.can_prompt() {
-        return Err(Error::from_str(
-            "Cannot resolve conflict without user input.",
-        ));
+fn select_entry(index: &mut Index, old_path: &PathBuf, entry: &IndexEntry) -> Result<(), Error> {
+    index.remove_path(old_path)?;
+    let mut new_entry = clone_entry(entry);
+    new_entry.flags = new_entry.flags.bitand(0x3000_u16.reverse_bits());
+    index.add(&new_entry)
+}
+
+fn extract_path(conflict: &IndexConflict) -> Result<PathBuf, Error> {
+    if let Some(our) = conflict.our.as_ref() {
+        bytes2path(&our.path)
+    } else {
+        bytes2path(&conflict.ancestor.as_ref().unwrap().path)
     }
+}
+
+fn apply_resolution(
+    repo: &Repository,
+    index: &mut Index,
+    conflict: &IndexConflict,
+    resolution: &ResolutionChoice,
+) -> Result<(), Error> {
+    let current_path = extract_path(&conflict)?;
+
+    match (resolution, conflict.our.as_ref(), conflict.their.as_ref()) {
+        (ResolutionChoice::Incoming, _, None) => delete_entry(index, &current_path),
+        (ResolutionChoice::Incoming, _, Some(choice)) => select_entry(index, &current_path, choice),
+        (ResolutionChoice::Base, None, _) => delete_entry(index, &current_path),
+        (ResolutionChoice::Base, Some(choice), _) => select_entry(index, &current_path, choice),
+        (ResolutionChoice::Manual(str), _, _) => {
+            let mut new_entry = clone_entry(conflict.their.as_ref().unwrap());
+            new_entry.id = repo.blob(str.as_bytes())?;
+            select_entry(index, &current_path, &new_entry)
+        }
+    }
+}
+
+fn resolve_conflict(
+    ctx: &Ctx,
+    index: &mut Index,
+    conflict: &IndexConflict,
+    resolutions: Option<&ResolutionMap>,
+) -> Result<Option<Conflict>, Error> {
     let repo = &ctx.repo;
-    match (conflict.their, conflict.our) {
+    let current_path = extract_path(&conflict)?;
+    let current_path_string: String = current_path.to_string_lossy().into();
+
+    if let Some(resolution) = resolutions.and_then(|f| f.get(&current_path_string)) {
+        apply_resolution(repo, index, conflict, resolution)?;
+        return Ok(None);
+    }
+
+    let resolution = match (&conflict.their, &conflict.our) {
         (Some(branch_entry), Some(main_entry)) => {
-            let current_path = bytes2path(&branch_entry.path)?;
-            let main_path = bytes2path(&main_entry.path)?;
+            if !ctx.can_prompt() {
+                let main_blob = repo.find_blob(main_entry.id)?;
+                let branch_blob = repo.find_blob(branch_entry.id)?;
+
+                let original_id = if let Some(ancestor_entry) = conflict.ancestor.as_ref() {
+                    ancestor_entry.id
+                } else {
+                    repo.blob("".as_bytes())?
+                };
+
+                match (main_blob.is_binary(), branch_blob.is_binary()) {
+                    (false, false) => {
+                        return Ok(Some(Conflict::Merge(MergeConflict {
+                            path: current_path_string,
+                            main_content: String::from_utf8_lossy(main_blob.content()).into(),
+                            branch_content: String::from_utf8_lossy(branch_blob.content()).into(),
+                            merge_content: get_merge_text(
+                                repo,
+                                &original_id,
+                                &main_entry.id,
+                                &branch_entry.id,
+                            )?,
+                        })));
+                    }
+                    _ => {
+                        return Ok(Some(Conflict::OpaqueMerge(current_path_string)));
+                    }
+                }
+            }
 
             let prompt = format!(
                 "{} is conflicted. What would you like to do?",
-                current_path.to_string_lossy(),
+                current_path_string,
             );
 
             let options = ["keep", "reset", "edit"];
 
             match ask_option(&prompt, &options, Some("edit")).as_str() {
-                "keep" => select_entry(index, &main_path, branch_entry),
-                "reset" => select_entry(index, &current_path, main_entry),
+                "keep" => ResolutionChoice::Incoming,
+                "reset" => ResolutionChoice::Base,
                 "edit" => {
                     let path = bytes2path(&branch_entry.path)?;
 
                     let original_id = conflict
                         .ancestor
+                        .as_ref()
                         .map(|e| e.id)
                         .unwrap_or_else(|| repo.blob("".as_bytes()).unwrap());
                     let patch_text =
                         get_merge_text(&ctx.repo, &original_id, &main_entry.id, &branch_entry.id)?;
                     let edited_string = edit_temp_text(&patch_text, path.extension())?;
-                    index.remove_path(&main_path)?;
-                    let mut new_entry = IndexEntry::from(branch_entry);
-                    new_entry.id = repo.blob(edited_string.as_bytes())?;
-                    select_entry(index, &main_path, new_entry)
+                    ResolutionChoice::Manual(edited_string)
                 }
                 _ => panic!("Unhandled option"),
             }
@@ -133,6 +216,9 @@ fn resolve_conflict(ctx: &Ctx, index: &mut Index, conflict: IndexConflict) -> Re
         // File deleted on main
         (Some(branch_entry), None) => {
             let current_path = bytes2path(&branch_entry.path)?;
+            if !ctx.can_prompt() {
+                return Ok(Some(Conflict::MainDeletion(current_path_string)));
+            }
             match ask_option(
                 &format!(
                     "{} was deleted on main. What would you like to do?",
@@ -143,34 +229,45 @@ fn resolve_conflict(ctx: &Ctx, index: &mut Index, conflict: IndexConflict) -> Re
             )
             .as_str()
             {
-                "keep" => select_entry(index, &current_path, branch_entry),
-                "delete" => delete_entry(index, &current_path),
+                "keep" => ResolutionChoice::Incoming,
+                "delete" => ResolutionChoice::Base,
                 _ => panic!("Unhandled option"),
             }
         }
         // File deleted on branch
-        (None, Some(main_entry)) => {
-            let current_path = bytes2path(&main_entry.path)?;
+        (None, Some(_)) => {
+            if !ctx.can_prompt() {
+                return Ok(Some(Conflict::BranchDeletion(current_path_string)));
+            }
+
             match ask_option(
                 &format!(
                     "{} was deleted, but has been modified on main. What would you like to do?",
-                    current_path.to_string_lossy(),
+                    current_path_string,
                 ),
                 &["delete", "keep"],
                 Some("keep"),
             )
             .as_str()
             {
-                "delete" => delete_entry(index, &current_path),
-                "keep" => select_entry(index, &current_path, main_entry),
+                "delete" => ResolutionChoice::Incoming,
+                "keep" => ResolutionChoice::Base,
                 _ => panic!("Unhandled option"),
             }
         }
-        (None, None) => Ok(()),
-    }
+        (None, None) => panic!("Expected either main or branch entry"),
+    };
+
+    apply_resolution(repo, index, conflict, &resolution)?;
+
+    Ok(None)
 }
 
-fn sync_branch(ctx: &Ctx, branch_name: &str) -> Result<(), Error> {
+pub fn try_sync_branch(
+    ctx: &Ctx,
+    branch_name: &str,
+    resolutions: Option<&ResolutionMap>,
+) -> Result<SyncDetails, Error> {
     let repo = &ctx.repo;
     let branch_ref = repo
         .find_branch(&branch_name, git2::BranchType::Local)?
@@ -190,6 +287,8 @@ fn sync_branch(ctx: &Ctx, branch_name: &str) -> Result<(), Error> {
     )?;
 
     let mut final_id: Oid = upstream_id.id();
+
+    let mut details: Vec<Conflict> = vec![];
 
     while let Some(Ok(operation)) = rebase.next() {
         match operation.kind() {
@@ -217,7 +316,14 @@ fn sync_branch(ctx: &Ctx, branch_name: &str) -> Result<(), Error> {
 
                     conflicts
                         .into_iter()
-                        .try_for_each(|conflict| resolve_conflict(ctx, &mut index, conflict))?;
+                        .try_for_each(|conflict| -> Result<(), Error> {
+                            if let Some(r) =
+                                resolve_conflict(ctx, &mut index, &conflict, resolutions)?
+                            {
+                                details.push(r);
+                            }
+                            Ok(())
+                        })?;
                 }
             }
             Some(RebaseOperationType::Fixup) => {
@@ -231,6 +337,10 @@ fn sync_branch(ctx: &Ctx, branch_name: &str) -> Result<(), Error> {
                 todo!("Handle: {:?}", operation);
             }
         };
+
+        if details.len() > 0 {
+            return Ok(SyncDetails::Conflicted(details));
+        }
 
         match rebase.commit(None, &repo.signature()?, None) {
             Ok(id) => {
@@ -256,7 +366,14 @@ fn sync_branch(ctx: &Ctx, branch_name: &str) -> Result<(), Error> {
         repo.branch(&branch_name, &final_commit, true)?;
     }
 
-    Ok(())
+    Ok(SyncDetails::Complete)
+}
+
+fn sync_branch(ctx: &Ctx, branch_name: &str) -> Result<(), Error> {
+    match try_sync_branch(ctx, branch_name, None)? {
+        SyncDetails::Complete => Ok(()),
+        SyncDetails::Conflicted(_) => Err(Error::from_str("Still conflicted after sync.")),
+    }
 }
 
 pub fn sync_command(ctx: &Ctx, args: &SyncArgs) -> Result<(), Error> {
@@ -277,10 +394,7 @@ pub fn sync_command(ctx: &Ctx, args: &SyncArgs) -> Result<(), Error> {
     }
 
     if args.names.len() == 0 {
-        let repo_head = ctx.repo.head()?;
-        let head_name_str = repo_head.name().unwrap();
-        let head_name = head_name_str[head_name_str.rfind("/").map_or(0, |e| e + 1)..].to_owned();
-        sync_branch(ctx, &head_name)?;
+        sync_branch(ctx, &get_head_name(ctx)?)?;
     }
     for branch in &args.names {
         sync_branch(ctx, &branch)?;

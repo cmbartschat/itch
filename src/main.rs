@@ -14,6 +14,7 @@ mod output;
 mod path;
 mod remote;
 mod reset;
+mod sync;
 
 #[tokio::main]
 async fn main() {
