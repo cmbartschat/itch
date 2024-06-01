@@ -1,10 +1,10 @@
 use crate::{
     cli::{LoadArgs, SaveArgs},
-    command::save::save_command,
     consts::TEMP_COMMIT_PREFIX,
     ctx::Ctx,
     error::{fail, Attempt},
     reset::pop_and_reset,
+    save::save,
 };
 
 pub fn _load_command(ctx: &Ctx, args: &LoadArgs) -> Attempt {
@@ -33,7 +33,7 @@ pub fn load_command(ctx: &Ctx, args: &LoadArgs) -> Attempt {
         "Save before switching to".to_string(),
         args.name.clone(),
     ];
-    save_command(
+    save(
         ctx,
         &SaveArgs {
             message: message_vec,
