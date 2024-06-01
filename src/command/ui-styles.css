@@ -17,14 +17,15 @@ body {
   margin: 0 1rem;
 }
 
-ul, li {
+ul,
+li {
   margin: 0;
   width: 100%;
   padding: 0;
 }
 
 ul {
-  padding-left: 1rem; 
+  padding-left: 1rem;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -52,7 +53,8 @@ ul {
   color: inherit;
 }
 
-.btn:disabled, .in:disabled {
+.btn:disabled,
+.in:disabled {
   cursor: default;
   opacity: 0.5;
 }
@@ -105,12 +107,13 @@ ul {
 }
 
 
-a:link, a:visited {
+a:link,
+a:visited {
   color: inherit;
   text-decoration: underline;
   text-decoration-color: var(--dec);
   text-decoration-skip: none;
-  text-decoration-skip-ink:none;
+  text-decoration-skip-ink: none;
   text-decoration-thickness: 2px;
 }
 
