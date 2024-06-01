@@ -1,46 +1,9 @@
-use git2::IndexAddOption;
-
-use crate::{cli::SaveArgs, ctx::Ctx, error::Attempt, remote::push_branch, reset::reset_repo};
-
-pub fn _save_command(ctx: &Ctx, args: &SaveArgs, silent: bool) -> Attempt {
-    let repo = &ctx.repo;
-
-    let mut index = repo.index()?;
-    index.add_all(["*"], IndexAddOption::all(), None)?;
-    let index_commit = index.write_tree()?;
-
-    let tree = repo.find_tree(index_commit)?;
-
-    let mut message = args.message.join(" ");
-    if message.len() == 0 {
-        message = String::from("Save");
-    }
-
-    let signature = repo.signature()?;
-
-    let parent = repo.head()?.peel_to_commit()?;
-
-    if index_commit == parent.tree_id() {
-        if !silent {
-            println!("Nothing to commit.");
-        }
-        return Ok(());
-    }
-
-    repo.commit(
-        Some("HEAD"),
-        &signature,
-        &signature,
-        &message,
-        &tree,
-        &[&parent],
-    )?;
-
-    Ok(())
-}
+use crate::{
+    cli::SaveArgs, ctx::Ctx, error::Attempt, remote::push_branch, reset::reset_repo, save::save,
+};
 
 pub fn save_command(ctx: &Ctx, args: &SaveArgs, silent: bool) -> Attempt {
-    _save_command(ctx, args, silent)?;
+    save(ctx, args, silent)?;
     let branch_name = ctx
         .repo
         .branches(Some(git2::BranchType::Local))?

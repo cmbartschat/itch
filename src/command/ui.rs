@@ -21,6 +21,8 @@ use crate::{
     ctx::{init_ctx, Ctx},
     diff::{collapse_renames, good_diff_options},
     error::{fail, Attempt, Fail, Maybe},
+    reset::pop_and_reset,
+    save::save_temp,
     sync::{Conflict, ResolutionChoice, ResolutionMap, SyncDetails},
 };
 
@@ -484,7 +486,10 @@ fn convert_sync_form(body: &SyncForm) -> Maybe<ResolutionMap> {
 async fn handle_sync(Form(body): Form<SyncForm>) -> impl IntoResponse {
     match with_ctx(|ctx| {
         let args = convert_sync_form(&body)?;
-        try_sync_branch(&ctx, &get_head_name(ctx)?, Some(&args))
+        save_temp(ctx)?;
+        let details = try_sync_branch(&ctx, &get_head_name(ctx)?, Some(&args))?;
+        pop_and_reset(ctx)?;
+        Ok(details)
     }) {
         Ok(details) => {
             if let SyncDetails::Conflicted(d) = details {

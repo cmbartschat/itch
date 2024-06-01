@@ -12,9 +12,7 @@ use git2::{
 
 use crate::{
     branch::get_head_name,
-    cli::{SaveArgs, SyncArgs},
-    command::save::save_command,
-    consts::TEMP_COMMIT_PREFIX,
+    cli::SyncArgs,
     ctx::Ctx,
     diff::get_merge_text,
     editor::edit_temp_text,
@@ -22,6 +20,7 @@ use crate::{
     path::bytes2path,
     remote::pull_main,
     reset::pop_and_reset,
+    save::save_temp,
     sync::{Conflict, MergeConflict, ResolutionChoice, ResolutionMap, SyncDetails},
 };
 
@@ -376,16 +375,7 @@ fn sync_branch(ctx: &Ctx, branch_name: &str) -> Attempt {
 }
 
 pub fn sync_command(ctx: &Ctx, args: &SyncArgs) -> Attempt {
-    save_command(
-        ctx,
-        &SaveArgs {
-            message: vec![
-                TEMP_COMMIT_PREFIX.to_string(),
-                "Save before sync".to_owned(),
-            ],
-        },
-        true,
-    )?;
+    save_temp(ctx)?;
 
     match pull_main(ctx) {
         Err(e) => println!("Skipping pull from remote due to: {}", e.message()),

@@ -15,6 +15,7 @@ mod output;
 mod path;
 mod remote;
 mod reset;
+mod save;
 mod sync;
 
 #[tokio::main]
