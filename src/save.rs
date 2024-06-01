@@ -22,7 +22,7 @@ pub fn save(ctx: &Ctx, args: &SaveArgs, silent: bool) -> Attempt {
 
     if index_commit == parent.tree_id() {
         if !silent {
-            println!("Nothing to commit.");
+            eprintln!("Nothing to commit.");
         }
         return Ok(());
     }

@@ -25,7 +25,7 @@ use crate::{
 };
 
 fn ask_option(prompt: &str, options: &[&str], default: Option<&str>) -> String {
-    print!("{prompt} ");
+    eprint!("{prompt} ");
 
     let last_index = options.len() - 1;
     let second_to_last_index = options.len() - 2;
@@ -50,23 +50,23 @@ fn ask_option(prompt: &str, options: &[&str], default: Option<&str>) -> String {
 
     for (index, option) in options.iter().enumerate() {
         if default == Some(option) {
-            print!("{} (default)", option.to_string());
+            eprint!("{} (default)", option.to_string());
         } else if let Some(shortcut) = fullform_map.get(*option) {
-            print!("({}){}", shortcut, &option[shortcut.len()..]);
+            eprint!("({}){}", shortcut, &option[shortcut.len()..]);
         }
         if index != last_index {
             if last_index == 1 {
-                print!(" ");
+                eprint!(" ");
             } else {
-                print!(", ");
+                eprint!(", ");
             }
         }
         if index == second_to_last_index {
-            print!("or ");
+            eprint!("or ");
         }
     }
 
-    print!(": ");
+    eprint!(": ");
 
     loop {
         io::stdout().flush().unwrap();
@@ -79,7 +79,7 @@ fn ask_option(prompt: &str, options: &[&str], default: Option<&str>) -> String {
         if let Some(input) = shortcut_map.get_mut(&input) {
             return input.clone();
         }
-        println!("Unrecognized option. Try again:");
+        eprintln!("Unrecognized option. Try again:");
     }
 }
 
@@ -305,8 +305,8 @@ pub fn try_sync_branch(
                             Ok(())
                         })?;
 
-                    println!(
-                        "\nWe have {} {} to resolve",
+                    eprintln!(
+                        "\nThere are {} {} to resolve.",
                         conflicts.len(),
                         if conflicts.len() == 1 {
                             "conflict"
@@ -378,7 +378,7 @@ pub fn sync_command(ctx: &Ctx, args: &SyncArgs) -> Attempt {
     save_temp(ctx)?;
 
     match pull_main(ctx) {
-        Err(e) => println!("Skipping pull from remote due to: {}", e.message()),
+        Err(e) => eprintln!("Skipping pull from remote due to: {}", e.message()),
         _ => {}
     }
 

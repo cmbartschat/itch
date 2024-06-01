@@ -42,7 +42,7 @@ pub fn merge_command(ctx: &Ctx) -> Attempt {
         .set_target(resolved_commit, &reflog_message)?;
 
     match push_main(ctx) {
-        Err(e) => println!("Skipping remote push due to: {}", e.message()),
+        Err(e) => eprintln!("Skipping remote push due to: {}", e.message()),
         _ => {}
     }
 

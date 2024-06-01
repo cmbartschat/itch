@@ -55,7 +55,7 @@ pub fn prune_command(ctx: &Ctx) -> Attempt {
 
     delete_command(&ctx, &delete_args)?;
 
-    println!("Deleted: {}", delete_args.names.join(", "));
+    eprintln!("Deleted: {}", delete_args.names.join(", "));
 
     Ok(())
 }

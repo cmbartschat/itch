@@ -13,7 +13,7 @@ pub fn save_command(ctx: &Ctx, args: &SaveArgs, silent: bool) -> Attempt {
         ctx,
         branch_name.unwrap().unwrap().0.name().unwrap().unwrap(),
     ) {
-        Err(e) => println!("Skipping remote push due to: {}", e.message()),
+        Err(e) => eprintln!("Skipping remote push due to: {}", e.message()),
         _ => {}
     }
 

@@ -18,7 +18,7 @@ pub fn squash_command(ctx: &Ctx) -> Attempt {
     let parent = ctx.repo.find_commit(parent_id)?;
 
     if top_commit.parents().any(|f| f.id() == parent.id()) {
-        println!("Already squashed.");
+        eprintln!("Already squashed.");
         return Ok(());
     }
 
