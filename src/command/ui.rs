@@ -19,6 +19,7 @@ use crate::{
     cli::{DeleteArgs, LoadArgs, NewArgs, SaveArgs},
     command::new::new_command,
     ctx::{init_ctx, Ctx},
+    diff::{collapse_renames, good_diff_options},
     error::{fail, Attempt, Fail, Maybe},
     sync::{Conflict, ResolutionChoice, ResolutionMap, SyncDetails},
 };
@@ -198,9 +199,11 @@ fn load_dashboard_info() -> Maybe<DashboardInfo> {
 
     branches.sort_unstable();
 
-    let unsaved_diff = ctx
+    let mut unsaved_diff = ctx
         .repo
-        .diff_tree_to_workdir(Some(&head_commit.tree()?), None)?;
+        .diff_tree_to_workdir(Some(&head_commit.tree()?), Some(&mut good_diff_options()))?;
+
+    collapse_renames(&mut unsaved_diff)?;
 
     Ok(DashboardInfo {
         commits_ahead: head_past_fork,
