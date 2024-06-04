@@ -2,7 +2,6 @@ use clap::Parser;
 use cli::Cli;
 use command::run_command;
 use log::LevelFilter;
-use macros::{timer_next, timer_start};
 
 mod branch;
 mod cli;
