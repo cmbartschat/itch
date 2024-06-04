@@ -50,6 +50,9 @@ pub enum Commands {
     #[command(about = "Prune unneeded branches")]
     Prune,
 
+    #[command(about = "Split the current branch into a separate workstream and switch to it")]
+    Split(SplitArgs),
+
     #[command(about = "Show interactive UI")]
     Ui,
 
@@ -59,6 +62,11 @@ pub enum Commands {
 
 #[derive(Args, Deserialize, Debug)]
 pub struct NewArgs {
+    pub name: Option<String>,
+}
+
+#[derive(Args, Deserialize, Debug)]
+pub struct SplitArgs {
     pub name: Option<String>,
 }
 

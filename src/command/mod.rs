@@ -1,6 +1,8 @@
 use std::io::IsTerminal;
 use std::{env, io::stdout};
 
+use split::split_command;
+
 use crate::error::Attempt;
 use crate::{
     cli::{Cli, Commands},
@@ -23,6 +25,7 @@ mod merge;
 mod new;
 mod prune;
 mod save;
+mod split;
 mod squash;
 mod status;
 mod sync;
@@ -50,6 +53,7 @@ pub async fn run_command(cli: &Cli) -> Attempt {
         Commands::New(args) => new_command(&ctx, &args),
         Commands::Prune => prune_command(&ctx),
         Commands::Save(args) => save_command(&ctx, &args, false),
+        Commands::Split(args) => split_command(&ctx, args),
         Commands::Squash => squash_command(&ctx),
         Commands::Status(args) => status_command(&ctx, &args),
         Commands::Sync(args) => sync_command(&ctx, &args),

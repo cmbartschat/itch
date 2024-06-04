@@ -51,7 +51,7 @@ itch sync to c001e5
 - [ ] Add undo
 - [x] Add remote pull/push
 - [x] Add unsave
-- [ ] Add fork
+- [x] Add split
 
 ### Tweaks
 
