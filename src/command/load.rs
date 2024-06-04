@@ -1,3 +1,5 @@
+use git2::build::CheckoutBuilder;
+
 use crate::{
     cli::{LoadArgs, SaveArgs},
     consts::TEMP_COMMIT_PREFIX,
@@ -5,6 +7,7 @@ use crate::{
     error::{fail, Attempt},
     reset::pop_and_reset,
     save::save,
+    timer::Timer,
 };
 
 pub fn _load_command(ctx: &Ctx, args: &LoadArgs) -> Attempt {
@@ -15,11 +18,10 @@ pub fn _load_command(ctx: &Ctx, args: &LoadArgs) -> Attempt {
 
     if let Some(target) = target_ref.name() {
         ctx.repo.set_head(target)?;
-        ctx.repo.reset(
-            target_ref.peel_to_commit()?.as_object(),
-            git2::ResetType::Hard,
-            None,
-        )?;
+        let mut options = CheckoutBuilder::new();
+        options.force();
+        ctx.repo.checkout_head(Some(&mut options.into()))?;
+
         pop_and_reset(ctx)?;
         Ok(())
     } else {
@@ -28,6 +30,7 @@ pub fn _load_command(ctx: &Ctx, args: &LoadArgs) -> Attempt {
 }
 
 pub fn load_command(ctx: &Ctx, args: &LoadArgs) -> Attempt {
+    let mut timer = Timer::new("load_command");
     let message_vec = vec![
         TEMP_COMMIT_PREFIX.to_string(),
         "Save before switching to".to_string(),
@@ -41,5 +44,15 @@ pub fn load_command(ctx: &Ctx, args: &LoadArgs) -> Attempt {
         true,
     )?;
 
-    _load_command(ctx, args)
+    timer.step("something");
+
+    timer.step("after save");
+
+    _load_command(ctx, args)?;
+
+    timer.step("after load");
+
+    timer.done();
+
+    Ok(())
 }

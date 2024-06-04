@@ -24,6 +24,7 @@ use crate::{
     reset::pop_and_reset,
     save::save_temp,
     sync::{Conflict, ResolutionChoice, ResolutionMap, SyncDetails},
+    timer,
 };
 
 use axum::{
@@ -168,6 +169,7 @@ fn count_commits_since(_ctx: &Ctx, older: &Commit, newer: &Commit) -> Maybe<usiz
 }
 
 fn load_dashboard_info() -> Maybe<DashboardInfo> {
+    // let _ = timer::Timer::new("load_dashboard_info");
     let mut ctx = init_ctx()?;
     ctx.set_mode(crate::ctx::Mode::Background);
 
@@ -179,11 +181,16 @@ fn load_dashboard_info() -> Maybe<DashboardInfo> {
 
     let base = "main";
 
+    // let base_commit_timer = timer::Timer::new("base_commit_timer");
     let base_commit = ctx
         .repo
         .find_branch(&base, git2::BranchType::Local)?
         .into_reference()
         .peel_to_commit()?;
+
+    // std::mem::drop(base_commit_timer);
+
+    // let commit_count_timer = timer::Timer::new("commit_count_timer");
 
     let head_commit = repo_head.peel_to_commit()?;
     let fork_point = ctx
@@ -193,6 +200,10 @@ fn load_dashboard_info() -> Maybe<DashboardInfo> {
     let base_past_fork = count_commits_since(&ctx, &fork_point, &base_commit)?;
     let head_past_fork = count_commits_since(&ctx, &fork_point, &head_commit)?;
 
+    // std::mem::drop(commit_count_timer);
+
+    // let branch_timer = timer::Timer::new("branch_timer");
+
     let mut branches = ctx
         .repo
         .branches(Some(git2::BranchType::Local))?
@@ -200,12 +211,16 @@ fn load_dashboard_info() -> Maybe<DashboardInfo> {
         .collect::<Vec<String>>();
 
     branches.sort_unstable();
+    // std::mem::drop(branch_timer);
+    // let diff_timer = timer::Timer::new("diff_timer");
 
     let mut unsaved_diff = ctx
         .repo
         .diff_tree_to_workdir(Some(&head_commit.tree()?), Some(&mut good_diff_options()))?;
 
     collapse_renames(&mut unsaved_diff)?;
+
+    // std::mem::drop(diff_timer);
 
     Ok(DashboardInfo {
         commits_ahead: head_past_fork,
@@ -507,7 +522,10 @@ async fn handle_new(Form(body): Form<NewArgs>) -> impl IntoResponse {
 }
 
 async fn handle_load(Form(body): Form<LoadArgs>) -> impl IntoResponse {
-    api_handler(move |ctx| load_command(&ctx, &body))
+    let handle_load_timer = timer::Timer::new("handle_load");
+    let res = api_handler(move |ctx| load_command(&ctx, &body));
+    std::mem::drop(handle_load_timer);
+    res
 }
 
 #[derive(Deserialize, Debug)]
@@ -601,7 +619,7 @@ pub async fn ui_command(_ctx: &Ctx) -> Attempt {
 
     let server = builder.serve(app.into_make_service());
 
-    open::that(format!("http://localhost:{}", server.local_addr().port())).unwrap();
+    // open::that(format!("http://localhost:{}", server.local_addr().port())).unwrap();
 
     server.await.unwrap();
 
