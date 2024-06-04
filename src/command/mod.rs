@@ -41,7 +41,6 @@ pub async fn run_command(cli: &Cli) -> Attempt {
     }
 
     match &cli.command {
-        Commands::Prune => prune_command(&ctx),
         Commands::Delete(args) => delete_command(&ctx, &args),
         Commands::Diff(args) => diff_command(&ctx, &args),
         Commands::List => list_command(&ctx),
@@ -49,9 +48,10 @@ pub async fn run_command(cli: &Cli) -> Attempt {
         Commands::Log => log_command(&ctx),
         Commands::Merge => merge_command(&ctx),
         Commands::New(args) => new_command(&ctx, &args),
+        Commands::Prune => prune_command(&ctx),
         Commands::Save(args) => save_command(&ctx, &args, false),
-        Commands::Status(args) => status_command(&ctx, &args),
         Commands::Squash => squash_command(&ctx),
+        Commands::Status(args) => status_command(&ctx, &args),
         Commands::Sync(args) => sync_command(&ctx, &args),
         Commands::Ui => ui_command(&ctx).await,
         Commands::Unsave => unsave_command(&ctx),
