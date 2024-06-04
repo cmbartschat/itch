@@ -1,8 +1,6 @@
 #![allow(dead_code)]
 use std::time::Instant;
 
-use log::debug;
-
 struct LastStep(String, Instant);
 
 pub struct Timer {
@@ -14,6 +12,7 @@ pub struct Timer {
 
 impl Timer {
     pub fn new<'a>(name: &'static str) -> Self {
+        eprintln!("[{}]: begin", name);
         return Self {
             name,
             start: Instant::now(),
@@ -24,35 +23,28 @@ impl Timer {
 
     pub fn step(&mut self, name: &'static str) {
         let now = Instant::now();
-        if let Some(LastStep(prev_name, prev_time)) = &self.last {
-            let passed = now.saturating_duration_since(*prev_time);
-            debug!(
-                "[{}]: {} -> {} {}",
-                self.name,
-                prev_name,
-                name,
-                passed.as_millis()
-            );
-        } else {
-            let passed = now.saturating_duration_since(self.start);
-            debug!(
-                "[{}]: Start -> {}]: {}",
-                self.name,
-                name,
-                passed.as_millis()
-            );
-        }
-
+        let prev_time: &Instant = self.last.as_ref().map(|f| &f.1).unwrap_or(&self.start);
+        let passed = now.saturating_duration_since(*prev_time).as_millis();
+        let passed_since_start = now.saturating_duration_since(self.start).as_millis();
+        eprintln!(
+            "[{}]: {} {} (+{})",
+            self.name, name, passed_since_start, passed,
+        );
         self.last = Some(LastStep(name.into(), now));
     }
 
     pub fn done(&mut self) {
         if self.done {
-            panic!("Can't call done() on the same timer twice.");
+            panic!("Can't call done() twice on a timer.");
         }
         let now = Instant::now();
-        let passed = now.saturating_duration_since(self.start);
-        debug!("[{}]: Finished after {}", self.name, passed.as_millis())
+        let prev_time: &Instant = self.last.as_ref().map(|f| &f.1).unwrap_or(&self.start);
+        let passed = now.saturating_duration_since(*prev_time).as_millis();
+        let passed_since_start = now.saturating_duration_since(self.start).as_millis();
+        eprintln!(
+            "[{}]: finish {} (+{})",
+            self.name, passed_since_start, passed,
+        );
     }
 }
 
