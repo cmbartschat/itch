@@ -22,15 +22,12 @@ mod timer;
 
 #[tokio::main]
 async fn main() {
-    timer_start!("main");
     let cli = Cli::parse();
-    timer_next!("parsed");
 
     if cli.verbose {
         env_logger::builder()
             .filter_level(LevelFilter::Debug)
             .init();
-        timer_next!("init logger");
     }
 
     let res = run_command(&cli);
@@ -38,5 +35,4 @@ async fn main() {
     if let Err(e) = res.await {
         eprintln!("Failed with error: {}", e.message());
     }
-    timer_next!("run command");
 }
