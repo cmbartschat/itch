@@ -17,6 +17,7 @@ mod remote;
 mod reset;
 mod save;
 mod sync;
+mod timer;
 
 #[tokio::main]
 async fn main() {
