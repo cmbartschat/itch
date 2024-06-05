@@ -3,7 +3,7 @@ use git2::Oid;
 use crate::{
     ctx::Ctx,
     error::{fail, Attempt, Maybe},
-    remote::push_main,
+    remote::try_push_main,
 };
 
 fn combine_branches(ctx: &Ctx) -> Maybe<Oid> {
@@ -41,10 +41,7 @@ pub fn merge_command(ctx: &Ctx) -> Attempt {
         .into_reference()
         .set_target(resolved_commit, &reflog_message)?;
 
-    match push_main(ctx) {
-        Err(e) => eprintln!("Skipping remote push due to: {}", e.message()),
-        _ => {}
-    }
+    try_push_main(ctx);
 
     Ok(())
 }

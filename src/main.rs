@@ -13,6 +13,7 @@ mod editor;
 mod error;
 mod output;
 mod path;
+mod print;
 mod remote;
 mod reset;
 mod save;

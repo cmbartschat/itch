@@ -18,7 +18,7 @@ use crate::{
     editor::edit_temp_text,
     error::{fail, Attempt, Maybe},
     path::bytes2path,
-    remote::pull_main,
+    remote::try_pull_main,
     reset::pop_and_reset,
     save::save_temp,
     sync::{Conflict, MergeConflict, ResolutionChoice, ResolutionMap, SyncDetails},
@@ -377,10 +377,7 @@ fn sync_branch(ctx: &Ctx, branch_name: &str) -> Attempt {
 pub fn sync_command(ctx: &Ctx, args: &SyncArgs) -> Attempt {
     save_temp(ctx)?;
 
-    match pull_main(ctx) {
-        Err(e) => eprintln!("Skipping pull from remote due to: {}", e.message()),
-        _ => {}
-    }
+    try_pull_main(ctx);
 
     if args.names.len() == 0 {
         sync_branch(ctx, &get_head_name(ctx)?)?;

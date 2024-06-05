@@ -7,6 +7,7 @@ use git2::{
 use crate::{
     ctx::Ctx,
     error::{fail, Attempt, Maybe},
+    print::show_warning,
 };
 
 fn get_remote_prefix() -> Maybe<String> {
@@ -136,4 +137,37 @@ pub fn push_main(ctx: &Ctx) -> Attempt {
         remote.push(&["refs/heads/main"], Some(&mut setup_push_options(ctx)))?;
     }
     Ok(())
+}
+
+pub fn try_push_branch(ctx: &Ctx, name: &str) {
+    match push_branch(ctx, name) {
+        Err(e) => show_warning(
+            ctx,
+            &format!(
+                "Failed to update remote; continuing anyway ({})",
+                e.message()
+            ),
+        ),
+        Ok(()) => {}
+    }
+}
+
+pub fn try_push_main(ctx: &Ctx) {
+    match push_main(ctx) {
+        Err(e) => show_warning(
+            ctx,
+            &format!("Failed to push remote; continuing anyway ({})", e.message()),
+        ),
+        Ok(()) => {}
+    }
+}
+
+pub fn try_pull_main(ctx: &Ctx) {
+    match pull_main(ctx) {
+        Err(e) => show_warning(
+            ctx,
+            &format!("Failed to pull remote; continuing anyway ({})", e.message()),
+        ),
+        Ok(()) => {}
+    }
 }
