@@ -483,13 +483,14 @@ fn convert_sync_form(body: &SyncForm) -> Maybe<ResolutionMap> {
 }
 
 async fn handle_sync(Form(body): Form<SyncForm>) -> impl IntoResponse {
-    match with_ctx(|ctx| {
+    let sync_result = with_ctx(|ctx| {
         let args = convert_sync_form(&body)?;
         save_temp(ctx)?;
         let details = try_sync_branch(ctx, &get_head_name(ctx)?, Some(&args))?;
         pop_and_reset(ctx)?;
         Ok(details)
-    }) {
+    });
+    match sync_result {
         Ok(details) => {
             if let SyncDetails::Conflicted(d) = details {
                 render_sync(&d).into_response()
