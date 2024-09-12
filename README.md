@@ -98,8 +98,8 @@ itch sync to c001e5
 - [ ] Delete branch when deleting client
 - [ ] Prevent saving "prefix-main"
 - [x] Include files in untracked folders in status
-- [ ] Make ui refresh faster
-- [ ] Make sure to use eprintln
+- [x] Make ui refresh faster
+- [x] Make sure to use eprintln
 
 ### Mapping from git
 
