@@ -318,15 +318,17 @@ pub fn try_sync_branch(
                             Ok(())
                         })?;
 
-                    eprintln!(
-                        "\nThere are {} {} to resolve.",
-                        conflicts.len(),
-                        if conflicts.len() == 1 {
-                            "conflict"
-                        } else {
-                            "conflicts"
-                        }
-                    );
+                    if ctx.can_prompt() {
+                        eprintln!(
+                            "\nThere are {} {} to resolve.",
+                            conflicts.len(),
+                            if conflicts.len() == 1 {
+                                "conflict"
+                            } else {
+                                "conflicts"
+                            }
+                        );
+                    }
 
                     conflicts.into_iter().try_for_each(|conflict| -> Attempt {
                         if let Some(r) = resolve_conflict(ctx, &mut index, &conflict, resolutions)?
