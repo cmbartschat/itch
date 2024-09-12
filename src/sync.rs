@@ -4,6 +4,7 @@ use std::collections::HashMap;
 pub enum ResolutionChoice {
     Incoming,
     Base,
+    Later,
     Manual(String),
 }
 

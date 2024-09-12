@@ -119,6 +119,10 @@ fn extract_path(conflict: &IndexConflict) -> Maybe<PathBuf> {
     }
 }
 
+fn get_entry_oid(entry: &Option<IndexEntry>) -> Oid {
+    entry.as_ref().map(|e| e.id).unwrap_or_else(Oid::zero)
+}
+
 fn apply_resolution(
     repo: &Repository,
     index: &mut Index,
@@ -132,6 +136,15 @@ fn apply_resolution(
         (ResolutionChoice::Incoming, _, Some(choice)) => select_entry(index, &current_path, choice),
         (ResolutionChoice::Base, None, _) => delete_entry(index, &current_path),
         (ResolutionChoice::Base, Some(choice), _) => select_entry(index, &current_path, choice),
+        (ResolutionChoice::Later, _, _) => {
+            let ancestor_oid = get_entry_oid(&conflict.ancestor);
+            let our_oid = get_entry_oid(&conflict.our);
+            let their_oid = get_entry_oid(&conflict.their);
+            let conflicted = get_merge_text(repo, &ancestor_oid, &their_oid, &our_oid)?;
+            let mut new_entry = clone_entry(conflict.their.as_ref().unwrap());
+            new_entry.id = repo.blob(conflicted.as_bytes())?;
+            select_entry(index, &current_path, &new_entry)
+        }
         (ResolutionChoice::Manual(str), _, _) => {
             let mut new_entry = clone_entry(conflict.their.as_ref().unwrap());
             new_entry.id = repo.blob(str.as_bytes())?;
