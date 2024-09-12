@@ -2,7 +2,7 @@ use std::{
     collections::HashMap,
     io::{self, Write},
     ops::BitAnd,
-    path::PathBuf,
+    path::{Path, PathBuf},
 };
 
 use git2::{
@@ -83,7 +83,7 @@ fn ask_option(prompt: &str, options: &[&str], default: Option<&str>) -> String {
     }
 }
 
-fn delete_entry(index: &mut Index, path: &PathBuf) -> Attempt {
+fn delete_entry(index: &mut Index, path: &Path) -> Attempt {
     index.remove_path(path)
 }
 
@@ -104,7 +104,7 @@ fn clone_entry(entry: &IndexEntry) -> IndexEntry {
     }
 }
 
-fn select_entry(index: &mut Index, old_path: &PathBuf, entry: &IndexEntry) -> Attempt {
+fn select_entry(index: &mut Index, old_path: &Path, entry: &IndexEntry) -> Attempt {
     index.remove_path(old_path)?;
     let mut new_entry = clone_entry(entry);
     new_entry.flags = new_entry.flags.bitand(0x3000_u16.reverse_bits());

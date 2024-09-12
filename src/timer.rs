@@ -11,7 +11,7 @@ pub struct Timer {
 }
 
 impl Timer {
-    pub fn new<'a>(name: &'static str) -> Self {
+    pub fn new(name: &'static str) -> Self {
         eprintln!("[{}]: begin", name);
         Self {
             name,

@@ -51,7 +51,7 @@ itch diff main
 
 */
 
-fn parse_intent(parts: &Vec<String>) -> Maybe<DiffIntent> {
+fn parse_intent(parts: &[String]) -> Maybe<DiffIntent> {
     if parts.is_empty() {
         return Ok(DiffIntent::FromFork);
     }
