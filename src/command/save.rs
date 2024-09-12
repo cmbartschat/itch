@@ -14,6 +14,6 @@ pub fn save_command(ctx: &Ctx, args: &SaveArgs, silent: bool) -> Attempt {
         branch_name.unwrap().unwrap().0.name().unwrap().unwrap(),
     );
 
-    reset_repo(&ctx)?;
+    reset_repo(ctx)?;
     Ok(())
 }

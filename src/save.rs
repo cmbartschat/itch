@@ -12,7 +12,7 @@ pub fn save(ctx: &Ctx, args: &SaveArgs, silent: bool) -> Attempt {
     let tree = repo.find_tree(index_commit)?;
 
     let mut message = args.message.join(" ");
-    if message.len() == 0 {
+    if message.is_empty() {
         message = String::from("Save");
     }
 

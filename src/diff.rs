@@ -26,7 +26,7 @@ fn blob_to_string(blob: &git2::Blob) -> Maybe<String> {
     Ok(original_content)
 }
 
-fn get_lines<'a>(str: &'a str) -> Vec<&'a str> {
+fn get_lines(str: &str) -> Vec<&str> {
     let mut original_lines: Vec<&str> = str.split_inclusive("\n").collect();
     if original_lines.last() == Some(&"") {
         original_lines.pop();
@@ -52,7 +52,7 @@ impl Range {
             return Self(index, index);
         }
 
-        return Self(start as usize - 1, start as usize + lines as usize - 1);
+        Self(start as usize - 1, start as usize + lines as usize - 1)
     }
 
     #[must_use]
@@ -116,7 +116,7 @@ fn get_diff_hunks(repo: &Repository, from: &git2::Blob, to: &git2::Blob) -> Vec<
                 old: Range::from_indices(hunk.old_start(), hunk.old_lines()),
                 new: Range::from_indices(hunk.new_start(), hunk.new_lines()),
             });
-            return true;
+            true
         }),
         line_cb,
     )
@@ -249,7 +249,7 @@ mod merge_tests {
         let branch_id = repo.blob(branch.as_bytes()).unwrap();
         let res = get_merge_text(&repo, &original_id, &upstream_id, &branch_id).unwrap();
         drop(dir);
-        return res;
+        res
     }
 
     #[test]

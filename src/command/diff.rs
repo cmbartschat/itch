@@ -52,7 +52,7 @@ itch diff main
 */
 
 fn parse_intent(parts: &Vec<String>) -> Maybe<DiffIntent> {
-    if parts.len() == 0 {
+    if parts.is_empty() {
         return Ok(DiffIntent::FromFork);
     }
     if parts.len() == 1 {
@@ -144,8 +144,8 @@ pub fn diff_command(ctx: &Ctx, args: &DiffArgs) -> Attempt {
         }
         DiffIntent::Range(from_point, to_point) => match (&from_point, &to_point) {
             (DiffPoint::Ref(from), DiffPoint::Ref(to)) => {
-                let from_tree = ctx.repo.revparse_single(&from)?.peel_to_tree()?;
-                let to_tree = ctx.repo.revparse_single(&to)?.peel_to_tree()?;
+                let from_tree = ctx.repo.revparse_single(from)?.peel_to_tree()?;
+                let to_tree = ctx.repo.revparse_single(to)?.peel_to_tree()?;
 
                 ctx.repo
                     .diff_tree_to_tree(Some(&from_tree), Some(&to_tree), diff_options)?
@@ -157,7 +157,7 @@ pub fn diff_command(ctx: &Ctx, args: &DiffArgs) -> Attempt {
                 return fail("Cannot diff in this direction.")
             }
             (DiffPoint::Ref(from), DiffPoint::Current) => {
-                let from_tree = ctx.repo.revparse_single(&from)?.peel_to_tree()?;
+                let from_tree = ctx.repo.revparse_single(from)?.peel_to_tree()?;
 
                 ctx.repo
                     .diff_tree_to_workdir(Some(&from_tree), diff_options)?

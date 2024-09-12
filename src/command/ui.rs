@@ -72,14 +72,13 @@ fn radio(label: &str, name: &str, value: &str, checked: bool) -> Markup {
 type Args = Option<HashMap<String, String>>;
 
 fn hidden_args(args: &Args) -> Option<Markup> {
-    match args {
-        None => None,
-        Some(map) => Some(html! {
+    args.as_ref().map(|map| {
+        html! {
            @for field in map.iter() {
               input type="hidden" name=(field.0) value=(field.1);
            }
-        }),
-    }
+        }
+    })
 }
 
 fn action_btn(method: &str, action: &str, content: &str, args: &Args, disabled: bool) -> Markup {
@@ -101,8 +100,8 @@ fn branch_entry(info: &DashboardInfo, name: &str) -> Markup {
     html! {
         li.spaced-across {
             span.grow .selected[info.current_branch == name] { (name) }
-            (action_btn("POST", &format!("/api/load"), "Load", &Some(named(name)), info.current_branch == name))
-            (action_btn("POST", &format!("/api/delete"), "Delete", &Some(named(name)), name == "main" || info.current_branch == name))
+            (action_btn("POST", "/api/load", "Load", &Some(named(name)), info.current_branch == name))
+            (action_btn("POST", "/api/delete", "Delete", &Some(named(name)), name == "main" || info.current_branch == name))
         }
     }
 }
@@ -181,7 +180,7 @@ fn load_dashboard_info() -> Maybe<DashboardInfo> {
 
     let base_commit = ctx
         .repo
-        .find_branch(&base, git2::BranchType::Local)?
+        .find_branch(base, git2::BranchType::Local)?
         .into_reference()
         .peel_to_commit()?;
 
@@ -212,7 +211,7 @@ fn load_dashboard_info() -> Maybe<DashboardInfo> {
         commits_behind: base_past_fork,
         current_branch: head_name.to_owned(),
         unsaved_changes: unsaved_diff.deltas().count(),
-        branches: branches,
+        branches,
         workspace: ctx
             .repo
             .workdir()
@@ -303,7 +302,7 @@ fn render_dashboard(info: &DashboardInfo) -> Markup {
 
                     ul.spaced-down {
                         @for b in &info.branches {
-                            (branch_entry(&info, &b))
+                            (branch_entry(info, b))
                         }
                     }
                 }
@@ -319,7 +318,7 @@ async fn dashboard(jar: CookieJar, State(state): State<CsrfState>) -> impl IntoR
             csrf.set_same_site(SameSite::Strict);
             (jar.add(csrf), render_dashboard(&info))
         })
-        .map_err(|err| map_error_to_response(err))
+        .map_err(map_error_to_response)
 }
 
 fn render_sync(conflicts: &Vec<Conflict>) -> Markup {
@@ -487,7 +486,7 @@ async fn handle_sync(Form(body): Form<SyncForm>) -> impl IntoResponse {
     match with_ctx(|ctx| {
         let args = convert_sync_form(&body)?;
         save_temp(ctx)?;
-        let details = try_sync_branch(&ctx, &get_head_name(ctx)?, Some(&args))?;
+        let details = try_sync_branch(ctx, &get_head_name(ctx)?, Some(&args))?;
         pop_and_reset(ctx)?;
         Ok(details)
     }) {
@@ -503,11 +502,11 @@ async fn handle_sync(Form(body): Form<SyncForm>) -> impl IntoResponse {
 }
 
 async fn handle_new(Form(body): Form<NewArgs>) -> impl IntoResponse {
-    api_handler(move |ctx| new_command(&ctx, &body))
+    api_handler(move |ctx| new_command(ctx, &body))
 }
 
 async fn handle_load(Form(body): Form<LoadArgs>) -> impl IntoResponse {
-    api_handler(move |ctx| load_command(&ctx, &body))
+    api_handler(move |ctx| load_command(ctx, &body))
 }
 
 #[derive(Deserialize, Debug)]
@@ -518,7 +517,7 @@ struct DeleteForm {
 async fn handle_delete(Form(body): Form<DeleteForm>) -> impl IntoResponse {
     api_handler(|ctx| {
         delete_command(
-            &ctx,
+            ctx,
             &DeleteArgs {
                 names: vec![body.name],
             },
@@ -527,7 +526,7 @@ async fn handle_delete(Form(body): Form<DeleteForm>) -> impl IntoResponse {
 }
 
 async fn handle_prune() -> impl IntoResponse {
-    api_handler(|ctx| prune_command(&ctx))
+    api_handler(prune_command)
 }
 
 async fn csrf_check<B>(
@@ -557,7 +556,7 @@ pub async fn ui_command(_ctx: &Ctx) -> Attempt {
     OsRng.fill_bytes(&mut key);
 
     let state = CsrfState {
-        token: base64::engine::general_purpose::STANDARD_NO_PAD.encode(&key),
+        token: base64::engine::general_purpose::STANDARD_NO_PAD.encode(key),
     };
 
     let api = Router::new()
@@ -589,11 +588,8 @@ pub async fn ui_command(_ctx: &Ctx) -> Attempt {
         for iteration in 0..100 {
             let port = 8000 + offset + iteration;
             let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), port);
-            match axum::Server::try_bind(&addr) {
-                Ok(l) => {
-                    return l;
-                }
-                _ => {}
+            if let Ok(l) = axum::Server::try_bind(&addr) {
+                return l;
             }
         }
         panic!("Unable to find unused port");

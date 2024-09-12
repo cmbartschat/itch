@@ -13,13 +13,13 @@ pub fn split_command(ctx: &Ctx, args: &SplitArgs) -> Attempt {
 
     let name: String = match &args.name {
         Some(n) => {
-            if n.len() > 0 {
+            if !n.is_empty() {
                 Ok(n.to_string())
             } else {
-                choose_random_branch_name(&ctx)
+                choose_random_branch_name(ctx)
             }
         }
-        None => choose_random_branch_name(&ctx),
+        None => choose_random_branch_name(ctx),
     }?;
 
     let head_commit = ctx.repo.head()?.peel_to_commit()?;

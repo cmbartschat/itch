@@ -13,12 +13,12 @@ pub struct Timer {
 impl Timer {
     pub fn new<'a>(name: &'static str) -> Self {
         eprintln!("[{}]: begin", name);
-        return Self {
+        Self {
             name,
             start: Instant::now(),
             last: None,
             done: false,
-        };
+        }
     }
 
     pub fn step(&mut self, name: &'static str) {

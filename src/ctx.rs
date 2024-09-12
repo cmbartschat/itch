@@ -39,15 +39,15 @@ impl Ctx {
     }
 
     pub fn is_pipe(&self) -> bool {
-        return self.mode == Mode::Pipe;
+        self.mode == Mode::Pipe
     }
 }
 
 pub fn init_ctx() -> Maybe<Ctx> {
     let repo = Repository::open_from_env()?;
-    return Ok(Ctx {
+    Ok(Ctx {
         repo,
         mode: Mode::Unknown,
         no_color: false,
-    });
+    })
 }

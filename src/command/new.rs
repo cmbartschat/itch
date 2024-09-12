@@ -9,13 +9,13 @@ use crate::{
 pub fn new_command(ctx: &Ctx, args: &NewArgs) -> Attempt {
     let name = match &args.name {
         Some(n) => {
-            if n.len() > 0 {
+            if !n.is_empty() {
                 Ok(n.to_string())
             } else {
-                choose_random_branch_name(&ctx)
+                choose_random_branch_name(ctx)
             }
         }
-        None => choose_random_branch_name(&ctx),
+        None => choose_random_branch_name(ctx),
     }?;
 
     let base_branch = ctx.repo.find_branch("main", git2::BranchType::Local)?;
@@ -24,7 +24,7 @@ pub fn new_command(ctx: &Ctx, args: &NewArgs) -> Attempt {
 
     ctx.repo.branch(&name, &base_commit, false)?;
 
-    load_command(&ctx, &LoadArgs { name })?;
+    load_command(ctx, &LoadArgs { name })?;
 
     Ok(())
 }

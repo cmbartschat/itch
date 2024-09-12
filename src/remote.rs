@@ -18,7 +18,7 @@ fn get_remote_prefix() -> Maybe<String> {
     }
 }
 
-fn setup_remote_callbacks<'a>(ctx: &'a Ctx) -> RemoteCallbacks<'a> {
+fn setup_remote_callbacks(ctx: &Ctx) -> RemoteCallbacks<'_> {
     let mut callbacks = RemoteCallbacks::new();
 
     callbacks
@@ -47,7 +47,7 @@ fn setup_remote_callbacks<'a>(ctx: &'a Ctx) -> RemoteCallbacks<'a> {
     callbacks
 }
 
-fn setup_push_options<'a>(ctx: &'a Ctx) -> PushOptions<'a> {
+fn setup_push_options(ctx: &Ctx) -> PushOptions<'_> {
     let mut options = PushOptions::new();
     options
         .proxy_options(ProxyOptions::new())
@@ -56,7 +56,7 @@ fn setup_push_options<'a>(ctx: &'a Ctx) -> PushOptions<'a> {
     options
 }
 
-fn setup_fetch_options<'a>(ctx: &'a Ctx) -> FetchOptions<'a> {
+fn setup_fetch_options(ctx: &Ctx) -> FetchOptions<'_> {
     let mut options = FetchOptions::new();
     options
         .proxy_options(ProxyOptions::new())
@@ -140,34 +140,31 @@ pub fn push_main(ctx: &Ctx) -> Attempt {
 }
 
 pub fn try_push_branch(ctx: &Ctx, name: &str) {
-    match push_branch(ctx, name) {
-        Err(e) => show_warning(
+    if let Err(e) = push_branch(ctx, name) {
+        show_warning(
             ctx,
             &format!(
                 "Failed to update remote; continuing anyway ({})",
                 e.message()
             ),
-        ),
-        Ok(()) => {}
+        )
     }
 }
 
 pub fn try_push_main(ctx: &Ctx) {
-    match push_main(ctx) {
-        Err(e) => show_warning(
+    if let Err(e) = push_main(ctx) {
+        show_warning(
             ctx,
             &format!("Failed to push remote; continuing anyway ({})", e.message()),
-        ),
-        Ok(()) => {}
+        )
     }
 }
 
 pub fn try_pull_main(ctx: &Ctx) {
-    match pull_main(ctx) {
-        Err(e) => show_warning(
+    if let Err(e) = pull_main(ctx) {
+        show_warning(
             ctx,
             &format!("Failed to pull remote; continuing anyway ({})", e.message()),
-        ),
-        Ok(()) => {}
+        )
     }
 }

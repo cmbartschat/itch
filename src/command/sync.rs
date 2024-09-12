@@ -50,7 +50,7 @@ fn ask_option(prompt: &str, options: &[&str], default: Option<&str>) -> String {
 
     for (index, option) in options.iter().enumerate() {
         if default == Some(option) {
-            eprint!("{} (default)", option.to_string());
+            eprint!("{} (default)", option);
         } else if let Some(shortcut) = fullform_map.get(*option) {
             eprint!("({}){}", shortcut, &option[shortcut.len()..]);
         }
@@ -73,7 +73,7 @@ fn ask_option(prompt: &str, options: &[&str], default: Option<&str>) -> String {
         let mut input = String::new();
         io::stdin().read_line(&mut input).unwrap();
         input = input.trim().to_string();
-        if options.contains(&&input.as_str()) {
+        if options.contains(&input.as_str()) {
             return input;
         }
         if let Some(input) = shortcut_map.get_mut(&input) {
@@ -125,7 +125,7 @@ fn apply_resolution(
     conflict: &IndexConflict,
     resolution: &ResolutionChoice,
 ) -> Attempt {
-    let current_path = extract_path(&conflict)?;
+    let current_path = extract_path(conflict)?;
 
     match (resolution, conflict.our.as_ref(), conflict.their.as_ref()) {
         (ResolutionChoice::Incoming, _, None) => delete_entry(index, &current_path),
@@ -147,7 +147,7 @@ fn resolve_conflict(
     resolutions: Option<&ResolutionMap>,
 ) -> Maybe<Option<Conflict>> {
     let repo = &ctx.repo;
-    let current_path = extract_path(&conflict)?;
+    let current_path = extract_path(conflict)?;
     let current_path_string: String = current_path.to_string_lossy().into();
 
     if let Some(resolution) = resolutions.and_then(|f| f.get(&current_path_string)) {
@@ -270,7 +270,7 @@ pub fn try_sync_branch(
 ) -> Maybe<SyncDetails> {
     let repo = &ctx.repo;
     let branch_ref = repo
-        .find_branch(&branch_name, git2::BranchType::Local)?
+        .find_branch(branch_name, git2::BranchType::Local)?
         .into_reference();
     let main_ref = repo
         .find_branch("main", git2::BranchType::Local)?
@@ -336,7 +336,7 @@ pub fn try_sync_branch(
             }
         };
 
-        if details.len() > 0 {
+        if !details.is_empty() {
             return Ok(SyncDetails::Conflicted(details));
         }
 
@@ -361,7 +361,7 @@ pub fn try_sync_branch(
     {
         repo.reset(final_commit.as_object(), git2::ResetType::Hard, None)?;
     } else {
-        repo.branch(&branch_name, &final_commit, true)?;
+        repo.branch(branch_name, &final_commit, true)?;
     }
 
     Ok(SyncDetails::Complete)
@@ -379,11 +379,11 @@ pub fn sync_command(ctx: &Ctx, args: &SyncArgs) -> Attempt {
 
     try_pull_main(ctx);
 
-    if args.names.len() == 0 {
+    if args.names.is_empty() {
         sync_branch(ctx, &get_head_name(ctx)?)?;
     }
     for branch in &args.names {
-        sync_branch(ctx, &branch)?;
+        sync_branch(ctx, branch)?;
     }
 
     pop_and_reset(ctx)

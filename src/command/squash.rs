@@ -29,7 +29,7 @@ pub fn squash_command(ctx: &Ctx) -> Attempt {
         None,
         &signature,
         &signature,
-        &message,
+        message,
         &tree,
         &[&parent],
     )?)?;

@@ -128,7 +128,7 @@ fn extract_path(d: &DiffFile) -> String {
 
 fn extract_optional_path(d: &DiffFile) -> Option<String> {
     if d.exists() {
-        Some(extract_path(&d))
+        Some(extract_path(d))
     } else {
         None
     }
@@ -142,30 +142,30 @@ struct SegmentedStatus {
 
 impl SegmentedStatus {
     fn from_committed_delta(delta: &DiffDelta) -> Self {
-        return Self {
-            committed: Some(FileStatus::from_delta(&delta)),
+        Self {
+            committed: Some(FileStatus::from_delta(delta)),
             work: None,
-        };
+        }
     }
     fn from_work_delta(delta: &DiffDelta) -> Self {
-        return Self {
+        Self {
             committed: None,
-            work: Some(FileStatus::from_delta(&delta)),
-        };
+            work: Some(FileStatus::from_delta(delta)),
+        }
     }
     fn maybe_add_work(&mut self, delta: &DiffDelta) -> bool {
         if let Some(committed) = &self.committed {
             if let Some(committed_path) = &committed.to {
                 if let Some(new_base_path) = extract_optional_path(&delta.old_file()) {
                     if &new_base_path == committed_path {
-                        self.work = Some(FileStatus::from_delta(&delta));
+                        self.work = Some(FileStatus::from_delta(delta));
                         return true;
                     }
                 }
             }
         }
 
-        return false;
+        false
     }
     fn print(self) {
         let mut committed_char = ' ';
@@ -182,22 +182,21 @@ impl SegmentedStatus {
         }
         if let Some(work) = self.work {
             work_char = work.char();
-            if potential_rename_chain.len() == 0 {
+            if potential_rename_chain.is_empty() {
                 potential_rename_chain.push(work.from);
             }
             potential_rename_chain.push(work.to);
         }
 
-        potential_rename_chain.iter().for_each(|p| match p {
-            Some(v) => {
+        potential_rename_chain.iter().for_each(|p| {
+            if let Some(v) = p {
                 rename_chain.push(v.clone());
             }
-            _ => {}
         });
 
         let mut rename_chain = potential_rename_chain
             .into_iter()
-            .filter_map(|f| f)
+            .flatten()
             .collect::<Vec<String>>();
 
         if let Some(first) = rename_chain.first() {
@@ -308,11 +307,11 @@ pub fn status_command(ctx: &Ctx, args: &StatusArgs) -> Attempt {
 
     let base_commit = ctx
         .repo
-        .find_branch(&base, git2::BranchType::Local)?
+        .find_branch(base, git2::BranchType::Local)?
         .into_reference()
         .peel_to_commit()?;
 
-    let head_branch = ctx.repo.find_branch(&head_name, git2::BranchType::Local)?;
+    let head_branch = ctx.repo.find_branch(head_name, git2::BranchType::Local)?;
 
     let is_head = head_branch.is_head();
 
@@ -392,8 +391,8 @@ pub fn status_command(ctx: &Ctx, args: &StatusArgs) -> Attempt {
         dirty: head_dirty,
     });
 
-    if statuses.len() > 0 {
-        println!("");
+    if !statuses.is_empty() {
+        println!();
 
         for status in statuses.into_iter() {
             status.print();
