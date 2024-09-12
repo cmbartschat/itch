@@ -358,6 +358,7 @@ fn render_sync(conflicts: &Vec<Conflict>) -> Markup {
                                 (info.path) " has conflicts." br;
                                 (radio("Keep your version", &info.path, "incoming", true))
                                 (radio("Reset to main version", &info.path, "base", false))
+                                (radio("Resolve conflicts later", &info.path, "later", false))
 
                                 details {
                                     summary {"Your content"}
@@ -372,6 +373,14 @@ fn render_sync(conflicts: &Vec<Conflict>) -> Markup {
                                     pre {
                                         code {
                                             (info.main_content)
+                                        }
+                                    }
+                                }
+                                details {
+                                    summary {"With conflicts"}
+                                    pre {
+                                        code {
+                                            (info.merge_content)
                                         }
                                     }
                                 }
@@ -471,6 +480,8 @@ fn convert_sync_form(body: &SyncForm) -> Maybe<ResolutionMap> {
             ResolutionChoice::Incoming
         } else if value == "base" {
             ResolutionChoice::Base
+        } else if value == "later" {
+            ResolutionChoice::Later
         } else if let Some(("manual", value)) = value.split_once(":") {
             ResolutionChoice::Manual(value.into())
         } else {
