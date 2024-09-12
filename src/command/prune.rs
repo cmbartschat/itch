@@ -12,8 +12,8 @@ pub fn prune_command(ctx: &Ctx) -> Attempt {
         .peel_to_commit()?
         .id();
 
-    for branch in ctx.repo.branches(Some(git2::BranchType::Local))? {
-        if let Ok((branch, BranchType::Local)) = branch {
+    for branch in ctx.repo.branches(Some(git2::BranchType::Local))?.flatten() {
+        if let (branch, BranchType::Local) = branch {
             let Some(name) = branch.name()? else {
                 continue;
             };
