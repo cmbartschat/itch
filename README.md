@@ -6,6 +6,14 @@ Itch is a source control tool that lets you get work done faster. It is:
 - usable on the command line or as a graphical interface
 - easy to use either way
 
+## Installation
+
+TODO
+
+## Getting started
+
+- `itch init` start a new repository in the current folder
+
 ## Using the GUI
 
 `itch ui` - Open the graphical user interface. While the command is running in the terminal, the interface will remain available.

@@ -1,9 +1,10 @@
 use std::io::IsTerminal;
 use std::{env, io::stdout};
 
+use init::init_command;
 use split::split_command;
 
-use crate::error::Attempt;
+use crate::error::{fail, Attempt};
 use crate::{
     cli::{Cli, Commands},
     ctx::{init_ctx, Mode},
@@ -18,6 +19,7 @@ use self::{
 
 mod delete;
 mod diff;
+mod init;
 mod list;
 mod load;
 mod log;
@@ -33,6 +35,10 @@ mod ui;
 mod unsave;
 
 pub async fn run_command(cli: &Cli) -> Attempt {
+    if let Commands::Init = cli.command {
+        return init_command();
+    }
+
     let mut ctx = init_ctx()?;
     ctx.set_mode(if stdout().lock().is_terminal() {
         Mode::Cli
@@ -44,6 +50,7 @@ pub async fn run_command(cli: &Cli) -> Attempt {
     }
 
     match &cli.command {
+        Commands::Init => fail("Unexpected command after block"),
         Commands::Delete(args) => delete_command(&ctx, args),
         Commands::Diff(args) => diff_command(&ctx, args),
         Commands::List => list_command(&ctx),

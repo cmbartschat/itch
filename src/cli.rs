@@ -14,6 +14,9 @@ pub struct Cli {
 
 #[derive(Subcommand)]
 pub enum Commands {
+    #[command(about = "Initialize an empty repo in the current folder")]
+    Init,
+
     #[command(about = "Start a new branch")]
     New(NewArgs),
 

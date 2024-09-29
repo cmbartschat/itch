@@ -9,7 +9,7 @@
 - [x] Add remote pull/push
 - [x] Add unsave
 - [x] Add split
-- [ ] Add init
+- [x] Add init
 - [ ] Add rename
 - [ ] Add revert
 - [ ] Add undo
