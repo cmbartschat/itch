@@ -11,7 +11,6 @@ use crate::{
 pub fn connect_command(ctx: &Ctx, args: &ConnectArgs) -> Attempt {
     save_temp(ctx)?;
 
-    println!("you want me to connect to {}", args.url);
     connect_remote(ctx, &args.url)?;
 
     let mut main_branch = ctx.repo.find_branch("main", git2::BranchType::Local)?;
@@ -24,13 +23,19 @@ pub fn connect_command(ctx: &Ctx, args: &ConnectArgs) -> Attempt {
                 return fail("Added remote, but local main branch has diverged from origin.");
             }
 
-            let options = ["ignore", "reset"];
-            match ask_option("Failed to pull from origin.", &options, None).as_str() {
-                "ignore" => {}
-                "reset" => {
-                    reset_main_to_remote(ctx)?;
-                }
-                _ => panic!("Unhandled option"),
+            let ignore_option = "ignore";
+            let reset_option = "reset local to main";
+
+            let options = [ignore_option, reset_option];
+
+            let chosen_option = ask_option(
+                "Conflicts detected between local main and remote main.",
+                &options,
+                None,
+            );
+
+            if chosen_option == reset_option {
+                reset_main_to_remote(ctx)?;
             }
         }
     }
