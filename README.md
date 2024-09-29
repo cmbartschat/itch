@@ -78,11 +78,13 @@ This will show where your branch is compared to main, what files have changed, a
 
 ## Synchronizing with a remote
 
-If your repository has a remote, itch will use it. Any time you save, the branch will be saved to the remote as `<username>-<branchname>`. Use the `ITCH_REMOTE_PREFIX` if you want a different prefix before the branch name.
+- `itch connect <url>` - connect a repo to a remote git service
+- `itch disconnect` - disconnect from the current remote
+
+If you have remote, it will be used by itch to backup pending changes, and synchronize shared changes. Any time you save, the branch will be saved to the remote as `<username>-<branchname>`. Use the `ITCH_REMOTE_PREFIX` if you want a different prefix before the branch name.
 
 itch will also push and pull changes from the remote main branch, allowing you to collaborate with others in the repository.
 
 ## Recovering from bad states
 
-Itch is made to reduce the chances of mistakes during normal operation. If something does happen, it might be time to drop down into git. git has powerful tools for manipulating state and using the reflog to recover 
-"lost" work is usually possible.
+Itch is made to reduce the chances of mistakes during normal operation. If something does happen, it might be time to drop down into git. git has powerful tools for manipulating state and using the reflog to recover "lost" work is usually possible.

@@ -131,6 +131,29 @@ pub fn pull_main(ctx: &Ctx) -> Attempt {
     }
 }
 
+pub fn reset_main_to_remote(ctx: &Ctx) -> Attempt {
+    let local_main = ctx.repo.find_branch("main", git2::BranchType::Local)?;
+
+    let remote_commit = ctx
+        .repo
+        .find_branch("origin/main", git2::BranchType::Remote)?
+        .into_reference()
+        .peel_to_commit()?;
+
+    let needs_reset = local_main.is_head();
+
+    local_main
+        .into_reference()
+        .set_target(remote_commit.id(), "Reset main to origin/main")?;
+
+    if needs_reset {
+        let object = ctx.repo.head()?.peel_to_commit()?.into_object();
+        ctx.repo.reset(&object, git2::ResetType::Hard, None)?;
+    }
+
+    Ok(())
+}
+
 pub fn push_main(ctx: &Ctx) -> Attempt {
     let remote = get_remote(ctx)?;
     if let Some(mut remote) = remote {
@@ -167,4 +190,32 @@ pub fn try_pull_main(ctx: &Ctx) {
             &format!("Failed to pull remote; continuing anyway ({})", e.message()),
         )
     }
+}
+
+pub fn connect_remote(ctx: &Ctx, url: &str) -> Attempt {
+    match get_remote(ctx) {
+        Ok(Some(_)) => {
+            return fail("Already have a remote.");
+        }
+        Ok(None) => {}
+        Err(e) => return Err(e),
+    };
+
+    let mut remote = ctx.repo.remote("origin", url)?;
+
+    remote.fetch(
+        &["main"],
+        Some(&mut setup_fetch_options(ctx)),
+        Some("Fetch main"),
+    )?;
+    Ok(())
+}
+
+pub fn disconnect_remote(ctx: &Ctx) -> Attempt {
+    match get_remote(ctx)? {
+        Some(remote) => ctx.repo.remote_delete(remote.name().unwrap())?,
+        None => show_warning(ctx, "No remote to disconnect."),
+    };
+
+    Ok(())
 }

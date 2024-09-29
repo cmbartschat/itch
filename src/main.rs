@@ -14,6 +14,7 @@ mod error;
 mod output;
 mod path;
 mod print;
+mod prompt;
 mod remote;
 mod reset;
 mod save;

@@ -1,6 +1,8 @@
 use std::io::IsTerminal;
 use std::{env, io::stdout};
 
+use connect::connect_command;
+use disconnect::disconnect_command;
 use init::init_command;
 use split::split_command;
 
@@ -17,8 +19,10 @@ use self::{
     ui::ui_command, unsave::unsave_command,
 };
 
+mod connect;
 mod delete;
 mod diff;
+mod disconnect;
 mod init;
 mod list;
 mod load;
@@ -51,6 +55,8 @@ pub async fn run_command(cli: &Cli) -> Attempt {
 
     match &cli.command {
         Commands::Init => fail("Unexpected command after block"),
+        Commands::Connect(args) => connect_command(&ctx, args),
+        Commands::Disconnect => disconnect_command(&ctx),
         Commands::Delete(args) => delete_command(&ctx, args),
         Commands::Diff(args) => diff_command(&ctx, args),
         Commands::List => list_command(&ctx),

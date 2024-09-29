@@ -17,6 +17,12 @@ pub enum Commands {
     #[command(about = "Initialize an empty repo in the current folder")]
     Init,
 
+    #[command(about = "Connect to a remote git service")]
+    Connect(ConnectArgs),
+
+    #[command(about = "Remove remote git service")]
+    Disconnect,
+
     #[command(about = "Start a new branch")]
     New(NewArgs),
 
@@ -101,4 +107,9 @@ pub struct StatusArgs {
 #[derive(Args, Deserialize, Debug)]
 pub struct DiffArgs {
     pub args: Vec<String>,
+}
+
+#[derive(Args, Deserialize, Debug)]
+pub struct ConnectArgs {
+    pub url: String,
 }
