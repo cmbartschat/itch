@@ -3,16 +3,16 @@
 Itch is a source control tool that lets you get work done faster. It is:
 
 - compatible with git
-- usable on the command line or as a graphical interface
+- available on the command line or as a graphical interface
 - easy to use either way
 
 ## Installation
 
-TODO
+`brew install cmbartschat/itch/itch`
 
 ## Getting started
 
-- `itch init` start a new repository in the current folder
+`itch init` start a new repository in the current folder
 
 ## Using the GUI
 
@@ -78,8 +78,8 @@ This will show where your branch is compared to main, what files have changed, a
 
 ## Synchronizing with a remote
 
-- `itch connect <url>` - connect a repo to a remote git service
-- `itch disconnect` - disconnect from the current remote
+`itch connect <url>` - connect a repo to a remote git service
+`itch disconnect` - disconnect from the current remote
 
 If you have remote, it will be used by itch to backup pending changes, and synchronize shared changes. Any time you save, the branch will be saved to the remote as `<username>-<branchname>`. Use the `ITCH_REMOTE_PREFIX` if you want a different prefix before the branch name.
 
