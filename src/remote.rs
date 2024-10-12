@@ -81,6 +81,9 @@ fn get_remote(ctx: &Ctx) -> Maybe<Option<Remote>> {
 }
 
 pub fn push_branch(ctx: &Ctx, branch: &str) -> Attempt {
+    if branch == "main" {
+        return push_main(ctx);
+    }
     let remote = get_remote(ctx)?;
     if let Some(mut remote) = remote {
         let remote_prefix = get_remote_prefix()?;
