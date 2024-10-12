@@ -2,7 +2,7 @@ use git2::{BranchType, ErrorCode};
 
 use crate::{
     ctx::Ctx,
-    error::{fail, Maybe},
+    error::{fail, inner_fail, Maybe},
 };
 
 pub fn local_branch_exists(ctx: &Ctx, branch: &str) -> Maybe<bool> {
@@ -28,8 +28,23 @@ pub fn choose_random_branch_name(ctx: &Ctx) -> Maybe<String> {
     fail("Could not autogenerate branch name.")
 }
 
-pub fn get_head_name(ctx: &Ctx) -> Maybe<String> {
-    let repo_head = ctx.repo.head()?;
-    let head_name_str = repo_head.name().unwrap();
-    Ok(head_name_str[head_name_str.rfind("/").map_or(0, |e| e + 1)..].to_owned())
+pub fn get_current_branch(ctx: &Ctx) -> Maybe<String> {
+    for branch in ctx.repo.branches(Some(git2::BranchType::Local))? {
+        let branch = branch?.0;
+        if !branch.is_head() {
+            continue;
+        }
+
+        let name_attempt = branch
+            .name()
+            .map_err(|_| inner_fail("Invalid branch name"))?;
+
+        if let Some(name) = name_attempt {
+            return Ok(name.to_string());
+        } else {
+            return fail("Current branch appears to have no name");
+        }
+    }
+
+    fail("Failed to locate active branch")
 }

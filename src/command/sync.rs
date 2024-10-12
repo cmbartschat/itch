@@ -9,7 +9,7 @@ use git2::{
 };
 
 use crate::{
-    branch::get_head_name,
+    branch::get_current_branch,
     cli::SyncArgs,
     ctx::Ctx,
     diff::get_merge_text,
@@ -335,7 +335,7 @@ pub fn sync_command(ctx: &Ctx, args: &SyncArgs) -> Attempt {
     try_pull_main(ctx);
 
     if args.names.is_empty() {
-        sync_branch(ctx, &get_head_name(ctx)?)?;
+        sync_branch(ctx, &get_current_branch(ctx)?)?;
     }
     for branch in &args.names {
         sync_branch(ctx, branch)?;

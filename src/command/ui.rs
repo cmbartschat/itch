@@ -15,7 +15,7 @@ use rand::rngs::OsRng;
 use serde::Deserialize;
 
 use crate::{
-    branch::get_head_name,
+    branch::get_current_branch,
     cli::{DeleteArgs, LoadArgs, NewArgs, SaveArgs},
     command::new::new_command,
     ctx::{init_ctx, Ctx},
@@ -497,7 +497,7 @@ async fn handle_sync(Form(body): Form<SyncForm>) -> impl IntoResponse {
     let sync_result = with_ctx(|ctx| {
         let args = convert_sync_form(&body)?;
         save_temp(ctx)?;
-        let details = try_sync_branch(ctx, &get_head_name(ctx)?, Some(&args))?;
+        let details = try_sync_branch(ctx, &get_current_branch(ctx)?, Some(&args))?;
         pop_and_reset(ctx)?;
         Ok(details)
     });
