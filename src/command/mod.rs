@@ -4,6 +4,7 @@ use std::{env, io::stdout};
 use connect::connect_command;
 use disconnect::disconnect_command;
 use init::init_command;
+use revert::revert_command;
 use split::split_command;
 
 use crate::error::{fail, Attempt};
@@ -30,6 +31,7 @@ mod log;
 mod merge;
 mod new;
 mod prune;
+mod revert;
 mod save;
 mod split;
 mod squash;
@@ -72,5 +74,6 @@ pub async fn run_command(cli: &Cli) -> Attempt {
         Commands::Sync(args) => sync_command(&ctx, args),
         Commands::Ui => ui_command(&ctx).await,
         Commands::Unsave => unsave_command(&ctx),
+        Commands::Revert(args) => revert_command(&ctx, args),
     }
 }
