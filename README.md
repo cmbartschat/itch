@@ -54,6 +54,10 @@ After you make changes to your files, you'll want to save them. Initially, saves
 
 `itch merge` - Merge saved changes into the main branch
 
+`itch revert file.txt file2.txt` - Revert changes to files
+
+`itch revert folder/path` - Revert changes in a folder
+
 ## Pulling in changes
     
 `itch sync` - Bring the latest changes from main into this branch

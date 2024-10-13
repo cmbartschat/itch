@@ -67,6 +67,9 @@ pub enum Commands {
 
     #[command(about = "Clear out all save commits without reverting changes")]
     Unsave,
+
+    #[command(about = "Undo changes to files since the last merge")]
+    Revert(RevertArgs),
 }
 
 #[derive(Args, Deserialize, Debug)]
@@ -112,4 +115,9 @@ pub struct DiffArgs {
 #[derive(Args, Deserialize, Debug)]
 pub struct ConnectArgs {
     pub url: String,
+}
+
+#[derive(Args, Deserialize, Debug)]
+pub struct RevertArgs {
+    pub args: Vec<String>,
 }
