@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::{rc::Rc, vec};
 
 use git2::{Commit, Delta, DiffDelta, DiffFile, StatusOptions};
 
@@ -11,17 +11,18 @@ use crate::{
 };
 
 #[derive(Debug)]
-struct BranchSummary<'a> {
-    name: &'a str,
-    latest_message: Option<&'a str>,
-    commit_count: usize,
+pub struct BranchSummary {
+    pub name: String,
+    pub latest_message: Option<String>,
+    pub commit_count: usize,
 }
 
 #[derive(Debug)]
-struct ForkInfo<'a> {
-    base: BranchSummary<'a>,
-    head: BranchSummary<'a>,
-    dirty: bool,
+pub struct ForkInfo {
+    pub base: BranchSummary,
+    pub head: BranchSummary,
+    pub dirty: bool,
+    pub file_statuses: Vec<SegmentedStatus>,
 }
 
 /*
@@ -89,10 +90,10 @@ struct ForkInfo<'a> {
 */
 
 #[derive(Debug)]
-struct FileStatus {
-    from: Option<String>,
-    to: Option<String>,
-    status: Delta,
+pub struct FileStatus {
+    pub from: Option<String>,
+    pub to: Option<String>,
+    pub status: Delta,
 }
 
 impl FileStatus {
@@ -107,13 +108,12 @@ impl FileStatus {
     fn char(&self) -> char {
         match self.status {
             Delta::Unmodified => ' ',
-            Delta::Added => 'A',
+            Delta::Added | Delta::Untracked => 'A',
             Delta::Deleted => 'D',
             Delta::Modified => 'M',
             Delta::Renamed => 'R',
             Delta::Copied => 'C',
             Delta::Typechange => 'T',
-            Delta::Untracked => 'A',
             _ => '?',
         }
     }
@@ -135,9 +135,9 @@ fn extract_optional_path(d: &DiffFile) -> Option<String> {
 }
 
 #[derive(Debug)]
-struct SegmentedStatus {
-    committed: Option<FileStatus>,
-    work: Option<FileStatus>,
+pub struct SegmentedStatus {
+    pub committed: Option<FileStatus>,
+    pub work: Option<FileStatus>,
 }
 
 impl SegmentedStatus {
@@ -167,6 +167,26 @@ impl SegmentedStatus {
 
         false
     }
+
+    pub fn get_work_rename_chain(&self) -> Vec<String> {
+        if let Some(work) = &self.work {
+            match (&work.from, &work.to) {
+                (Some(from), Some(to)) => {
+                    if from != to {
+                        vec![from.to_string(), to.to_string()]
+                    } else {
+                        vec![from.to_string()]
+                    }
+                }
+                (None, Some(to)) => vec![to.to_string()],
+                (Some(from), None) => vec![from.to_string()],
+                (None, None) => vec![],
+            }
+        } else {
+            vec![]
+        }
+    }
+
     fn print(self) {
         let mut committed_char = ' ';
         let mut work_char = ' ';
@@ -222,7 +242,7 @@ impl SegmentedStatus {
 }
 
 fn get_post_fork_commits(info: &BranchSummary) -> String {
-    let message_part = match info.latest_message {
+    let message_part = match &info.latest_message {
         Some(s) => {
             let mut final_message = String::from(s);
             final_message.truncate(25);
@@ -241,8 +261,8 @@ fn get_post_fork_commits(info: &BranchSummary) -> String {
 }
 
 fn draw_fork_diagram(info: &ForkInfo) {
-    let base_name = info.base.name;
-    let head_name = info.head.name;
+    let base_name = &info.base.name;
+    let head_name = &info.head.name;
     let head_display = get_post_fork_commits(&info.head);
     let base_display = get_post_fork_commits(&info.base);
 
@@ -296,10 +316,10 @@ file1.txt
 + a
 - b
  */
-pub fn status_command(ctx: &Ctx, args: &StatusArgs) -> Attempt {
+pub fn resolve_fork_info(ctx: &Ctx, branch_name: Option<&str>) -> Maybe<ForkInfo> {
     let repo_head = ctx.repo.head()?;
-    let head_name: &str = match &args.name {
-        Some(name) => name.as_str(),
+    let head_name: &str = match &branch_name {
+        Some(name) => name,
         None => repo_head.shorthand().unwrap(),
     };
 
@@ -377,24 +397,31 @@ pub fn status_command(ctx: &Ctx, args: &StatusArgs) -> Attempt {
         });
     }
 
-    draw_fork_diagram(&ForkInfo {
+    return Ok(ForkInfo {
         base: BranchSummary {
-            name: base,
-            latest_message: base_commit.summary(),
+            name: base.to_string(),
+            latest_message: base_commit.summary().map(|e| e.to_string()),
             commit_count: base_past_fork + 1,
         },
         head: BranchSummary {
-            name: head_name,
-            latest_message: head_commit.summary(),
+            name: head_name.to_string(),
+            latest_message: head_commit.summary().map(|e| e.to_string()),
             commit_count: head_past_fork,
         },
         dirty: head_dirty,
+        file_statuses: statuses,
     });
+}
 
-    if !statuses.is_empty() {
+pub fn status_command(ctx: &Ctx, args: &StatusArgs) -> Attempt {
+    let info = resolve_fork_info(ctx, args.name.as_deref())?;
+
+    draw_fork_diagram(&info);
+
+    if !info.file_statuses.is_empty() {
         println!();
 
-        for status in statuses.into_iter() {
+        for status in info.file_statuses.into_iter() {
             status.print();
         }
     }

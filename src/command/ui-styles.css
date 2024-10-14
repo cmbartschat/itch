@@ -10,6 +10,10 @@ body {
   --bg: white;
   --fg: black;
   --dec: #bbb;
+  --orange: #cf9f1d;
+  --red: #ce1818;
+  --green: #1a5e1a;
+  --blue: #393987;
 
   color: var(--fg);
   background: var(--bg);
@@ -34,6 +38,11 @@ ul {
     --bg: black;
     --fg: white;
     --dec: #4f4f4f;
+
+    --orange: #e6c986;
+    --red: #cb7c7c;
+    --green: #7acd7a;
+    --blue: rgb(87, 139, 235);
   }
 }
 
@@ -161,4 +170,38 @@ fieldset {
   margin: 0;
   padding: 0.5rem 1rem;
   width: 100%;
+}
+
+.status-files {
+  line-height: 1.7;
+  margin-left: 0;
+  padding-left: 0;
+}
+
+.status-files li {
+  list-style: none;
+}
+
+.status-other::before {
+  content: "? ";
+}
+
+.status-added::before {
+  content: "A ";
+  color: var(--green);
+}
+
+.status-modified::before {
+  content: "M ";
+  color: var(--orange);
+}
+
+.status-deleted::before {
+  content: "D ";
+  color: var(--red);
+}
+
+.status-renamed::before {
+  content: "R ";
+  color: var(--blue);
 }

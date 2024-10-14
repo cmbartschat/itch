@@ -10,7 +10,7 @@ use axum_extra::extract::{
     cookie::{Cookie, SameSite},
     CookieJar,
 };
-use git2::Commit;
+use git2::{Commit, Delta};
 use rand::rngs::OsRng;
 use serde::Deserialize;
 
@@ -37,8 +37,14 @@ use axum::{
 use maud::{html, Markup, PreEscaped, DOCTYPE};
 
 use super::{
-    delete::delete_command, load::load_command, merge::merge_command, prune::prune_command,
-    save::save_command, squash::squash_command, sync::try_sync_branch,
+    delete::delete_command,
+    load::load_command,
+    merge::merge_command,
+    prune::prune_command,
+    save::save_command,
+    squash::squash_command,
+    status::{resolve_fork_info, ForkInfo},
+    sync::try_sync_branch,
 };
 
 #[derive(Clone)]
@@ -65,6 +71,30 @@ fn radio(label: &str, name: &str, value: &str, checked: bool) -> Markup {
                 html! {input type="radio" name=(name) value=(value);}
             })
             (label)
+        }
+    }
+}
+
+fn status_class(delta: &Delta) -> &'static str {
+    match delta {
+        Delta::Added | Delta::Untracked => "status-added",
+        Delta::Deleted => "status-deleted",
+        Delta::Modified => "status-modified",
+        Delta::Renamed => "status-renamed",
+        _ => "status-other",
+    }
+}
+
+fn render_file_statuses(info: &DashboardInfo) -> Markup {
+    html! {
+        ul.status-files {
+            @for status in &info.fork_info.file_statuses {
+                @if let Some(work_status) = &status.work {
+                    li class=(status_class(&work_status.status)) {
+                       (status.get_work_rename_chain().join(" → "))
+                    }
+                }
+            }
         }
     }
 }
@@ -111,6 +141,7 @@ struct DashboardInfo {
     unsaved_changes: usize,
     commits_ahead: usize,
     commits_behind: usize,
+    fork_info: ForkInfo,
     branches: Vec<String>,
     workspace: String,
 }
@@ -212,6 +243,7 @@ fn load_dashboard_info() -> Maybe<DashboardInfo> {
         current_branch: head_name.to_owned(),
         unsaved_changes: unsaved_diff.deltas().count(),
         branches,
+        fork_info: resolve_fork_info(&ctx, None)?,
         workspace: ctx
             .repo
             .workdir()
@@ -280,9 +312,9 @@ fn render_dashboard(info: &DashboardInfo) -> Markup {
                             }
                             (btn("submit", "Save", info.unsaved_changes == 0))
                         }
-
-                        p {(info.unsaved_changes) " changes"}
                     }
+
+                    (render_file_statuses(info))
                 }
 
                 div.spaced-down.big-col {
