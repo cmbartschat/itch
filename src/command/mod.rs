@@ -73,7 +73,7 @@ pub async fn run_command(cli: &Cli) -> Attempt {
         Commands::Status(args) => status_command(&ctx, args),
         Commands::Sync(args) => sync_command(&ctx, args),
         Commands::Ui => ui_command(&ctx).await,
-        Commands::Unsave => unsave_command(&ctx),
+        Commands::Unsave(args) => unsave_command(&ctx, args),
         Commands::Revert(args) => revert_command(&ctx, args),
     }
 }
