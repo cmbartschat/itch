@@ -14,28 +14,28 @@ const GIT_FILEMODE_COMMIT: i32 = 0o160000;
 
 fn get_entry_mode(entry: &TreeEntry) -> FileMode {
     let mode = entry.filemode();
-    if (mode == GIT_FILEMODE_UNREADABLE) {
+    if mode == GIT_FILEMODE_UNREADABLE {
         return FileMode::Unreadable;
     }
-    if (mode == GIT_FILEMODE_TREE) {
+    if mode == GIT_FILEMODE_TREE {
         return FileMode::Tree;
     }
-    if (mode == GIT_FILEMODE_BLOB) {
+    if mode == GIT_FILEMODE_BLOB {
         return FileMode::Blob;
     }
-    if (mode == GIT_FILEMODE_BLOB_GROUP_WRITABLE) {
+    if mode == GIT_FILEMODE_BLOB_GROUP_WRITABLE {
         return FileMode::BlobGroupWritable;
     }
-    if (mode == GIT_FILEMODE_BLOB_EXECUTABLE) {
+    if mode == GIT_FILEMODE_BLOB_EXECUTABLE {
         return FileMode::BlobExecutable;
     }
-    if (mode == GIT_FILEMODE_LINK) {
+    if mode == GIT_FILEMODE_LINK {
         return FileMode::Link;
     }
-    if (mode == GIT_FILEMODE_COMMIT) {
+    if mode == GIT_FILEMODE_COMMIT {
         return FileMode::Commit;
     }
-    return FileMode::Unreadable;
+    FileMode::Unreadable
 }
 
 pub fn unsave_command(ctx: &Ctx, args: &UnsaveArgs) -> Attempt {
