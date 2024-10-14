@@ -66,7 +66,7 @@ pub enum Commands {
     Ui,
 
     #[command(about = "Clear out all save commits without reverting changes")]
-    Unsave,
+    Unsave(UnsaveArgs),
 
     #[command(about = "Undo changes to files since the last merge")]
     Revert(RevertArgs),
@@ -119,5 +119,10 @@ pub struct ConnectArgs {
 
 #[derive(Args, Deserialize, Debug)]
 pub struct RevertArgs {
+    pub args: Vec<String>,
+}
+
+#[derive(Args, Deserialize, Debug)]
+pub struct UnsaveArgs {
     pub args: Vec<String>,
 }
