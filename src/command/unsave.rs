@@ -39,8 +39,6 @@ fn get_entry_mode(entry: &TreeEntry) -> FileMode {
 }
 
 pub fn unsave_command(ctx: &Ctx, args: &UnsaveArgs) -> Attempt {
-    println!("You want to unsave: {args:?}");
-    // return Ok(());
     let head_commit = ctx.repo.head()?.peel_to_commit()?;
     let base_commit = ctx
         .repo
@@ -60,9 +58,6 @@ pub fn unsave_command(ctx: &Ctx, args: &UnsaveArgs) -> Attempt {
         let mut new_tree_builder = TreeUpdateBuilder::new();
 
         for file_path in args.args.iter().map(Path::new) {
-            // if (current_tree.get_path(file_path)
-            // new_tree_builder.remove(file_path);
-
             match prev_tree.get_path(file_path) {
                 Ok(entry) => {
                     new_tree_builder.upsert(file_path, entry.id(), get_entry_mode(&entry));
@@ -70,18 +65,11 @@ pub fn unsave_command(ctx: &Ctx, args: &UnsaveArgs) -> Attempt {
                 Err(e) => match e.code() {
                     git2::ErrorCode::NotFound => {
                         let should_delete = match current_tree.get_path(file_path) {
-                            Ok(_) => {
-                                println!("Current tree has {file_path:?}, will delete");
-                                true
-                            }
+                            Ok(_) => true,
                             Err(e) => {
                                 if e.code() == git2::ErrorCode::NotFound {
-                                    println!(
-                                        "Current tree doesn't have {file_path:?}, won't delete"
-                                    );
                                     false
                                 } else {
-                                    println!("Got error trying to hit {file_path:?}");
                                     return Err(e);
                                 }
                             }
@@ -94,9 +82,6 @@ pub fn unsave_command(ctx: &Ctx, args: &UnsaveArgs) -> Attempt {
                 },
             }
         }
-
-        // TODO: Undo save if they're all reset
-        // handle sub-paths
 
         let new_tree: Tree = ctx
             .repo
@@ -112,8 +97,6 @@ pub fn unsave_command(ctx: &Ctx, args: &UnsaveArgs) -> Attempt {
             &new_tree,
             &parent_refs,
         )?;
-
-        println!("Committed: {committed:?}");
 
         ctx.repo.reset(
             &ctx.repo.find_object(committed, None)?,
