@@ -52,7 +52,9 @@ pub fn prune_command(ctx: &Ctx) -> Attempt {
 
     delete_command(ctx, &delete_args)?;
 
-    eprintln!("Deleted: {}", delete_args.names.join(", "));
+    if ctx.can_prompt() {
+        eprintln!("Deleted: {}", delete_args.names.join(", "));
+    }
 
     Ok(())
 }
