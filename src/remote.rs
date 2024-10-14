@@ -222,3 +222,30 @@ pub fn disconnect_remote(ctx: &Ctx) -> Attempt {
 
     Ok(())
 }
+
+pub fn delete_remote_branch(ctx: &Ctx, name: &str) -> Attempt {
+    if name == "main" {
+        return fail("Refusing to delete main branch.");
+    }
+    match get_remote(ctx)? {
+        Some(mut remote) => {
+            let prefix = get_remote_prefix()?;
+            remote.push(
+                &[format!(":refs/heads/{prefix}{name}")],
+                Some(&mut setup_push_options(ctx)),
+            )?;
+        }
+        None => return Ok(()),
+    };
+
+    Ok(())
+}
+
+pub fn try_delete_remote_branch(ctx: &Ctx, name: &str) {
+    if let Err(e) = delete_remote_branch(ctx, name) {
+        show_warning(
+            ctx,
+            &format!("Failed to delete branch on remote ({})", e.message()),
+        )
+    }
+}
