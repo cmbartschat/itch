@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use git2::{Commit, ResetType, Tree};
+use git2::{build::TreeUpdateBuilder, Commit, FileMode, ResetType, Tree};
 
 use crate::{cli::UnsaveArgs, ctx::Ctx, error::Attempt};
 
@@ -23,20 +23,32 @@ pub fn unsave_command(ctx: &Ctx, args: &UnsaveArgs) -> Attempt {
         let prev_commit = head_commit.parent(0)?;
         let prev_tree = prev_commit.tree()?;
 
-        let mut new_tree_builder = ctx.repo.treebuilder(Some(&current_tree))?;
+        let mut new_tree_builder = TreeUpdateBuilder::new();
 
-        for filename in &args.args {
-            let path = Path::new(filename);
+        for file_path in args.args.iter().map(Path::new) {
+            // if (current_tree.get_path(file_path)
+            // new_tree_builder.remove(file_path);
 
-            if new_tree_builder.get(filename)?.is_some() {
-                new_tree_builder.remove(filename)?;
-            }
-            match prev_tree.get_path(&path) {
+            match prev_tree.get_path(file_path) {
                 Ok(entry) => {
-                    new_tree_builder.insert(filename, entry.id(), entry.filemode())?;
+                    new_tree_builder.upsert(file_path, entry.id(), FileMode::Tree);
                 }
                 Err(e) => match e.code() {
-                    git2::ErrorCode::NotFound => {}
+                    git2::ErrorCode::NotFound => {
+                        let should_delete = match current_tree.get_path(file_path) {
+                            Ok(_) => true,
+                            Err(e) => {
+                                if e.code() == git2::ErrorCode::NotFound {
+                                    false
+                                } else {
+                                    return Err(e);
+                                }
+                            }
+                        };
+                        if should_delete {
+                            new_tree_builder.remove(file_path);
+                        }
+                    }
                     _ => return Err(e),
                 },
             }
@@ -45,7 +57,9 @@ pub fn unsave_command(ctx: &Ctx, args: &UnsaveArgs) -> Attempt {
         // TODO: Undo save if they're all reset
         // handle sub-paths
 
-        let new_tree: Tree = ctx.repo.find_tree(new_tree_builder.write()?)?;
+        let new_tree: Tree = ctx
+            .repo
+            .find_tree(new_tree_builder.create_updated(&ctx.repo, &prev_tree)?)?;
         let parents: Vec<Commit> = head_commit.parents().collect();
         let parent_refs: Vec<&Commit> = parents.iter().collect();
 
