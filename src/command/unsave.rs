@@ -1,8 +1,42 @@
 use std::path::Path;
 
-use git2::{build::TreeUpdateBuilder, Commit, FileMode, ResetType, Tree};
+use git2::{build::TreeUpdateBuilder, Commit, FileMode, ResetType, Tree, TreeEntry};
 
 use crate::{cli::UnsaveArgs, ctx::Ctx, error::Attempt};
+
+const GIT_FILEMODE_UNREADABLE: i32 = 0o000000;
+const GIT_FILEMODE_TREE: i32 = 0o040000;
+const GIT_FILEMODE_BLOB: i32 = 0o100644;
+const GIT_FILEMODE_BLOB_GROUP_WRITABLE: i32 = 0o100664;
+const GIT_FILEMODE_BLOB_EXECUTABLE: i32 = 0o100755;
+const GIT_FILEMODE_LINK: i32 = 0o120000;
+const GIT_FILEMODE_COMMIT: i32 = 0o160000;
+
+fn get_entry_mode(entry: &TreeEntry) -> FileMode {
+    let mode = entry.filemode();
+    if (mode == GIT_FILEMODE_UNREADABLE) {
+        return FileMode::Unreadable;
+    }
+    if (mode == GIT_FILEMODE_TREE) {
+        return FileMode::Tree;
+    }
+    if (mode == GIT_FILEMODE_BLOB) {
+        return FileMode::Blob;
+    }
+    if (mode == GIT_FILEMODE_BLOB_GROUP_WRITABLE) {
+        return FileMode::BlobGroupWritable;
+    }
+    if (mode == GIT_FILEMODE_BLOB_EXECUTABLE) {
+        return FileMode::BlobExecutable;
+    }
+    if (mode == GIT_FILEMODE_LINK) {
+        return FileMode::Link;
+    }
+    if (mode == GIT_FILEMODE_COMMIT) {
+        return FileMode::Commit;
+    }
+    return FileMode::Unreadable;
+}
 
 pub fn unsave_command(ctx: &Ctx, args: &UnsaveArgs) -> Attempt {
     println!("You want to unsave: {args:?}");
@@ -31,16 +65,23 @@ pub fn unsave_command(ctx: &Ctx, args: &UnsaveArgs) -> Attempt {
 
             match prev_tree.get_path(file_path) {
                 Ok(entry) => {
-                    new_tree_builder.upsert(file_path, entry.id(), FileMode::Tree);
+                    new_tree_builder.upsert(file_path, entry.id(), get_entry_mode(&entry));
                 }
                 Err(e) => match e.code() {
                     git2::ErrorCode::NotFound => {
                         let should_delete = match current_tree.get_path(file_path) {
-                            Ok(_) => true,
+                            Ok(_) => {
+                                println!("Current tree has {file_path:?}, will delete");
+                                true
+                            }
                             Err(e) => {
                                 if e.code() == git2::ErrorCode::NotFound {
+                                    println!(
+                                        "Current tree doesn't have {file_path:?}, won't delete"
+                                    );
                                     false
                                 } else {
+                                    println!("Got error trying to hit {file_path:?}");
                                     return Err(e);
                                 }
                             }
@@ -59,7 +100,7 @@ pub fn unsave_command(ctx: &Ctx, args: &UnsaveArgs) -> Attempt {
 
         let new_tree: Tree = ctx
             .repo
-            .find_tree(new_tree_builder.create_updated(&ctx.repo, &prev_tree)?)?;
+            .find_tree(new_tree_builder.create_updated(&ctx.repo, &current_tree)?)?;
         let parents: Vec<Commit> = head_commit.parents().collect();
         let parent_refs: Vec<&Commit> = parents.iter().collect();
 
