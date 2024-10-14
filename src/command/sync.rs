@@ -145,11 +145,12 @@ fn resolve_conflict(
                 current_path_string,
             );
 
-            let options = ["keep", "reset", "edit"];
+            let options = ["keep", "reset", "later", "edit"];
 
             match ask_option(&prompt, &options, Some("edit")).as_str() {
                 "keep" => ResolutionChoice::Incoming,
                 "reset" => ResolutionChoice::Base,
+                "later" => ResolutionChoice::Later,
                 "edit" => {
                     let path = bytes2path(&branch_entry.path)?;
 
