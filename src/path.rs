@@ -1,6 +1,6 @@
-use std::{ffi::OsStr, path::PathBuf};
+use std::path::PathBuf;
 
-use crate::error::Maybe;
+use crate::error::{fail, Maybe};
 
 pub fn bytes2path(bytes: &[u8]) -> Maybe<PathBuf> {
     #[cfg(unix)]
@@ -13,7 +13,7 @@ pub fn bytes2path(bytes: &[u8]) -> Maybe<PathBuf> {
         use std::str;
         match str::from_utf8(bytes) {
             Ok(s) => Ok(PathBuf::from(s)),
-            Err(..) => Err("invalid non-unicode path".into()),
+            Err(..) => fail("invalid non-unicode path"),
         }
     }
 }
