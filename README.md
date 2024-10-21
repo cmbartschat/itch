@@ -59,7 +59,7 @@ After you make changes to your files, you'll want to save them. Initially, saves
 `itch revert folder/path` - Revert changes in a folder
 
 ## Pulling in changes
-    
+
 `itch sync` - Bring the latest changes from main into this branch
 
 If there are conflicts, you may be asked to keep, reset, or edit the conflicted file. If you "keep", you will keep your branch's version of the file, ignoring any changes made on the main branch. If you "reset", you will undo all your unmerged changes. If you "edit", you'll get a popup window allowing you to select which portions of the files you want to keep.
@@ -85,6 +85,7 @@ This will show where your branch is compared to main, what files have changed, a
 ## Synchronizing with a remote
 
 `itch connect <url>` - connect a repo to a remote git service
+
 `itch disconnect` - disconnect from the current remote
 
 If you have remote, it will be used by itch to backup pending changes, and synchronize shared changes. Any time you save, the branch will be saved to the remote as `<username>-<branchname>`. Use the `ITCH_REMOTE_PREFIX` if you want a different prefix before the branch name.
