@@ -64,6 +64,8 @@ After you make changes to your files, you'll want to save them. Initially, saves
 
 If there are conflicts, you may be asked to keep, reset, or edit the conflicted file. If you "keep", you will keep your branch's version of the file, ignoring any changes made on the main branch. If you "reset", you will undo all your unmerged changes. If you "edit", you'll get a popup window allowing you to select which portions of the files you want to keep.
 
+You can use the `EDITOR` variable to customize how to edit the conflicts. For vscode, `export EDITOR='code -w -r` should be solid.
+
 ## Inspecting
 
 `itch log` - Show history of the current branch
