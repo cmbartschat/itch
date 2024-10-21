@@ -331,7 +331,7 @@ fn sync_branch(ctx: &Ctx, branch_name: &str) -> Attempt {
 }
 
 pub fn sync_command(ctx: &Ctx, args: &SyncArgs) -> Attempt {
-    save_temp(ctx)?;
+    save_temp(ctx, "Save before sync".to_string())?;
 
     try_pull_main(ctx);
 

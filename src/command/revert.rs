@@ -4,9 +4,13 @@ use crate::{
     cli::RevertArgs,
     ctx::Ctx,
     error::{fail, Attempt},
+    reset::pop_and_reset,
+    save::save_temp,
 };
 
 pub fn revert_command(ctx: &Ctx, args: &RevertArgs) -> Attempt {
+    save_temp(ctx, "Save before revert".to_string())?;
+
     let head_commit = ctx.repo.head()?.peel_to_commit()?;
     let base_commit = ctx
         .repo
@@ -32,5 +36,8 @@ pub fn revert_command(ctx: &Ctx, args: &RevertArgs) -> Attempt {
     }
     ctx.repo
         .checkout_tree(&tree.into_object(), Some(&mut options))?;
+
+    pop_and_reset(ctx)?;
+
     Ok(())
 }

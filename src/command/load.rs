@@ -1,10 +1,9 @@
 use crate::{
-    cli::{LoadArgs, SaveArgs},
-    consts::TEMP_COMMIT_PREFIX,
+    cli::LoadArgs,
     ctx::Ctx,
     error::{fail, Attempt},
     reset::pop_and_reset,
-    save::save,
+    save::save_temp,
 };
 
 pub fn _load_command(ctx: &Ctx, args: &LoadArgs) -> Attempt {
@@ -28,18 +27,7 @@ pub fn _load_command(ctx: &Ctx, args: &LoadArgs) -> Attempt {
 }
 
 pub fn load_command(ctx: &Ctx, args: &LoadArgs) -> Attempt {
-    let message_vec = vec![
-        TEMP_COMMIT_PREFIX.to_string(),
-        "Save before switching to".to_string(),
-        args.name.clone(),
-    ];
-    save(
-        ctx,
-        &SaveArgs {
-            message: message_vec,
-        },
-        true,
-    )?;
+    save_temp(ctx, format!("Save before switching to {}", args.name))?;
 
     _load_command(ctx, args)
 }

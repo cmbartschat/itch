@@ -9,7 +9,7 @@ use crate::{
 };
 
 pub fn connect_command(ctx: &Ctx, args: &ConnectArgs) -> Attempt {
-    save_temp(ctx)?;
+    save_temp(ctx, "Save before connect".to_string())?;
 
     connect_remote(ctx, &args.url)?;
 

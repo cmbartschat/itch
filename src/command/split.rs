@@ -9,7 +9,7 @@ use crate::{
 use super::load::load_command;
 
 pub fn split_command(ctx: &Ctx, args: &SplitArgs) -> Attempt {
-    save_temp(ctx)?;
+    save_temp(ctx, "Save before split".to_string())?;
 
     let name: String = match &args.name {
         Some(n) => {

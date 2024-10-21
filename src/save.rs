@@ -39,14 +39,11 @@ pub fn save(ctx: &Ctx, args: &SaveArgs, silent: bool) -> Attempt {
     Ok(())
 }
 
-pub fn save_temp(ctx: &Ctx) -> Attempt {
+pub fn save_temp(ctx: &Ctx, message: String) -> Attempt {
     save(
         ctx,
         &SaveArgs {
-            message: vec![
-                TEMP_COMMIT_PREFIX.to_string(),
-                "Save before sync".to_owned(),
-            ],
+            message: vec![TEMP_COMMIT_PREFIX.to_string(), message],
         },
         true,
     )
