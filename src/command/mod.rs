@@ -4,7 +4,11 @@ use std::{env, io::stdout};
 use connect::connect_command;
 use disconnect::disconnect_command;
 use init::init_command;
+<<<
+use please::please_command;
+===
 use revert::revert_command;
+>>>
 use split::split_command;
 
 use crate::error::{fail, Attempt};
@@ -30,8 +34,11 @@ mod load;
 mod log;
 mod merge;
 mod new;
-mod prune;
+<<<
+mod please;
+===
 mod revert;
+>>>
 mod save;
 mod split;
 mod squash;
@@ -68,6 +75,7 @@ pub async fn run_command(cli: &Cli) -> Attempt {
         Commands::New(args) => new_command(&ctx, args),
         Commands::Prune => prune_command(&ctx),
         Commands::Save(args) => save_command(&ctx, args, false),
+        Commands::Please(args) => please_command(&ctx, &args),
         Commands::Split(args) => split_command(&ctx, args),
         Commands::Squash => squash_command(&ctx),
         Commands::Status(args) => status_command(&ctx, args),

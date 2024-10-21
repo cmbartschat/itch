@@ -11,6 +11,7 @@ mod ctx;
 mod diff;
 mod editor;
 mod error;
+mod llm;
 mod output;
 mod path;
 mod print;
