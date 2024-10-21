@@ -206,11 +206,11 @@ pub fn get_merge_text(
 
         match (upstream_range, branch_range) {
             (Some(upstream_range), Some(branch_range)) => {
-                res.push_str("<<<\n");
+                res.push_str("<<<<<<<\n");
                 copy_lines(&mut res, &upstream_lines, &upstream_range);
-                res.push_str("===\n");
+                res.push_str("=======\n");
                 copy_lines(&mut res, &branch_lines, &branch_range);
-                res.push_str(">>>\n");
+                res.push_str(">>>>>>>\n");
             }
             (Some(upstream_range), None) => {
                 copy_lines(&mut res, &upstream_lines, &upstream_range);
