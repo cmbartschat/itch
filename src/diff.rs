@@ -1,7 +1,7 @@
-use git2::{Diff, DiffFindOptions, DiffOptions, Oid, Repository};
+use git2::{Blob, Diff, DiffFindOptions, DiffOptions, Oid, Repository};
 use std::io::Read;
 
-use crate::error::{Attempt, Maybe};
+use crate::error::{fail, Attempt, Maybe};
 
 pub fn collapse_renames(diff: &mut Diff) -> Attempt {
     let mut options = DiffFindOptions::new();
@@ -18,12 +18,19 @@ pub fn good_diff_options() -> DiffOptions {
     options
 }
 
-fn blob_to_string(blob: &git2::Blob) -> Maybe<String> {
+fn oid_to_string<'a>(repo: &'a Repository, oid: &git2::Oid) -> Maybe<(Option<Blob<'a>>, String)> {
+    if oid.is_zero() {
+        return Ok((None, "".to_string()));
+    }
+    let blob = repo.find_blob(*oid)?;
+    if blob.is_binary() {
+        return fail("Cannot load binary data line-by-line");
+    }
     let mut original_content = String::new();
     blob.content()
         .read_to_string(&mut original_content)
         .unwrap();
-    Ok(original_content)
+    Ok((Some(blob), original_content))
 }
 
 fn get_lines(str: &str) -> Vec<&str> {
@@ -89,10 +96,12 @@ struct MyHunk {
     new: Range,
 }
 
-fn get_diff_hunks(repo: &Repository, from: &git2::Blob, to: &git2::Blob) -> Vec<MyHunk> {
-    let old_blob = Some(from);
+fn get_diff_hunks(
+    repo: &Repository,
+    old_blob: &Option<git2::Blob>,
+    new_blob: &Option<git2::Blob>,
+) -> Vec<MyHunk> {
     let old_as_path = None;
-    let new_blob = Some(to);
     let new_as_path = None;
     let mut opts = DiffOptions::new();
     opts.context_lines(0);
@@ -104,9 +113,9 @@ fn get_diff_hunks(repo: &Repository, from: &git2::Blob, to: &git2::Blob) -> Vec<
     let mut res = vec![];
 
     repo.diff_blobs(
-        old_blob,
+        old_blob.as_ref(),
         old_as_path,
-        new_blob,
+        new_blob.as_ref(),
         new_as_path,
         Some(&mut opts),
         file_cb,
@@ -131,16 +140,13 @@ pub fn get_merge_text(
     upstream_id: &Oid,
     branch_id: &Oid,
 ) -> Maybe<String> {
-    let original_blob = repo.find_blob(*original_id)?;
-    let original_string = blob_to_string(&original_blob)?;
+    let (original_blob, original_string) = oid_to_string(repo, original_id)?;
     let original_lines = get_lines(&original_string);
 
-    let upstream_blob = repo.find_blob(*upstream_id)?;
-    let upstream_string = blob_to_string(&upstream_blob)?;
+    let (upstream_blob, upstream_string) = oid_to_string(repo, upstream_id)?;
     let upstream_lines = get_lines(&upstream_string);
 
-    let branch_blob = repo.find_blob(*branch_id)?;
-    let branch_string = blob_to_string(&branch_blob)?;
+    let (branch_blob, branch_string) = oid_to_string(repo, branch_id)?;
     let branch_lines = get_lines(&branch_string);
 
     let mut branch_hunks = get_diff_hunks(repo, &original_blob, &branch_blob)
@@ -231,7 +237,7 @@ pub fn get_merge_text(
 
 #[cfg(test)]
 mod merge_tests {
-    use git2::Repository;
+    use git2::{Oid, Repository};
     use tempfile::TempDir;
 
     use crate::diff::get_merge_text;
@@ -424,6 +430,42 @@ return 2;
     fn add_conflicting_line() {
         let combined = merge_files("same\n", "same\nupstream\n", "same\nbranch\n");
         assert_eq!(&combined, "same\n<<<\nupstream\n===\nbranch\n>>>\n");
+    }
+
+    #[test]
+    fn no_original() {
+        let (dir, repo) = init_repo();
+        let original_id = Oid::zero();
+        let upstream_id = repo.blob("upstream content\n".as_bytes()).unwrap();
+        let branch_id = repo.blob("branch content\n".as_bytes()).unwrap();
+        let combined = get_merge_text(&repo, &original_id, &upstream_id, &branch_id).unwrap();
+        assert_eq!(
+            &combined,
+            "<<<\nupstream content\n===\nbranch content\n>>>\n"
+        );
+        drop(dir);
+    }
+
+    #[test]
+    fn no_branch() {
+        let (dir, repo) = init_repo();
+        let original_id = repo.blob("original content\n".as_bytes()).unwrap();
+        let upstream_id = repo.blob("upstream content\n".as_bytes()).unwrap();
+        let branch_id = Oid::zero();
+        let combined = get_merge_text(&repo, &original_id, &upstream_id, &branch_id).unwrap();
+        assert_eq!(&combined, "<<<\nupstream content\n===\n>>>\n");
+        drop(dir);
+    }
+
+    #[test]
+    fn no_upstream() {
+        let (dir, repo) = init_repo();
+        let original_id = repo.blob("original content\n".as_bytes()).unwrap();
+        let upstream_id = Oid::zero();
+        let branch_id = repo.blob("branch content\n".as_bytes()).unwrap();
+        let combined = get_merge_text(&repo, &original_id, &upstream_id, &branch_id).unwrap();
+        assert_eq!(&combined, "<<<\n===\nbranch content\n>>>\n");
+        drop(dir);
     }
 }
 
