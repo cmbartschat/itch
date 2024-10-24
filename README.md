@@ -1,3 +1,5 @@
+<p align="center"><img src="https://raw.githubusercontent.com/cmbartschat/itch/refs/heads/main/src/command/ui-favicon.svg" width="64" height="64" alt="logo"></p>
+
 # itch
 
 Itch is a source control tool that lets you get work done faster. It is:
