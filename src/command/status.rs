@@ -25,69 +25,52 @@ pub struct ForkInfo {
     pub file_statuses: Vec<SegmentedStatus>,
 }
 
-/*
-==========================================
+struct Styles {
+    pub highlight: &'static str,
+    pub muted: &'static str,
+    pub end: &'static str,
+}
 
-        o ─ <4> ─ o<[save] ←─ example*
-       /
-─ o ─ o ←─ main
+fn get_styles(ctx: &Ctx) -> Styles {
+    if ctx.color_enabled() {
+        Styles {
+            highlight: "\x1b[1;37m",
+            muted: "\x1b[1;94m",
+            end: "\x1b[0m",
+        }
+    } else {
+        Styles {
+            highlight: "",
+            muted: "",
+            end: "",
+        }
+    }
+}
 
-==========================================
+static DOTS_PER_BRAILLE: usize = 6;
 
-         ┌ o ─ <4> ─ o<[save] ←─ example*
-         │
-─ o ─ o ─┴──── main
+fn create_many_dots(count: usize) -> String {
+    if count > DOTS_PER_BRAILLE * 4 {
+        return format!("⠿{}⠿", count);
+    }
 
-==========================================
+    let full_count = count / DOTS_PER_BRAILLE;
+    let partial_count = count % DOTS_PER_BRAILLE;
 
-      ┌─  example
-      │
-─ o ─ o ←─ main
-
-==========================================
-
-      ┌─ example
-      │
-─ o ─ o<[message1] ←─ main
-
-==========================================
-
-─ o ─ o<[message1] ←─ main
-
-==========================================
-
-      ┌─ o<[message2] (example)
-      │
-─ o ─ o<[message1] (main)
-
-==========================================
-
-                         ┌─ example
-                         ↓
-─ o ─ o<[message1] ─ o ─ o<[message2]
-      ↑
-      └─ main
-
-==========================================
-
-      o ─ o<[message2] ←─ example
-      │
-─ o ─ o<[message1] ←─ main
-
-==========================================
-
-      o<[message2] ←─ example
-      │
-─ o ─ o<[message1] ←─ main
-
-==========================================
-
-      ┌─ example
-      ↓
-─ o ─ o<[message1] ←─ main
-
-==========================================
-*/
+    format!(
+        "{}{}",
+        "⠿".repeat(full_count),
+        match partial_count {
+            0 => "",
+            1 => "⠁",
+            2 => "⠃",
+            3 => "⠇",
+            4 => "⠏",
+            5 => "⠟",
+            _ => "x",
+        }
+    )
+}
 
 #[derive(Debug)]
 pub struct FileStatus {
@@ -241,30 +224,49 @@ impl SegmentedStatus {
     }
 }
 
-fn get_post_fork_commits(info: &BranchSummary) -> String {
-    let message_part = match &info.latest_message {
+fn get_post_fork_commits(info: &BranchSummary, styles: &Styles) -> String {
+    let truncated_message = match &info.latest_message {
         Some(s) => {
             let mut final_message = String::from(s);
-            final_message.truncate(25);
-            format!("<[{}]", final_message.trim())
+            if final_message.len() < 40 {
+                final_message
+            } else {
+                final_message.truncate(37);
+                format!("{}...", final_message.trim())
+            }
         }
         _ => String::from(""),
     };
 
+    let wrapped_message = format!(
+        "{}({}{}{}){}",
+        styles.highlight, styles.end, truncated_message, styles.highlight, styles.end
+    );
+
     match info.commit_count {
         0 => "".to_string(),
-        1 => format!("o{}", message_part),
-        2 => format!("o ─ o{}", message_part),
-        3 => format!("o ─ o ─ o{}", message_part),
-        _ => format!("o ─ <{}> ─ o{}", info.commit_count - 2, message_part),
+        1 => wrapped_message,
+        2 => format!("{}o{} ─ {wrapped_message}", styles.highlight, styles.muted,),
+        3 => format!(
+            "{}o{} ─ {}o{} ─ {wrapped_message}",
+            styles.highlight, styles.muted, styles.highlight, styles.muted,
+        ),
+        _ => format!(
+            "{}o{} ─ {}{}{} ─ {wrapped_message}",
+            styles.highlight,
+            styles.muted,
+            styles.highlight,
+            create_many_dots(info.commit_count - 2),
+            styles.muted,
+        ),
     }
 }
 
-fn draw_fork_diagram(info: &ForkInfo) {
+fn draw_fork_diagram(info: &ForkInfo, styles: &Styles) {
     let base_name = &info.base.name;
     let head_name = &info.head.name;
-    let head_display = get_post_fork_commits(&info.head);
-    let base_display = get_post_fork_commits(&info.base);
+    let head_display = get_post_fork_commits(&info.head, styles);
+    let base_display = get_post_fork_commits(&info.base, styles);
 
     let mut main_dirty_indicator = "";
 
@@ -272,17 +274,26 @@ fn draw_fork_diagram(info: &ForkInfo) {
         let dirty_indicator = if info.dirty { "*" } else { "" };
 
         if info.head.commit_count == 0 {
-            println!("      ┌─ {head_name}{dirty_indicator}");
-            println!("      ↓");
+            println!(
+                "      {}┌─{} {head_name}{dirty_indicator}",
+                styles.muted, styles.end
+            );
+            println!("      {}↓{}", styles.muted, styles.end);
         } else {
-            println!("          {head_display} ← {head_name}{dirty_indicator}");
-            println!("        /");
+            println!(
+                "          {head_display} {}←{} {head_name}{dirty_indicator}",
+                styles.muted, styles.end
+            );
+            println!("        {}/{}", styles.muted, styles.end);
         }
     } else if info.dirty {
         main_dirty_indicator = "*"
     }
 
-    println!("─ o ─ {base_display} ← {base_name}{main_dirty_indicator}")
+    println!(
+        "{}─ {}o{} ─ {}{base_display} {}←{} {base_name}{main_dirty_indicator}",
+        styles.muted, styles.highlight, styles.muted, styles.end, styles.muted, styles.end
+    )
 }
 
 fn count_commits_since(_ctx: &Ctx, older: &Commit, newer: &Commit) -> Maybe<usize> {
@@ -416,7 +427,9 @@ pub fn resolve_fork_info(ctx: &Ctx, branch_name: Option<&str>) -> Maybe<ForkInfo
 pub fn status_command(ctx: &Ctx, args: &StatusArgs) -> Attempt {
     let info = resolve_fork_info(ctx, args.name.as_deref())?;
 
-    draw_fork_diagram(&info);
+    let styles = get_styles(ctx);
+
+    draw_fork_diagram(&info, &styles);
 
     if !info.file_statuses.is_empty() {
         println!();
