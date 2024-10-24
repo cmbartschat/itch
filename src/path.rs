@@ -11,7 +11,7 @@ pub fn bytes2path(bytes: &[u8]) -> Maybe<PathBuf> {
     }
     #[cfg(windows)]
     {
-        use crate::error::{fail, Maybe};
+        use crate::error::fail;
         use std::str;
         match str::from_utf8(bytes) {
             Ok(s) => Ok(PathBuf::from(s)),
