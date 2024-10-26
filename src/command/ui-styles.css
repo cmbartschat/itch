@@ -205,3 +205,31 @@ fieldset {
   content: "R ";
   color: var(--blue);
 }
+
+.diff-line {
+  padding-left: 1.5rem;
+  position: relative;
+}
+
+.diff-line::before {
+  position: absolute;
+  top: 0;
+  left: 0;
+  user-select: none;
+}
+
+.diff-line.new {
+  color: var(--green);
+}
+
+.diff-line.new::before {
+  content: '+';
+}
+
+.diff-line.deleted {
+  color: var(--red);
+}
+
+.diff-line.deleted::before {
+  content: '-';
+}

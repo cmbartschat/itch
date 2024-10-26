@@ -3,6 +3,7 @@ use std::{
     env,
     hash::{Hash, Hasher},
     net::{IpAddr, Ipv4Addr, SocketAddr},
+    path::PathBuf,
     rc::Rc,
 };
 
@@ -10,7 +11,7 @@ use axum_extra::extract::{
     cookie::{Cookie, SameSite},
     CookieJar,
 };
-use git2::{Commit, Delta};
+use git2::{Commit, Delta, DiffDelta, DiffHunk, DiffLine, Patch};
 use rand::rngs::OsRng;
 use serde::Deserialize;
 
@@ -27,7 +28,7 @@ use crate::{
 };
 
 use axum::{
-    extract::State,
+    extract::{Path, State},
     http::{Request, StatusCode},
     middleware::Next,
     response::{IntoResponse, Redirect},
@@ -43,7 +44,7 @@ use super::{
     prune::prune_command,
     save::save_command,
     squash::squash_command,
-    status::{resolve_fork_info, ForkInfo},
+    status::{resolve_fork_info, FileStatus, ForkInfo, SegmentedStatus},
     sync::try_sync_branch,
 };
 
@@ -85,14 +86,26 @@ fn status_class(delta: &Delta) -> &'static str {
     }
 }
 
+fn render_file_status(status: &SegmentedStatus, work_status: &FileStatus) -> Markup {
+    let display_name = status.get_work_rename_chain().join(" → ");
+    let diff_link = work_status.to.as_ref().map(|f| format!("/diff/{}", f));
+    html! {
+        li class=(status_class(&work_status.status)) {
+            @if let Some(link) = diff_link {
+                a href=(link) {(display_name)}
+            } @else {
+                (display_name)
+            }
+        }
+    }
+}
+
 fn render_file_statuses(info: &DashboardInfo) -> Markup {
     html! {
         ul.status-files {
             @for status in &info.fork_info.file_statuses {
                 @if let Some(work_status) = &status.work {
-                    li class=(status_class(&work_status.status)) {
-                       (status.get_work_rename_chain().join(" → "))
-                    }
+                    (render_file_status(status, work_status))
                 }
             }
         }
@@ -113,7 +126,7 @@ fn hidden_args(args: &Args) -> Option<Markup> {
 
 fn action_btn(method: &str, action: &str, content: &str, args: &Args, disabled: bool) -> Markup {
     html! {
-      form method=(method) action=(action) .inline-form   {
+      form method=(method) action=(action) .inline-form {
         (hidden_args(args).unwrap_or_default())
         (btn("submit", content, disabled))
       }
@@ -158,20 +171,22 @@ fn common_head_contents() -> Markup {
 fn render_message(title: &str, text: Option<&str>) -> impl IntoResponse {
     html! {
         (DOCTYPE)
-        head {
-            title {
-                (title) " | itch ui"
+        html {
+            head {
+                title {
+                    (title) " | itch ui"
+                }
+                (common_head_contents())
             }
-            (common_head_contents())
-        }
-        body.spaced-down {
-            h1 { (title) }
+            body.spaced-down {
+                h1 { (title) }
 
-            @if let Some(text) = text {
-                p { (text) }
+                @if let Some(text) = text {
+                    p { (text) }
+                }
+
+                a href="/" {"Back"}
             }
-
-            a href="/" {"Back"}
         }
     }
 }
@@ -195,6 +210,16 @@ fn count_commits_since(_ctx: &Ctx, older: &Commit, newer: &Commit) -> Maybe<usiz
     }
 
     Ok(count)
+}
+
+fn get_workspace_name(ctx: &Ctx) -> String {
+    ctx.repo
+        .workdir()
+        .unwrap()
+        .file_name()
+        .unwrap()
+        .to_string_lossy()
+        .into_owned()
 }
 
 fn load_dashboard_info() -> Maybe<DashboardInfo> {
@@ -244,97 +269,92 @@ fn load_dashboard_info() -> Maybe<DashboardInfo> {
         unsaved_changes: unsaved_diff.deltas().count(),
         branches,
         fork_info: resolve_fork_info(&ctx, None)?,
-        workspace: ctx
-            .repo
-            .workdir()
-            .unwrap()
-            .file_name()
-            .unwrap()
-            .to_string_lossy()
-            .into_owned(),
+        workspace: get_workspace_name(&ctx),
     })
 }
 
 fn render_dashboard(info: &DashboardInfo) -> Markup {
     html! {
         (DOCTYPE)
-        head {
-            title {
-               (info.workspace) " | itch ui"
+        html {
+            head {
+                title {
+                (info.workspace) " | itch ui"
+                }
+                (common_head_contents())
+                script {
+                    (PreEscaped(include_str!("ui.js")))
+                }
             }
-            (common_head_contents())
-            script {
-                (PreEscaped(include_str!("ui.js")))
-            }
-        }
-        body.spaced-down {
-            header.spaced-across {
-                h1 { (info.workspace) }
-                a href="/" { "Refresh" }
-            }
-
-            div.spaced-across.start {
-                div.spaced-down.big-col {
-                    h2 { "Branch: " (info.current_branch) }
-                    div.spaced-across {
-                        (action_btn("POST", "/api/merge", "Merge", &None, info.commits_ahead == 0 || info.commits_behind > 0))
-                        @if info.commits_ahead == 0 {
-                           "nothing to merge"
-                        } @else if info.commits_behind > 0 {
-                            "sync before merging"
-                        } @else if info.commits_ahead == 1 {
-                            "1 commit"
-                        } @else {
-                            (info.commits_ahead) " commits"
-                        }
-                    }
-
-                    div.spaced-across {
-                        (action_btn("POST", "/api/squash", "Squash", &None, info.commits_ahead < 2))
-                        "to single commit"
-                    }
-
-                    div.spaced-across {
-                        (action_btn("POST", "/api/sync", "Sync", &None, info.commits_behind == 0))
-                        @match info.commits_behind {
-                            0 => ("already synced"),
-                            1 => ("1 commit behind"),
-                            n => {(n) " commits behind"},
-                         }
-                    }
-
-                    form method="POST" action="/api/save" {
-                        div.spaced-across.end {
-                            label {
-                                "Save message"
-                                br;
-                                input .in name="message" placeholder="(optional)" disabled[info.unsaved_changes == 0];
-                            }
-                            (btn("submit", "Save", info.unsaved_changes == 0))
-                        }
-                    }
-
-                    (render_file_statuses(info))
+            body.spaced-down {
+                header.spaced-across {
+                    h1 { (info.workspace) }
+                    a href="/" { "Refresh" }
                 }
 
-                div.spaced-down.big-col {
-                    div.spaced-across {
-                        h2 {"All Branches"}
-                        (action_btn("POST", "/api/prune", "Prune empty", &None, false))
-                    }
-
-                    form method="POST" action="/api/new" .inline-form.spaced-across.end  {
-                        label.grow {
-                            "New branch"
-                            br;
-                            input .in name="name" placeholder="(optional)";
+                div.spaced-across.start {
+                    div.spaced-down.big-col {
+                        h2 { "Branch: " (info.current_branch) }
+                        div.spaced-across {
+                            (action_btn("POST", "/api/merge", "Merge", &None, info.commits_ahead == 0 || info.commits_behind > 0))
+                            @if info.commits_ahead == 0 {
+                            "nothing to merge"
+                            } @else if info.commits_behind > 0 {
+                                "sync before merging"
+                            } @else if info.commits_ahead == 1 {
+                                "1 commit"
+                            } @else {
+                                (info.commits_ahead) " commits"
+                            }
                         }
-                        (btn("submit", "New branch", false))
+
+                        div.spaced-across {
+                            (action_btn("POST", "/api/squash", "Squash", &None, info.commits_ahead < 2))
+                            "to single commit"
+                        }
+
+                        div.spaced-across {
+                            (action_btn("POST", "/api/sync", "Sync", &None, info.commits_behind == 0))
+                            @match info.commits_behind {
+                                0 => ("already synced"),
+                                1 => ("1 commit behind"),
+                                n => {(n) " commits behind"},
+                            }
+                        }
+
+                        form method="POST" action="/api/save" {
+                            div.spaced-across.end {
+                                label {
+                                    "Save message"
+                                    br;
+                                    input .in name="message" placeholder="(optional)" disabled[info.unsaved_changes == 0];
+                                }
+                                (btn("submit", "Save", info.unsaved_changes == 0))
+                            }
+                        }
+
+                        (render_file_statuses(info))
                     }
 
-                    ul.spaced-down {
-                        @for b in &info.branches {
-                            (branch_entry(info, b))
+                    div.spaced-down.big-col {
+                        div.spaced-across {
+                            h2 {"All Branches"}
+                            (action_btn("POST", "/api/prune", "Prune empty", &None, false))
+                        }
+
+                        form method="POST" action="/api/new" .inline-form.spaced-across.end  {
+                            label.grow {
+                                "New branch"
+                                br;
+                                input .in name="name" placeholder="(optional)";
+                            }
+                            (btn("submit", "New branch", false))
+                        }
+
+                        ul.spaced-down {
+                            @for b in &info.branches {
+                                (branch_entry(info, b))
+                            }
                         }
                     }
                 }
@@ -445,6 +465,88 @@ fn render_sync(conflicts: &Vec<Conflict>) -> Markup {
 
 async fn sync() -> impl IntoResponse {
     render_sync(&vec![])
+}
+
+fn render_diff(file_path: String) -> Maybe<Option<Markup>> {
+    let mut ctx = init_ctx()?;
+    ctx.set_mode(crate::ctx::Mode::Background);
+
+    let head_commit = ctx.repo.head()?.peel_to_commit()?;
+
+    let mut unsaved_diff = ctx
+        .repo
+        .diff_tree_to_workdir(Some(&head_commit.tree()?), Some(&mut good_diff_options()))?;
+
+    collapse_renames(&mut unsaved_diff)?;
+
+    let target_path = PathBuf::from(&file_path);
+
+    let change_index = unsaved_diff.deltas().enumerate().find_map(|(i, e)| {
+        if e.new_file().path() == Some(&target_path) {
+            Some(i)
+        } else {
+            None
+        }
+    });
+
+    match change_index {
+        None => Ok(None),
+        Some(change_index) => {
+            let mut patch = Patch::from_diff(&unsaved_diff, change_index)?
+                .expect("Change index should be valid");
+
+            let mut lines = Vec::<(&'static str, String)>::new();
+
+            patch.print(&mut |_: DiffDelta, __: Option<DiffHunk>, line: DiffLine| {
+                let origin = line.origin();
+                let line = String::from_utf8_lossy(line.content()).into_owned();
+
+                lines.push((
+                    match origin {
+                        '+' => "new",
+                        '-' => "deleted",
+                        _ => "",
+                    },
+                    line,
+                ));
+
+                true
+            })?;
+            Ok(Some(html! {
+                (DOCTYPE)
+                html {
+                    head {
+                        title {
+                            (&file_path) " | " (get_workspace_name(&ctx)) " | itch ui"
+                        }
+                        (common_head_contents())
+                    }
+                    body.spaced-down {
+                        h1 {
+                            (&file_path)
+                        }
+                        a href="/" {"Back"}
+
+                        pre { code { @for line in lines {
+                            div class={"diff-line "(line.0)} {
+                                (line.1)
+                            }
+                        }}}
+                    }
+                }
+            }))
+        }
+    }
+}
+
+async fn diff(Path(file_path): Path<String>) -> impl IntoResponse {
+    match render_diff(file_path) {
+        Ok(e) => match e {
+            Some(e) => e.into_response(),
+            None => (StatusCode::NOT_FOUND, render_message("Not found", None)).into_response(),
+        },
+        Err(e) => map_error_to_response(e).into_response(),
+    }
 }
 
 fn with_ctx<R, T>(callback: T) -> Maybe<R>
@@ -595,7 +697,7 @@ async fn csrf_check<B>(
 use base64::Engine;
 use rand::RngCore;
 
-pub async fn ui_command(_ctx: &Ctx) -> Attempt {
+pub async fn ui_command(ctx: &Ctx) -> Attempt {
     let mut key = [0u8; 32];
     OsRng.fill_bytes(&mut key);
 
@@ -620,6 +722,7 @@ pub async fn ui_command(_ctx: &Ctx) -> Attempt {
     let app = Router::new()
         .route("/", get(dashboard))
         .route("/sync", get(sync))
+        .route("/diff/*file_path", get(diff))
         .nest("/api", api)
         .with_state(state)
         .fallback(render_404);
@@ -641,7 +744,13 @@ pub async fn ui_command(_ctx: &Ctx) -> Attempt {
 
     let server = builder.serve(app.into_make_service());
 
-    open::that(format!("http://localhost:{}", server.local_addr().port())).unwrap();
+    let address = format!("http://localhost:{}", server.local_addr().port());
+
+    if ctx.can_prompt() {
+        println!("Listening on {address}");
+    }
+
+    open::that(address).unwrap();
 
     server.await.unwrap();
 
