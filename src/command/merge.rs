@@ -3,7 +3,7 @@ use git2::Oid;
 use crate::{
     ctx::Ctx,
     error::{fail, Attempt, Maybe},
-    remote::try_push_main,
+    remote::{try_pull_main, try_push_main},
 };
 
 fn combine_branches(ctx: &Ctx) -> Maybe<Oid> {
@@ -31,6 +31,8 @@ pub fn merge_command(ctx: &Ctx) -> Attempt {
     if head_name == "refs/heads/main" {
         return fail("Cannot merge from main.");
     }
+
+    try_pull_main(ctx);
 
     let resolved_commit = combine_branches(ctx)?;
 
