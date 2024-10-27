@@ -395,14 +395,14 @@ g\n",
             "\
 a
 b
-<<<
-===
+<<<<<<<
+=======
 c2
 d1
 d2
 d3
 e2
->>>
+>>>>>>>
 f
 g\n"
         );
@@ -429,7 +429,10 @@ return 2;
     #[test]
     fn add_conflicting_line() {
         let combined = merge_files("same\n", "same\nupstream\n", "same\nbranch\n");
-        assert_eq!(&combined, "same\n<<<\nupstream\n===\nbranch\n>>>\n");
+        assert_eq!(
+            &combined,
+            "same\n<<<<<<<\nupstream\n=======\nbranch\n>>>>>>>\n"
+        );
     }
 
     #[test]
@@ -441,7 +444,7 @@ return 2;
         let combined = get_merge_text(&repo, &original_id, &upstream_id, &branch_id).unwrap();
         assert_eq!(
             &combined,
-            "<<<\nupstream content\n===\nbranch content\n>>>\n"
+            "<<<<<<<\nupstream content\n=======\nbranch content\n>>>>>>>\n"
         );
         drop(dir);
     }
@@ -453,7 +456,7 @@ return 2;
         let upstream_id = repo.blob("upstream content\n".as_bytes()).unwrap();
         let branch_id = Oid::zero();
         let combined = get_merge_text(&repo, &original_id, &upstream_id, &branch_id).unwrap();
-        assert_eq!(&combined, "<<<\nupstream content\n===\n>>>\n");
+        assert_eq!(&combined, "<<<<<<<\nupstream content\n=======\n>>>>>>>\n");
         drop(dir);
     }
 
@@ -464,7 +467,7 @@ return 2;
         let upstream_id = Oid::zero();
         let branch_id = repo.blob("branch content\n".as_bytes()).unwrap();
         let combined = get_merge_text(&repo, &original_id, &upstream_id, &branch_id).unwrap();
-        assert_eq!(&combined, "<<<\n===\nbranch content\n>>>\n");
+        assert_eq!(&combined, "<<<<<<<\n=======\nbranch content\n>>>>>>>\n");
         drop(dir);
     }
 }
