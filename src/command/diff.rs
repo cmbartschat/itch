@@ -171,10 +171,10 @@ pub fn diff_command(ctx: &Ctx, args: &DiffArgs) -> Attempt {
 
     diff.print(git2::DiffFormat::Patch, |_, _, line| {
         let origin = line.origin();
-        let (color_code, clear_code) = match (ctx.color_enabled(), origin) {
-            (true, '+') => ("\x1b[32m", "\x1b[0m"),
-            (true, '-') => ("\x1b[31m", "\x1b[0m"),
-            _ => ("", ""),
+        let (color_code, background_code, clear_code) = match (ctx.color_enabled(), origin) {
+            (true, '+') => ("\x1b[32m", "\x1b[42m", "\x1b[0m"),
+            (true, '-') => ("\x1b[31m", "\x1b[41m", "\x1b[0m"),
+            _ => ("", "", ""),
         };
 
         let char = match origin {
@@ -184,13 +184,15 @@ pub fn diff_command(ctx: &Ctx, args: &DiffArgs) -> Attempt {
             _ => "",
         };
 
-        write!(
+        let line = String::from_utf8_lossy(line.content());
+
+        let visible_line = line.trim_end();
+        let trailing_whitespace = &line[visible_line.len()..];
+        let trailing_non_newline = trailing_whitespace.trim_end_matches('\n');
+
+        writeln!(
             output,
-            "{}{}{}{}",
-            color_code,
-            char,
-            String::from_utf8_lossy(line.content()),
-            clear_code,
+            "{color_code}{char}{visible_line}{background_code}{trailing_non_newline}{clear_code}"
         )
         .unwrap();
 
