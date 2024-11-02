@@ -1,7 +1,16 @@
-use git2::{Blob, Diff, DiffFindOptions, DiffOptions, Oid, Repository};
+use git2::{Blob, Diff, DiffFindOptions, DiffLine, DiffOptions, Oid, Repository};
 use std::io::Read;
 
 use crate::error::{fail, Attempt, Maybe};
+
+pub fn split_diff_line(line: &DiffLine) -> (String, String) {
+    let line = String::from_utf8_lossy(line.content());
+
+    let visible_line = line.trim_end();
+    let trailing_whitespace = &line[visible_line.len()..];
+    let trailing_non_newline = trailing_whitespace.trim_end_matches('\n');
+    (visible_line.to_string(), trailing_non_newline.to_string())
+}
 
 pub fn collapse_renames(diff: &mut Diff) -> Attempt {
     let mut options = DiffFindOptions::new();

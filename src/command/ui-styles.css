@@ -226,10 +226,18 @@ fieldset {
   content: '+';
 }
 
+.diff-line.new .trailing_whitespace {
+  background: var(--green);
+}
+
 .diff-line.deleted {
   color: var(--red);
 }
 
 .diff-line.deleted::before {
   content: '-';
+}
+
+.diff-line.deleted .trailing_whitespace {
+  background: var(--red);
 }

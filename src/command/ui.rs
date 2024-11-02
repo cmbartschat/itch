@@ -20,7 +20,7 @@ use crate::{
     cli::{DeleteArgs, LoadArgs, NewArgs, SaveArgs},
     command::new::new_command,
     ctx::{init_ctx, Ctx},
-    diff::{collapse_renames, good_diff_options},
+    diff::{collapse_renames, good_diff_options, split_diff_line},
     error::{fail, Attempt, Fail, Maybe},
     reset::pop_and_reset,
     save::save_temp,
@@ -495,11 +495,11 @@ fn render_diff(file_path: String) -> Maybe<Option<Markup>> {
             let mut patch = Patch::from_diff(&unsaved_diff, change_index)?
                 .expect("Change index should be valid");
 
-            let mut lines = Vec::<(&'static str, String)>::new();
+            let mut lines = Vec::<(&'static str, String, String)>::new();
 
             patch.print(&mut |_: DiffDelta, __: Option<DiffHunk>, line: DiffLine| {
                 let origin = line.origin();
-                let line = String::from_utf8_lossy(line.content()).into_owned();
+                let (main_line, trailing_whitespace_line) = split_diff_line(&line);
 
                 lines.push((
                     match origin {
@@ -507,7 +507,8 @@ fn render_diff(file_path: String) -> Maybe<Option<Markup>> {
                         '-' => "deleted",
                         _ => "",
                     },
-                    line,
+                    main_line,
+                    trailing_whitespace_line,
                 ));
 
                 true
@@ -529,7 +530,7 @@ fn render_diff(file_path: String) -> Maybe<Option<Markup>> {
 
                         pre { code { @for line in lines {
                             div class={"diff-line "(line.0)} {
-                                (line.1)
+                                (line.1)span.trailing_whitespace{(line.2)}
                             }
                         }}}
                     }

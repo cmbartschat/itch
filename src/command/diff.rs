@@ -1,7 +1,7 @@
 use crate::{
     cli::DiffArgs,
     ctx::Ctx,
-    diff::{collapse_renames, good_diff_options},
+    diff::{collapse_renames, good_diff_options, split_diff_line},
     error::{fail, Attempt, Maybe},
     output::OutputTarget,
 };
@@ -184,11 +184,7 @@ pub fn diff_command(ctx: &Ctx, args: &DiffArgs) -> Attempt {
             _ => "",
         };
 
-        let line = String::from_utf8_lossy(line.content());
-
-        let visible_line = line.trim_end();
-        let trailing_whitespace = &line[visible_line.len()..];
-        let trailing_non_newline = trailing_whitespace.trim_end_matches('\n');
+        let (visible_line, trailing_non_newline) = split_diff_line(&line);
 
         writeln!(
             output,
