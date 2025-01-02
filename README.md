@@ -52,7 +52,9 @@ After you make changes to your files, you'll want to save them. Initially, saves
 
 `itch squash` - Squash all unmerged saves into one, preserving the most recent save message
 
-`itch unsave` - Clear out all unmerged saves without reverting changes
+`itch unsave` - Undo the last save without reverting changes
+
+`itch unsave file1 file2` - Remove the given files from the most recent save
 
 `itch merge` - Merge saved changes into the main branch
 
