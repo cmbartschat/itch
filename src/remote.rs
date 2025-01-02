@@ -33,12 +33,10 @@ fn setup_remote_callbacks(ctx: &Ctx) -> RemoteCallbacks<'_> {
             if allowed_types.contains(CredentialType::USER_PASS_PLAINTEXT) {
                 Cred::credential_helper(&ctx.repo.config()?, url, username_from_url)
             } else if allowed_types.contains(CredentialType::SSH_KEY) {
-                Cred::ssh_key(
-                    username_from_url.unwrap(),
-                    None,
-                    std::path::Path::new(&format!("{}/.ssh/id_ed25519", env::var("HOME").unwrap())),
-                    Some("git2023"),
-                )
+                match username_from_url {
+                    Some(user) => Cred::ssh_key_from_agent(user),
+                    None => return fail("Username not provided, expecting git@ in ssh URLs"),
+                }
             } else {
                 todo!("support for auth type: {allowed_types:?}");
             }
