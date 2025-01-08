@@ -6,24 +6,19 @@ use crate::{
     save::save_temp,
 };
 
-pub fn _load_command(ctx: &Ctx, args: &LoadArgs) -> Attempt {
+fn _load_command(ctx: &Ctx, args: &LoadArgs) -> Attempt {
     let target_ref = ctx
         .repo
         .find_branch(&args.name, git2::BranchType::Local)?
         .into_reference();
 
-    if let Some(target) = target_ref.name() {
-        ctx.repo.set_head(target)?;
-        ctx.repo.reset(
-            target_ref.peel_to_commit()?.as_object(),
-            git2::ResetType::Hard,
-            None,
-        )?;
-        pop_and_reset(ctx)?;
-        Ok(())
-    } else {
-        fail("Invalid branch name")
-    }
+    match target_ref.name() {
+        Some(name) => ctx.repo.set_head(name)?,
+        None => return fail("Invalid branch name"),
+    };
+
+    ctx.repo.checkout_head(None)?;
+    pop_and_reset(ctx)
 }
 
 pub fn load_command(ctx: &Ctx, args: &LoadArgs) -> Attempt {
