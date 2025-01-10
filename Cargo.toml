@@ -19,7 +19,6 @@ env_logger = "0.10.1"
 git2 = "0.18.1"
 log = "0.4.20"
 maud = { version = "0.25.0", features = ["axum"] }
-minus = { version = "5.5.3", features = ["static_output"] }
 open = "5.0.1"
 quick-xml = "0.31.0"
 rand = "0.8.5"
@@ -29,3 +28,4 @@ tempfile = "3.10.1"
 tokio = { version = "1.35.1", features = ["full"] }
 whoami = "1.5.1"
 macros = { path = "macros" }
+tui = "0.19.0"
