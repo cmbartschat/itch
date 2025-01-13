@@ -19,7 +19,7 @@ env_logger = "0.10.1"
 git2 = "0.18.1"
 log = "0.4.20"
 maud = { version = "0.25.0", features = ["axum"] }
-minus = { version = "5.5.3", features = ["static_output"] }
+minus = { version = "5.5.3", features = ["static_output"], path = "../minus" }
 open = "5.0.1"
 quick-xml = "0.31.0"
 rand = "0.8.5"

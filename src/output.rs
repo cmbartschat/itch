@@ -15,7 +15,10 @@ impl OutputTarget {
         if env::var_os("NOPAGER").is_some() {
             Ok(OutputTarget::Stdout)
         } else {
-            Ok(OutputTarget::Pager(minus::Pager::new()))
+            let p = minus::Pager::new();
+            p.horizontal_scroll(true)
+                .expect("Failed to communicate with the pager");
+            Ok(OutputTarget::Pager(p))
         }
     }
 
