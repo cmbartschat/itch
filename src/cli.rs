@@ -54,7 +54,7 @@ pub enum Commands {
     Sync(SyncArgs),
 
     #[command(about = "Flatten the current saves into one commit")]
-    Squash,
+    Squash(SquashArgs),
 
     #[command(about = "Prune unneeded branches")]
     Prune,
@@ -125,4 +125,9 @@ pub struct RevertArgs {
 #[derive(Args, Deserialize, Debug)]
 pub struct UnsaveArgs {
     pub args: Vec<String>,
+}
+
+#[derive(Args)]
+pub struct SquashArgs {
+    pub message: Vec<String>,
 }

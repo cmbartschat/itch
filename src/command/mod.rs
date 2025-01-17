@@ -69,7 +69,7 @@ pub async fn run_command(cli: &Cli) -> Attempt {
         Commands::Prune => prune_command(&ctx),
         Commands::Save(args) => save_command(&ctx, args, false),
         Commands::Split(args) => split_command(&ctx, args),
-        Commands::Squash => squash_command(&ctx),
+        Commands::Squash(args) => squash_command(&ctx, args),
         Commands::Status(args) => status_command(&ctx, args),
         Commands::Sync(args) => sync_command(&ctx, args),
         Commands::Ui => ui_command(&ctx).await,

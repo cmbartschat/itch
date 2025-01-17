@@ -17,7 +17,7 @@ use serde::Deserialize;
 
 use crate::{
     branch::get_current_branch,
-    cli::{DeleteArgs, LoadArgs, NewArgs, SaveArgs},
+    cli::{DeleteArgs, LoadArgs, NewArgs, SaveArgs, SquashArgs},
     command::new::new_command,
     ctx::{init_ctx, Ctx},
     diff::{collapse_renames, good_diff_options, split_diff_line},
@@ -585,7 +585,7 @@ async fn handle_merge() -> impl IntoResponse {
 }
 
 async fn handle_squash() -> impl IntoResponse {
-    api_handler(squash_command)
+    api_handler(|ctx| squash_command(ctx, &SquashArgs { message: vec![] }))
 }
 
 #[derive(Deserialize, Debug)]

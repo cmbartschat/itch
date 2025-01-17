@@ -1,6 +1,11 @@
-use crate::{ctx::Ctx, error::Attempt};
+use crate::{
+    cli::SquashArgs,
+    ctx::Ctx,
+    error::{fail, Attempt},
+    save::resolve_commit_message,
+};
 
-pub fn squash_command(ctx: &Ctx) -> Attempt {
+pub fn squash_command(ctx: &Ctx, args: &SquashArgs) -> Attempt {
     let _head = ctx.repo.head()?;
 
     let signature = ctx.repo.signature()?;
@@ -17,19 +22,21 @@ pub fn squash_command(ctx: &Ctx) -> Attempt {
 
     let parent = ctx.repo.find_commit(parent_id)?;
 
-    if top_commit.parents().any(|f| f.id() == parent.id()) {
-        eprintln!("Already squashed.");
-        return Ok(());
-    }
+    let message = match resolve_commit_message(&args.message) {
+        Some(m) => m,
+        None => match top_commit.message() {
+            Some(m) => m.to_string(),
+            None => return fail("Invalid characters in previous message"),
+        },
+    };
 
-    let message = top_commit.message().unwrap_or("<invalid message>");
     let tree = top_commit.tree()?;
 
     let squashed_commit = ctx.repo.find_commit(ctx.repo.commit(
         None,
         &signature,
         &signature,
-        message,
+        &message,
         &tree,
         &[&parent],
     )?)?;

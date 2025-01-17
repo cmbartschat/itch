@@ -2,6 +2,15 @@ use git2::IndexAddOption;
 
 use crate::{cli::SaveArgs, consts::TEMP_COMMIT_PREFIX, ctx::Ctx, error::Attempt};
 
+pub fn resolve_commit_message(message_parts: &[String]) -> Option<String> {
+    let joined = message_parts.join(" ");
+    let trimmed = joined.trim();
+    if trimmed.is_empty() {
+        return None;
+    }
+    Some(trimmed.to_string())
+}
+
 pub fn save(ctx: &Ctx, args: &SaveArgs, silent: bool) -> Attempt {
     let repo = &ctx.repo;
 
@@ -11,10 +20,7 @@ pub fn save(ctx: &Ctx, args: &SaveArgs, silent: bool) -> Attempt {
 
     let tree = repo.find_tree(index_commit)?;
 
-    let mut message = args.message.join(" ");
-    if message.is_empty() {
-        message = String::from("Save");
-    }
+    let message = resolve_commit_message(&args.message).unwrap_or_else(|| "Save".into());
 
     let signature = repo.signature()?;
 
