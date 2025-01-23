@@ -1,3 +1,5 @@
+use git2::build::CheckoutBuilder;
+
 use crate::{
     cli::LoadArgs,
     ctx::Ctx,
@@ -17,7 +19,10 @@ fn _load_command(ctx: &Ctx, args: &LoadArgs) -> Attempt {
         None => return fail("Invalid branch name"),
     };
 
-    ctx.repo.checkout_head(None)?;
+    let mut options = CheckoutBuilder::new();
+    options.force();
+    ctx.repo.checkout_head(Some(&mut options))?;
+
     pop_and_reset(ctx)
 }
 
