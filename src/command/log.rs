@@ -13,7 +13,7 @@ pub fn log_command(ctx: &Ctx) -> Attempt {
     while let Some(current_commit) = repo_head {
         let message = &current_commit.message().unwrap_or("<invalid message>");
 
-        let truncated_message = match message.find("\n") {
+        let truncated_message = match message.find('\n') {
             Some(i) => &message[0..i],
             None => &message[0..],
         };

@@ -51,7 +51,7 @@ static DOTS_PER_BRAILLE: usize = 6;
 
 fn create_many_dots(count: usize) -> String {
     if count > DOTS_PER_BRAILLE * 4 {
-        return format!("⠿{}⠿", count);
+        return format!("⠿{count}⠿");
     }
 
     let full_count = count / DOTS_PER_BRAILLE;
@@ -191,11 +191,11 @@ impl SegmentedStatus {
             potential_rename_chain.push(work.to);
         }
 
-        potential_rename_chain.iter().for_each(|p| {
+        for p in &potential_rename_chain {
             if let Some(v) = p {
                 rename_chain.push(v.clone());
             }
-        });
+        }
 
         let mut rename_chain = potential_rename_chain
             .into_iter()
@@ -235,7 +235,7 @@ fn get_post_fork_commits(info: &BranchSummary, styles: &Styles) -> String {
                 format!("{}...", final_message.trim())
             }
         }
-        _ => String::from(""),
+        _ => String::new(),
     };
 
     let wrapped_message = format!(
@@ -244,7 +244,7 @@ fn get_post_fork_commits(info: &BranchSummary, styles: &Styles) -> String {
     );
 
     match info.commit_count {
-        0 => "".to_string(),
+        0 => String::new(),
         1 => wrapped_message,
         2 => format!("{}o{} ─ {wrapped_message}", styles.highlight, styles.muted,),
         3 => format!(
@@ -287,13 +287,13 @@ fn draw_fork_diagram(info: &ForkInfo, styles: &Styles) {
             println!("        {}/{}", styles.muted, styles.end);
         }
     } else if info.dirty {
-        main_dirty_indicator = "*"
+        main_dirty_indicator = "*";
     }
 
     println!(
         "{}─ {}o{} ─ {}{base_display} {}←{} {base_name}{main_dirty_indicator}",
         styles.muted, styles.highlight, styles.muted, styles.end, styles.muted, styles.end
-    )
+    );
 }
 
 fn count_commits_since(_ctx: &Ctx, older: &Commit, newer: &Commit) -> Maybe<usize> {
@@ -394,7 +394,7 @@ pub fn resolve_fork_info(ctx: &Ctx, branch_name: Option<&str>) -> Maybe<ForkInfo
                 head_dirty = true;
                 let mut found = false;
 
-                for change in statuses.iter_mut() {
+                for change in &mut statuses {
                     if change.maybe_add_work(&d) {
                         found = true;
                         break;
@@ -411,12 +411,12 @@ pub fn resolve_fork_info(ctx: &Ctx, branch_name: Option<&str>) -> Maybe<ForkInfo
     return Ok(ForkInfo {
         base: BranchSummary {
             name: base.to_string(),
-            latest_message: base_commit.summary().map(|e| e.to_string()),
+            latest_message: base_commit.summary().map(std::string::ToString::to_string),
             commit_count: base_past_fork + 1,
         },
         head: BranchSummary {
             name: head_name.to_string(),
-            latest_message: head_commit.summary().map(|e| e.to_string()),
+            latest_message: head_commit.summary().map(std::string::ToString::to_string),
             commit_count: head_past_fork,
         },
         dirty: head_dirty,
@@ -434,7 +434,7 @@ pub fn status_command(ctx: &Ctx, args: &StatusArgs) -> Attempt {
     if !info.file_statuses.is_empty() {
         println!();
 
-        for status in info.file_statuses.into_iter() {
+        for status in info.file_statuses {
             status.print();
         }
     }

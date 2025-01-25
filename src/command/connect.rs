@@ -16,27 +16,25 @@ pub fn connect_command(ctx: &Ctx, args: &ConnectArgs) -> Attempt {
     let mut main_branch = ctx.repo.find_branch("main", git2::BranchType::Local)?;
     main_branch.set_upstream(Some("origin/main"))?;
 
-    match pull_main(ctx) {
-        Ok(()) => {}
-        Err(_) => {
-            if !ctx.can_prompt() {
-                return fail("Added remote, but local main branch has diverged from origin.");
-            }
+    if let Ok(()) = pull_main(ctx) {
+    } else {
+        if !ctx.can_prompt() {
+            return fail("Added remote, but local main branch has diverged from origin.");
+        }
 
-            let ignore_option = "ignore";
-            let reset_option = "reset local to main";
+        let ignore_option = "ignore";
+        let reset_option = "reset local to main";
 
-            let options = [ignore_option, reset_option];
+        let options = [ignore_option, reset_option];
 
-            let chosen_option = ask_option(
-                "Conflicts detected between local main and remote main.",
-                &options,
-                None,
-            );
+        let chosen_option = ask_option(
+            "Conflicts detected between local main and remote main.",
+            &options,
+            None,
+        );
 
-            if chosen_option == reset_option {
-                reset_main_to_remote(ctx)?;
-            }
+        if chosen_option == reset_option {
+            reset_main_to_remote(ctx)?;
         }
     }
 

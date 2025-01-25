@@ -85,10 +85,7 @@ pub fn push_branch(ctx: &Ctx, branch: &str) -> Attempt {
     let remote = get_remote(ctx)?;
     if let Some(mut remote) = remote {
         let remote_prefix = get_remote_prefix()?;
-        let refspec = format!(
-            "+refs/heads/{}:refs/heads/{}{}",
-            branch, remote_prefix, branch
-        );
+        let refspec = format!("+refs/heads/{branch}:refs/heads/{remote_prefix}{branch}");
         remote.push(&[refspec], Some(&mut setup_push_options(ctx)))?;
     }
     Ok(())
@@ -171,7 +168,7 @@ pub fn try_push_branch(ctx: &Ctx, name: &str) {
                 "Failed to update remote; continuing anyway ({})",
                 e.message()
             ),
-        )
+        );
     }
 }
 
@@ -180,7 +177,7 @@ pub fn try_push_main(ctx: &Ctx) {
         show_warning(
             ctx,
             &format!("Failed to push remote; continuing anyway ({})", e.message()),
-        )
+        );
     }
 }
 
@@ -189,7 +186,7 @@ pub fn try_pull_main(ctx: &Ctx) {
         show_warning(
             ctx,
             &format!("Failed to pull remote; continuing anyway ({})", e.message()),
-        )
+        );
     }
 }
 
@@ -244,6 +241,6 @@ pub fn try_delete_remote_branch(ctx: &Ctx, name: &str) {
         show_warning(
             ctx,
             &format!("Failed to delete branch on remote ({})", e.message()),
-        )
+        );
     }
 }

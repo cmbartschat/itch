@@ -60,7 +60,7 @@ fn extract_path(conflict: &IndexConflict) -> Maybe<PathBuf> {
 }
 
 fn get_entry_oid(entry: &Option<IndexEntry>) -> Oid {
-    entry.as_ref().map(|e| e.id).unwrap_or_else(Oid::zero)
+    entry.as_ref().map_or_else(Oid::zero, |e| e.id)
 }
 
 fn apply_resolution(
@@ -140,10 +140,8 @@ fn resolve_conflict(
                 }
             }
 
-            let prompt = format!(
-                "{} is conflicted. What would you like to do?",
-                current_path_string,
-            );
+            let prompt =
+                format!("{current_path_string} is conflicted. What would you like to do?",);
 
             let options = ["keep", "reset", "later", "edit"];
 
@@ -157,8 +155,7 @@ fn resolve_conflict(
                     let original_id = conflict
                         .ancestor
                         .as_ref()
-                        .map(|e| e.id)
-                        .unwrap_or_else(|| repo.blob("".as_bytes()).unwrap());
+                        .map_or_else(|| repo.blob("".as_bytes()).unwrap(), |e| e.id);
                     let patch_text =
                         get_merge_text(&ctx.repo, &original_id, &main_entry.id, &branch_entry.id)?;
                     let edited_string = edit_temp_text(&patch_text, path.extension())?;
@@ -196,8 +193,7 @@ fn resolve_conflict(
 
             match ask_option(
                 &format!(
-                    "{} was deleted, but has been modified on main. What would you like to do?",
-                    current_path_string,
+                    "{current_path_string} was deleted, but has been modified on main. What would you like to do?",
                 ),
                 &["delete", "keep"],
                 Some("keep"),

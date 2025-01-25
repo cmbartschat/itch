@@ -19,7 +19,7 @@ pub fn local_branch_exists(ctx: &Ctx, branch: &str) -> Maybe<bool> {
 
 pub fn choose_random_branch_name(ctx: &Ctx) -> Maybe<String> {
     for i in 1..100 {
-        let new_name = format!("b{}", i);
+        let new_name = format!("b{i}");
         let exists = local_branch_exists(ctx, &new_name)?;
         if !exists {
             return Ok(new_name);

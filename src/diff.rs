@@ -29,7 +29,7 @@ pub fn good_diff_options() -> DiffOptions {
 
 fn oid_to_string<'a>(repo: &'a Repository, oid: &git2::Oid) -> Maybe<(Option<Blob<'a>>, String)> {
     if oid.is_zero() {
-        return Ok((None, "".to_string()));
+        return Ok((None, String::new()));
     }
     let blob = repo.find_blob(*oid)?;
     if blob.is_binary() {
@@ -43,7 +43,7 @@ fn oid_to_string<'a>(repo: &'a Repository, oid: &git2::Oid) -> Maybe<(Option<Blo
 }
 
 fn get_lines(str: &str) -> Vec<&str> {
-    let mut original_lines: Vec<&str> = str.split_inclusive("\n").collect();
+    let mut original_lines: Vec<&str> = str.split_inclusive('\n').collect();
     if original_lines.last() == Some(&"") {
         original_lines.pop();
     }

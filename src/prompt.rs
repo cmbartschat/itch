@@ -13,23 +13,23 @@ pub fn ask_option(prompt: &str, options: &[&str], default: Option<&str>) -> Stri
     let mut fullform_map: HashMap<String, String> = HashMap::new();
 
     if let Some(default) = default {
-        shortcut_map.insert("".into(), default.into());
+        shortcut_map.insert(String::new(), default.into());
     }
 
-    options.iter().for_each(|f| {
+    for f in options {
         for i in 1..f.len() {
             let possible_shortcut = &f[0..i];
             if !shortcut_map.contains_key(possible_shortcut) {
-                shortcut_map.insert(possible_shortcut.into(), f.to_string());
-                fullform_map.insert(f.to_string(), possible_shortcut.into());
+                shortcut_map.insert(possible_shortcut.into(), (*f).to_string());
+                fullform_map.insert((*f).to_string(), possible_shortcut.into());
                 break;
             }
         }
-    });
+    }
 
     for (index, option) in options.iter().enumerate() {
         if default == Some(option) {
-            eprint!("{} (default)", option);
+            eprint!("{option} (default)");
         } else if let Some(shortcut) = fullform_map.get(*option) {
             eprint!("({}){}", shortcut, &option[shortcut.len()..]);
         }

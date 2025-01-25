@@ -88,7 +88,7 @@ fn status_class(delta: &Delta) -> &'static str {
 
 fn render_file_status(status: &SegmentedStatus, work_status: &FileStatus) -> Markup {
     let display_name = status.get_work_rename_chain().join(" → ");
-    let diff_link = work_status.to.as_ref().map(|f| format!("/diff/{}", f));
+    let diff_link = work_status.to.as_ref().map(|f| format!("/diff/{f}"));
     html! {
         li class=(status_class(&work_status.status)) {
             @if let Some(link) = diff_link {
@@ -117,7 +117,7 @@ type Args = Option<HashMap<String, String>>;
 fn hidden_args(args: &Args) -> Option<Markup> {
     args.as_ref().map(|map| {
         html! {
-           @for field in map.iter() {
+           @for field in map {
               input type="hidden" name=(field.0) value=(field.1);
            }
         }
@@ -230,7 +230,7 @@ fn load_dashboard_info() -> Maybe<DashboardInfo> {
 
     let head_name_str = repo_head.name().unwrap();
 
-    let head_name = head_name_str[head_name_str.rfind("/").map_or(0, |e| e + 1)..].to_owned();
+    let head_name = head_name_str[head_name_str.rfind('/').map_or(0, |e| e + 1)..].to_owned();
 
     let base = "main";
 
@@ -265,7 +265,7 @@ fn load_dashboard_info() -> Maybe<DashboardInfo> {
     Ok(DashboardInfo {
         commits_ahead: head_past_fork,
         commits_behind: base_past_fork,
-        current_branch: head_name.to_owned(),
+        current_branch: head_name.clone(),
         unsaved_changes: unsaved_diff.deltas().count(),
         branches,
         fork_info: resolve_fork_info(&ctx, None)?,
@@ -610,14 +610,14 @@ type SyncForm = HashMap<String, String>;
 fn convert_sync_form(body: &SyncForm) -> Maybe<ResolutionMap> {
     let mut resolutions: ResolutionMap = HashMap::new();
 
-    for (key, value) in body.iter() {
+    for (key, value) in body {
         let value = if value == "incoming" {
             ResolutionChoice::Incoming
         } else if value == "base" {
             ResolutionChoice::Base
         } else if value == "later" {
             ResolutionChoice::Later
-        } else if let Some(("manual", value)) = value.split_once(":") {
+        } else if let Some(("manual", value)) = value.split_once(':') {
             ResolutionChoice::Manual(value.into())
         } else {
             return fail("Unexpected selection");

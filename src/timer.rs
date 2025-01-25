@@ -12,7 +12,7 @@ pub struct Timer {
 
 impl Timer {
     pub fn new(name: &'static str) -> Self {
-        eprintln!("[{}]: begin", name);
+        eprintln!("[{name}]: begin");
         Self {
             name,
             start: Instant::now(),
@@ -23,7 +23,7 @@ impl Timer {
 
     pub fn step(&mut self, name: &'static str) {
         let now = Instant::now();
-        let prev_time: &Instant = self.last.as_ref().map(|f| &f.1).unwrap_or(&self.start);
+        let prev_time: &Instant = self.last.as_ref().map_or(&self.start, |f| &f.1);
         let passed = now.saturating_duration_since(*prev_time).as_millis();
         let passed_since_start = now.saturating_duration_since(self.start).as_millis();
         eprintln!(
@@ -34,11 +34,9 @@ impl Timer {
     }
 
     pub fn done(&mut self) {
-        if self.done {
-            panic!("Can't call done() twice on a timer.");
-        }
+        assert!(!self.done, "Can't call done() twice on a timer.");
         let now = Instant::now();
-        let prev_time: &Instant = self.last.as_ref().map(|f| &f.1).unwrap_or(&self.start);
+        let prev_time: &Instant = self.last.as_ref().map_or(&self.start, |f| &f.1);
         let passed = now.saturating_duration_since(*prev_time).as_millis();
         let passed_since_start = now.saturating_duration_since(self.start).as_millis();
         eprintln!(
