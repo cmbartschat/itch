@@ -9,10 +9,10 @@ use crate::{
 pub fn new_command(ctx: &Ctx, args: &NewArgs) -> Attempt {
     let name = match &args.name {
         Some(n) => {
-            if !n.is_empty() {
-                Ok(n.to_string())
-            } else {
+            if n.is_empty() {
                 choose_random_branch_name(ctx)
+            } else {
+                Ok(n.to_string())
             }
         }
         None => choose_random_branch_name(ctx),

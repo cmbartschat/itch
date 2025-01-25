@@ -155,10 +155,10 @@ impl SegmentedStatus {
         if let Some(work) = &self.work {
             match (&work.from, &work.to) {
                 (Some(from), Some(to)) => {
-                    if from != to {
-                        vec![from.to_string(), to.to_string()]
-                    } else {
+                    if from == to {
                         vec![from.to_string()]
+                    } else {
+                        vec![from.to_string(), to.to_string()]
                     }
                 }
                 (None, Some(to)) => vec![to.to_string()],
@@ -174,8 +174,6 @@ impl SegmentedStatus {
         let mut committed_char = ' ';
         let mut work_char = ' ';
 
-        let mut rename_chain: Vec<String> = Vec::new();
-
         let mut potential_rename_chain: Vec<Option<String>> = Vec::new();
 
         if let Some(committed) = self.committed {
@@ -189,12 +187,6 @@ impl SegmentedStatus {
                 potential_rename_chain.push(work.from);
             }
             potential_rename_chain.push(work.to);
-        }
-
-        for p in &potential_rename_chain {
-            if let Some(v) = p {
-                rename_chain.push(v.clone());
-            }
         }
 
         let mut rename_chain = potential_rename_chain

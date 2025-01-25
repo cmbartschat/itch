@@ -2,6 +2,7 @@ use std::path::PathBuf;
 
 use crate::error::Maybe;
 
+#[allow(clippy::unnecessary_wraps)]
 pub fn bytes2path(bytes: &[u8]) -> Maybe<PathBuf> {
     #[cfg(unix)]
     {

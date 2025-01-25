@@ -1,3 +1,8 @@
+#![deny(clippy::all)]
+#![deny(clippy::pedantic)]
+#![allow(clippy::module_name_repetitions)]
+#![allow(clippy::redundant_else)]
+
 use clap::Parser;
 use cli::Cli;
 use command::run_command;

@@ -23,10 +23,8 @@ impl Ctx {
 
     pub fn can_prompt(&self) -> bool {
         match self.mode {
-            Mode::Unknown => true,
-            Mode::Cli => true,
-            Mode::Background => false,
-            Mode::Pipe => false,
+            Mode::Unknown | Mode::Cli => true,
+            Mode::Background | Mode::Pipe => false,
         }
     }
 

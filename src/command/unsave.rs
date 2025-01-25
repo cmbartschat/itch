@@ -130,10 +130,10 @@ pub fn unsave_command(ctx: &Ctx, args: &UnsaveArgs) -> Attempt {
     match (parent_commits.next(), parent_commits.next()) {
         (None, _) => fail("Latest commit has no parent."),
         (Some(prev_commit), None) => {
-            if !args.args.is_empty() {
-                unsave_files(ctx, &args.args, &head_commit, &prev_commit)
-            } else {
+            if args.args.is_empty() {
                 unsave_single(ctx, prev_commit)
+            } else {
+                unsave_files(ctx, &args.args, &head_commit, &prev_commit)
             }
         }
         (Some(_), Some(_)) => fail("Expected single parent commit."),

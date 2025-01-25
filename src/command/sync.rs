@@ -69,14 +69,16 @@ fn apply_resolution(
     conflict: &IndexConflict,
     resolution: &ResolutionChoice,
 ) -> Attempt {
+    type C = ResolutionChoice;
+
     let current_path = extract_path(conflict)?;
 
     match (resolution, conflict.our.as_ref(), conflict.their.as_ref()) {
-        (ResolutionChoice::Incoming, _, None) => delete_entry(index, &current_path),
-        (ResolutionChoice::Incoming, _, Some(choice)) => select_entry(index, &current_path, choice),
-        (ResolutionChoice::Base, None, _) => delete_entry(index, &current_path),
-        (ResolutionChoice::Base, Some(choice), _) => select_entry(index, &current_path, choice),
-        (ResolutionChoice::Later, _, _) => {
+        (C::Incoming, _, None) | (C::Base, None, _) => delete_entry(index, &current_path),
+        (C::Incoming, _, Some(choice)) | (C::Base, Some(choice), _) => {
+            select_entry(index, &current_path, choice)
+        }
+        (C::Later, _, _) => {
             let ancestor_oid = get_entry_oid(&conflict.ancestor);
             let our_oid = get_entry_oid(&conflict.our);
             let their_oid = get_entry_oid(&conflict.their);
@@ -85,7 +87,7 @@ fn apply_resolution(
             new_entry.id = repo.blob(conflicted.as_bytes())?;
             select_entry(index, &current_path, &new_entry)
         }
-        (ResolutionChoice::Manual(str), _, _) => {
+        (C::Manual(str), _, _) => {
             let mut new_entry = clone_entry(conflict.their.as_ref().unwrap());
             new_entry.id = repo.blob(str.as_bytes())?;
             select_entry(index, &current_path, &new_entry)

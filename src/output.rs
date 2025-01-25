@@ -3,19 +3,17 @@ use std::{
     fmt::{self},
 };
 
-use crate::error::Maybe;
-
 pub enum OutputTarget {
     Pager(minus::Pager),
     Stdout,
 }
 
 impl OutputTarget {
-    pub fn new() -> Maybe<Self> {
+    pub fn new() -> Self {
         if env::var_os("NOPAGER").is_some() {
-            Ok(OutputTarget::Stdout)
+            OutputTarget::Stdout
         } else {
-            Ok(OutputTarget::Pager(minus::Pager::new()))
+            OutputTarget::Pager(minus::Pager::new())
         }
     }
 

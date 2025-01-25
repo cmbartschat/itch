@@ -167,7 +167,7 @@ pub fn diff_command(ctx: &Ctx, args: &DiffArgs) -> Attempt {
 
     collapse_renames(&mut diff)?;
 
-    let mut output = OutputTarget::new()?;
+    let mut output = OutputTarget::new();
 
     diff.print(git2::DiffFormat::Patch, |_, _, line| {
         let origin = line.origin();

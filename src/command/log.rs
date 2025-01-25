@@ -6,7 +6,7 @@ use crate::{
 use std::fmt::Write;
 
 pub fn log_command(ctx: &Ctx) -> Attempt {
-    let mut output = OutputTarget::new()?;
+    let mut output = OutputTarget::new();
 
     let mut repo_head = Some(ctx.repo.head()?.peel_to_commit()?);
     let mut iterations = 0;

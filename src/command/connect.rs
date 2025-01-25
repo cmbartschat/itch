@@ -16,8 +16,7 @@ pub fn connect_command(ctx: &Ctx, args: &ConnectArgs) -> Attempt {
     let mut main_branch = ctx.repo.find_branch("main", git2::BranchType::Local)?;
     main_branch.set_upstream(Some("origin/main"))?;
 
-    if let Ok(()) = pull_main(ctx) {
-    } else {
+    if pull_main(ctx).is_err() {
         if !ctx.can_prompt() {
             return fail("Added remote, but local main branch has diverged from origin.");
         }

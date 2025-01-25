@@ -76,7 +76,7 @@ fn radio(label: &str, name: &str, value: &str, checked: bool) -> Markup {
     }
 }
 
-fn status_class(delta: &Delta) -> &'static str {
+fn status_class(delta: Delta) -> &'static str {
     match delta {
         Delta::Added | Delta::Untracked => "status-added",
         Delta::Deleted => "status-deleted",
@@ -90,7 +90,7 @@ fn render_file_status(status: &SegmentedStatus, work_status: &FileStatus) -> Mar
     let display_name = status.get_work_rename_chain().join(" → ");
     let diff_link = work_status.to.as_ref().map(|f| format!("/diff/{f}"));
     html! {
-        li class=(status_class(&work_status.status)) {
+        li class=(status_class(work_status.status)) {
             @if let Some(link) = diff_link {
                 a href=(link) {(display_name)}
             } @else {
@@ -467,7 +467,7 @@ async fn sync() -> impl IntoResponse {
     render_sync(&vec![])
 }
 
-fn render_diff(file_path: String) -> Maybe<Option<Markup>> {
+fn render_diff(file_path: &str) -> Maybe<Option<Markup>> {
     let mut ctx = init_ctx()?;
     ctx.set_mode(crate::ctx::Mode::Background);
 
@@ -541,7 +541,7 @@ fn render_diff(file_path: String) -> Maybe<Option<Markup>> {
 }
 
 async fn diff(Path(file_path): Path<String>) -> impl IntoResponse {
-    match render_diff(file_path) {
+    match render_diff(&file_path) {
         Ok(e) => match e {
             Some(e) => e.into_response(),
             None => (StatusCode::NOT_FOUND, render_message("Not found", None)).into_response(),
@@ -567,10 +567,12 @@ where
 }
 
 fn map_error_to_response(err: Fail) -> impl IntoResponse {
-    (
+    let res = (
         StatusCode::INTERNAL_SERVER_ERROR,
         render_message("Error", Some(err.message())),
-    )
+    );
+    std::mem::drop(err);
+    res
 }
 
 fn map_result_to_response<T>(res: Maybe<T>) -> impl IntoResponse {
@@ -706,7 +708,7 @@ pub async fn ui_command(ctx: &Ctx) -> Attempt {
         token: base64::engine::general_purpose::STANDARD_NO_PAD.encode(key),
     };
 
-    let api = Router::new()
+    let api_router = Router::new()
         .route("/merge", post(handle_merge))
         .route("/squash", post(handle_squash))
         .route("/sync", post(handle_sync))
@@ -720,17 +722,18 @@ pub async fn ui_command(ctx: &Ctx) -> Attempt {
             csrf_check,
         ));
 
-    let app = Router::new()
+    let root_router = Router::new()
         .route("/", get(dashboard))
         .route("/sync", get(sync))
         .route("/diff/*file_path", get(diff))
-        .nest("/api", api)
+        .nest("/api", api_router)
         .with_state(state)
         .fallback(render_404);
 
     let mut hasher = DefaultHasher::new();
     env::current_dir().unwrap().hash(&mut hasher);
-    let offset = (hasher.finish() % 1000) as u16;
+    let bytes = hasher.finish().to_be_bytes();
+    let offset = u16::from_be_bytes([bytes[0], bytes[1]]) % 1000;
 
     let builder = (|| {
         for iteration in 0..100 {
@@ -743,7 +746,7 @@ pub async fn ui_command(ctx: &Ctx) -> Attempt {
         panic!("Unable to find unused port");
     })();
 
-    let server = builder.serve(app.into_make_service());
+    let server = builder.serve(root_router.into_make_service());
 
     let address = format!("http://localhost:{}", server.local_addr().port());
 
