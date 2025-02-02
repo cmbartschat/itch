@@ -1,4 +1,5 @@
 use base64::Engine;
+use fork::{close_fd, fork, Fork};
 use rand::RngCore;
 use std::{
     collections::{hash_map::DefaultHasher, HashMap},
@@ -778,14 +779,6 @@ async fn locate_background(dir: &str) -> Maybe<Option<UiHost>> {
     Ok(None)
 }
 
-fn make_address(port: u16, path: &str) -> String {
-    format!("http://localhost:{port}/{path}")
-}
-
-fn open_ui(port: u16) -> Attempt {
-    open::that(make_address(port, "")).map_err(|_| inner_fail("Failed to open UI tab."))
-}
-
 async fn run_ui_server(ctx: &Ctx) -> Attempt {
     let mut key = [0u8; 32];
     OsRng.fill_bytes(&mut key);
@@ -845,10 +838,21 @@ async fn run_ui_server(ctx: &Ctx) -> Attempt {
 
     open::that(address).unwrap();
 
+    close_fd().map_err(|_| inner_fail("Failed to fork"))?;
+
     shutdown.await.map_err(|_| inner_fail("Exited with error"))
 }
 
 pub fn ui_command(ctx: &Ctx) -> Attempt {
+    match fork() {
+        Ok(Fork::Child) => {}
+        Ok(Fork::Parent(_)) => {
+            std::thread::sleep(std::time::Duration::from_millis(500));
+            return Ok(());
+        }
+        Err(_) => return fail("Failed to start in background"),
+    };
+
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
@@ -856,12 +860,13 @@ pub fn ui_command(ctx: &Ctx) -> Attempt {
 
     runtime.block_on(async {
         match locate_background(ctx.repo.path().to_string_lossy().as_ref()).await {
-            Ok(Some(e)) => open_ui(e.port),
-            Ok(None) => {
-                let res = run_ui_server(ctx).await;
-                println!("UI server closed.");
-                res
+            Ok(Some(e)) => {
+                let address = format!("http://localhost:{}", e.port);
+                open::that(&address).unwrap();
+                println!("Listening on {address}");
+                Ok(())
             }
+            Ok(None) => run_ui_server(ctx).await,
             Err(e) => Err(e),
         }
     })
