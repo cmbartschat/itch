@@ -53,6 +53,7 @@ use super::{
 #[derive(Clone)]
 struct CsrfState {
     token: String,
+    exit_signal: tokio::sync::mpsc::Sender<()>,
 }
 
 const STYLES: PreEscaped<&'static str> = PreEscaped(include_str!("ui-styles.css"));
@@ -290,8 +291,13 @@ fn render_dashboard(info: &DashboardInfo) -> Markup {
             }
             body.spaced-down {
                 header.spaced-across {
-                    h1 { (info.workspace) }
-                    a href="/" { "Refresh" }
+                    div.spaced-across.grow {
+                        h1 { (info.workspace) }
+                        a href="/" { "Refresh" }
+                    }
+                    div.right {
+                       (action_btn("POST", "/api/quit", "Quit", &None, false))
+                    }
                 }
 
                 div.spaced-across.start {
@@ -592,6 +598,22 @@ async fn handle_squash() -> impl IntoResponse {
     api_handler(|ctx| squash_command(ctx, &SquashArgs { message: vec![] }))
 }
 
+async fn handle_quit(State(state): State<CsrfState>) -> impl IntoResponse {
+    match state.exit_signal.send(()).await {
+        Ok(()) => (
+            StatusCode::OK,
+            render_message(
+                "Exited",
+                Some("The UI server has exited, you can close the tab."),
+            ),
+        ),
+        Err(_) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            render_message("Error", Some("Failed to exit UI.")),
+        ),
+    }
+}
+
 #[derive(Deserialize, Debug)]
 struct SaveForm {
     message: String,
@@ -703,8 +725,11 @@ async fn run_ui_server(ctx: &Ctx) -> Attempt {
     let mut key = [0u8; 32];
     OsRng.fill_bytes(&mut key);
 
+    let (tx, mut rx) = tokio::sync::mpsc::channel(1);
+
     let state = CsrfState {
         token: base64::engine::general_purpose::STANDARD_NO_PAD.encode(key),
+        exit_signal: tx,
     };
 
     let api_router = Router::new()
@@ -712,6 +737,7 @@ async fn run_ui_server(ctx: &Ctx) -> Attempt {
         .route("/squash", post(handle_squash))
         .route("/sync", post(handle_sync))
         .route("/save", post(handle_save))
+        .route("/quit", post(handle_quit))
         .route("/load", post(handle_load))
         .route("/delete", post(handle_delete))
         .route("/prune", post(handle_prune))
@@ -749,13 +775,17 @@ async fn run_ui_server(ctx: &Ctx) -> Attempt {
 
     let address = format!("http://localhost:{}", server.local_addr().port());
 
+    let shutdown = server.with_graceful_shutdown(async {
+        rx.recv().await;
+    });
+
     if ctx.can_prompt() {
         println!("Listening on {address}");
     }
 
     open::that(address).unwrap();
 
-    server.await.map_err(|_| inner_fail("Exited with error"))
+    shutdown.await.map_err(|_| inner_fail("Exited with error"))
 }
 
 pub fn ui_command(ctx: &Ctx) -> Attempt {
@@ -764,5 +794,7 @@ pub fn ui_command(ctx: &Ctx) -> Attempt {
         .build()
         .map_err(|_| inner_fail("Async runtime error"))?;
 
-    runtime.block_on(async { run_ui_server(ctx).await })
+    let res = runtime.block_on(async { run_ui_server(ctx).await });
+    println!("UI server closed.");
+    res
 }

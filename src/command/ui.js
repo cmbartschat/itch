@@ -27,5 +27,6 @@ window.addEventListener('focus', () => {
 
 
 window.addEventListener('DOMContentLoaded', () => {
-  document.querySelector('h1').parentNode.appendChild(label)
+  const container = document.querySelector('header > div:first-child')
+  container.appendChild( label)
 }, {once: true})

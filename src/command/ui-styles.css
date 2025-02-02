@@ -32,6 +32,10 @@ ul {
   padding-left: 1rem;
 }
 
+header {
+  width: 100%;
+}
+
 @media (prefers-color-scheme: dark) {
   body {
     --border: white;
