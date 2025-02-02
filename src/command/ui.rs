@@ -2,7 +2,6 @@ use base64::Engine;
 use rand::RngCore;
 use std::{
     collections::{hash_map::DefaultHasher, HashMap},
-    env,
     hash::{Hash, Hasher},
     net::{IpAddr, Ipv4Addr, SocketAddr},
     path::PathBuf,
@@ -15,7 +14,7 @@ use axum_extra::extract::{
 };
 use git2::{Commit, Delta, DiffDelta, DiffHunk, DiffLine, Patch};
 use rand::rngs::OsRng;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use crate::{
     branch::get_current_branch,
@@ -54,6 +53,16 @@ use super::{
 struct CsrfState {
     token: String,
     exit_signal: tokio::sync::mpsc::Sender<()>,
+}
+
+#[derive(Debug)]
+struct UiHost {
+    port: u16,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct UiInfo {
+    directory: String,
 }
 
 const STYLES: PreEscaped<&'static str> = PreEscaped(include_str!("ui-styles.css"));
@@ -682,6 +691,20 @@ async fn handle_load(Form(body): Form<LoadArgs>) -> impl IntoResponse {
     api_handler(move |ctx| load_command(ctx, &body))
 }
 
+async fn handle_info() -> impl IntoResponse {
+    with_ctx(|ctx| {
+        let data = UiInfo {
+            directory: ctx.repo.path().to_string_lossy().to_string(),
+        };
+        let json = serde_json::to_string(&data).map_err(|e| {
+            eprintln!("{e:?}");
+            inner_fail("Failed to Serialize")
+        })?;
+        Ok((StatusCode::OK, json))
+    })
+    .map_err(map_error_to_response)
+}
+
 #[derive(Deserialize, Debug)]
 struct DeleteForm {
     name: String,
@@ -721,6 +744,48 @@ async fn csrf_check<B>(
     }
 }
 
+fn iterate_ports(dir: &str) -> std::ops::Range<u16> {
+    let mut hasher = DefaultHasher::new();
+    dir.hash(&mut hasher);
+    let bytes = hasher.finish().to_be_bytes();
+    let offset = 8000 + (u16::from_be_bytes([bytes[0], bytes[1]]) % 1000);
+    offset..(offset + 100)
+}
+
+async fn locate_background(dir: &str) -> Maybe<Option<UiHost>> {
+    for port in iterate_ports(dir) {
+        match reqwest::get(format!("http:/0.0.0.0:{port}/_info")).await {
+            Ok(res) => {
+                if res.status().is_success() {
+                    let text = res.text().await.map_err(|_| inner_fail("Failed to load"))?;
+                    let parsed: UiInfo =
+                        serde_json::from_str(&text).map_err(|_| inner_fail("Parse error"))?;
+                    if parsed.directory == dir {
+                        return Ok(Some(UiHost { port }));
+                    }
+                }
+                continue;
+            }
+            Err(e) => {
+                if e.is_connect() {
+                    continue;
+                }
+                return fail("Unexpected error in request");
+            }
+        }
+    }
+
+    Ok(None)
+}
+
+fn make_address(port: u16, path: &str) -> String {
+    format!("http://localhost:{port}/{path}")
+}
+
+fn open_ui(port: u16) -> Attempt {
+    open::that(make_address(port, "")).map_err(|_| inner_fail("Failed to open UI tab."))
+}
+
 async fn run_ui_server(ctx: &Ctx) -> Attempt {
     let mut key = [0u8; 32];
     OsRng.fill_bytes(&mut key);
@@ -751,18 +816,13 @@ async fn run_ui_server(ctx: &Ctx) -> Attempt {
         .route("/", get(dashboard))
         .route("/sync", get(sync))
         .route("/diff/*file_path", get(diff))
+        .route("/_info", get(handle_info))
         .nest("/api", api_router)
         .with_state(state)
         .fallback(render_404);
 
-    let mut hasher = DefaultHasher::new();
-    env::current_dir().unwrap().hash(&mut hasher);
-    let bytes = hasher.finish().to_be_bytes();
-    let offset = u16::from_be_bytes([bytes[0], bytes[1]]) % 1000;
-
     let builder = (|| {
-        for iteration in 0..100 {
-            let port = 8000 + offset + iteration;
+        for port in iterate_ports(&ctx.repo.path().to_string_lossy()) {
             let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), port);
             if let Ok(l) = axum::Server::try_bind(&addr) {
                 return l;
@@ -794,7 +854,15 @@ pub fn ui_command(ctx: &Ctx) -> Attempt {
         .build()
         .map_err(|_| inner_fail("Async runtime error"))?;
 
-    let res = runtime.block_on(async { run_ui_server(ctx).await });
-    println!("UI server closed.");
-    res
+    runtime.block_on(async {
+        match locate_background(ctx.repo.path().to_string_lossy().as_ref()).await {
+            Ok(Some(e)) => open_ui(e.port),
+            Ok(None) => {
+                let res = run_ui_server(ctx).await;
+                println!("UI server closed.");
+                res
+            }
+            Err(e) => Err(e),
+        }
+    })
 }
