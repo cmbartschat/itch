@@ -26,8 +26,7 @@ mod save;
 mod sync;
 mod timer;
 
-#[tokio::main]
-async fn main() {
+fn main() {
     let cli = Cli::parse();
 
     if cli.verbose {
@@ -38,7 +37,7 @@ async fn main() {
 
     let res = run_command(&cli);
 
-    if let Err(e) = res.await {
+    if let Err(e) = res {
         eprintln!("Failed with error: {}", e.message());
     }
 }

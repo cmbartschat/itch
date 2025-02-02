@@ -1,3 +1,5 @@
+use base64::Engine;
+use rand::RngCore;
 use std::{
     collections::{hash_map::DefaultHasher, HashMap},
     env,
@@ -21,7 +23,7 @@ use crate::{
     command::new::new_command,
     ctx::{init_ctx, Ctx},
     diff::{collapse_renames, good_diff_options, split_diff_line},
-    error::{fail, Attempt, Fail, Maybe},
+    error::{fail, inner_fail, Attempt, Fail, Maybe},
     reset::pop_and_reset,
     save::save_temp,
     sync::{Conflict, ResolutionChoice, ResolutionMap, SyncDetails},
@@ -697,10 +699,7 @@ async fn csrf_check<B>(
     }
 }
 
-use base64::Engine;
-use rand::RngCore;
-
-pub async fn ui_command(ctx: &Ctx) -> Attempt {
+async fn run_ui_server(ctx: &Ctx) -> Attempt {
     let mut key = [0u8; 32];
     OsRng.fill_bytes(&mut key);
 
@@ -756,7 +755,14 @@ pub async fn ui_command(ctx: &Ctx) -> Attempt {
 
     open::that(address).unwrap();
 
-    server.await.unwrap();
+    server.await.map_err(|_| inner_fail("Exited with error"))
+}
 
-    Ok(())
+pub fn ui_command(ctx: &Ctx) -> Attempt {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .map_err(|_| inner_fail("Async runtime error"))?;
+
+    runtime.block_on(async { run_ui_server(ctx).await })
 }

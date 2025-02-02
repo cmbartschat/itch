@@ -40,7 +40,7 @@ mod sync;
 mod ui;
 mod unsave;
 
-pub async fn run_command(cli: &Cli) -> Attempt {
+pub fn run_command(cli: &Cli) -> Attempt {
     if let Commands::Init = cli.command {
         return init_command();
     }
@@ -72,7 +72,7 @@ pub async fn run_command(cli: &Cli) -> Attempt {
         Commands::Squash(args) => squash_command(&ctx, args),
         Commands::Status(args) => status_command(&ctx, args),
         Commands::Sync(args) => sync_command(&ctx, args),
-        Commands::Ui => ui_command(&ctx).await,
+        Commands::Ui => ui_command(&ctx),
         Commands::Unsave(args) => unsave_command(&ctx, args),
         Commands::Revert(args) => revert_command(&ctx, args),
     }
