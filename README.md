@@ -18,7 +18,7 @@ Itch is a source control tool that lets you get work done faster. It is:
 
 ## Using the GUI
 
-`itch ui` - Open the graphical user interface. While the command is running in the terminal, the interface will remain available.
+`itch ui` - Open the graphical user interface. The interface will remain available until exited by the "Quit" button in the interface. Running `itch ui` a second time will reopen the interface.
 
 ## Working with branches
 
