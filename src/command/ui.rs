@@ -152,14 +152,23 @@ fn named(name: &str) -> HashMap<String, String> {
     map
 }
 
-fn branch_entry(info: &DashboardInfo, name: &str) -> Markup {
+fn branch_entry(info: &DashboardInfo, branch: &BranchInfo) -> Markup {
+    let name: &str = &branch.name;
     html! {
         li.spaced-across {
             span.grow .selected[info.current_branch == name] { (name) }
+            @if branch.commits_behind > 0 {
+                (action_btn("POST", "/api/sync", "Sync", &Some(named(name)), false))
+            }
             (action_btn("POST", "/api/load", "Load", &Some(named(name)), info.current_branch == name))
             (action_btn("POST", "/api/delete", "Delete", &Some(named(name)), name == "main" || info.current_branch == name))
         }
     }
+}
+
+struct BranchInfo {
+    name: String,
+    commits_behind: usize,
 }
 
 struct DashboardInfo {
@@ -168,7 +177,7 @@ struct DashboardInfo {
     commits_ahead: usize,
     commits_behind: usize,
     fork_info: ForkInfo,
-    branches: Vec<String>,
+    branches: Vec<BranchInfo>,
     workspace: String,
 }
 
@@ -261,13 +270,23 @@ fn load_dashboard_info() -> Maybe<DashboardInfo> {
     let base_past_fork = count_commits_since(&ctx, &fork_point, &base_commit)?;
     let head_past_fork = count_commits_since(&ctx, &fork_point, &head_commit)?;
 
-    let mut branches = ctx
-        .repo
-        .branches(Some(git2::BranchType::Local))?
-        .map(|e| e.unwrap().0.name().unwrap().unwrap().to_owned())
-        .collect::<Vec<String>>();
+    let mut branches: Vec<BranchInfo> = vec![];
 
-    branches.sort_unstable();
+    for branch in ctx.repo.branches(Some(git2::BranchType::Local))? {
+        let (branch, _type) = branch?;
+        let branch_name = branch.name()?.unwrap().to_string();
+        let head_commit = branch.into_reference().peel_to_commit()?;
+        let fork_point = ctx
+            .repo
+            .find_commit(ctx.repo.merge_base(base_commit.id(), head_commit.id())?)?;
+
+        let base_past_fork = count_commits_since(&ctx, &fork_point, &base_commit)?;
+
+        branches.push(BranchInfo {
+            name: branch_name,
+            commits_behind: base_past_fork,
+        });
+    }
 
     let mut unsaved_diff = ctx
         .repo
@@ -332,7 +351,7 @@ fn render_dashboard(info: &DashboardInfo) -> Markup {
                         }
 
                         div.spaced-across {
-                            (action_btn("POST", "/api/sync", "Sync", &None, info.commits_behind == 0))
+                            (action_btn("POST", "/api/sync", "Sync", &None, false))
                             @match info.commits_behind {
                                 0 => ("already synced"),
                                 1 => ("1 commit behind"),
@@ -391,7 +410,7 @@ async fn dashboard(jar: CookieJar, State(state): State<CsrfState>) -> impl IntoR
         .map_err(map_error_to_response)
 }
 
-fn render_sync(conflicts: &Vec<Conflict>) -> Markup {
+fn render_sync(conflicts: &Vec<Conflict>, branch_name: Option<&str>) -> Markup {
     html! {
         (DOCTYPE)
         head {
@@ -404,6 +423,8 @@ fn render_sync(conflicts: &Vec<Conflict>) -> Markup {
             h1 { "Sync" }
 
             form.spaced-down method="POST" action="/api/sync"  {
+                (branch_name.map(|b| hidden_args(&Some(named(b)))).unwrap_or_default().unwrap_or_default())
+
                 @for conflict in conflicts {
                     @match conflict {
                       Conflict::MainDeletion(path) => {
@@ -482,7 +503,7 @@ fn render_sync(conflicts: &Vec<Conflict>) -> Markup {
 }
 
 async fn sync() -> impl IntoResponse {
-    render_sync(&vec![])
+    render_sync(&vec![], None)
 }
 
 fn render_diff(file_path: &str) -> Maybe<Option<Markup>> {
@@ -664,18 +685,21 @@ fn convert_sync_form(body: &SyncForm) -> Maybe<ResolutionMap> {
     Ok(resolutions)
 }
 
-async fn handle_sync(Form(body): Form<SyncForm>) -> impl IntoResponse {
+async fn handle_sync(Form(mut body): Form<SyncForm>) -> impl IntoResponse {
     let sync_result = with_ctx(|ctx| {
+        let name = body.remove("name");
         let args = convert_sync_form(&body)?;
+        let current_branch = get_current_branch(ctx)?;
+        let target_branch = name.unwrap_or(current_branch);
         save_temp(ctx, "Save before sync".to_string())?;
-        let details = try_sync_branch(ctx, &get_current_branch(ctx)?, Some(&args))?;
+        let details = try_sync_branch(ctx, &target_branch, Some(&args))?;
         pop_and_reset(ctx)?;
-        Ok(details)
+        Ok((target_branch, details))
     });
     match sync_result {
-        Ok(details) => {
+        Ok((name, details)) => {
             if let SyncDetails::Conflicted(d) = details {
-                render_sync(&d).into_response()
+                render_sync(&d, Some(&name)).into_response()
             } else {
                 Redirect::to("/").into_response()
             }
