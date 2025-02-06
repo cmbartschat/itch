@@ -161,7 +161,7 @@ fn branch_entry(info: &DashboardInfo, branch: &BranchInfo) -> Markup {
                 (action_btn("POST", "/api/sync", "Sync", &Some(named(name)), false))
             }
             (action_btn("POST", "/api/load", "Load", &Some(named(name)), info.current_branch == name))
-            (action_btn("POST", "/api/delete", "Delete", &Some(named(name)), name == "main" || info.current_branch == name))
+            (action_btn("POST", "/api/delete", "Delete", &Some(named(name)), name == "main"))
         }
     }
 }

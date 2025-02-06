@@ -20,9 +20,6 @@ pub fn prune_command(ctx: &Ctx) -> Attempt {
             if name == "main" {
                 continue;
             }
-            if branch.is_head() {
-                continue;
-            }
 
             let branch_id = ctx
                 .repo
