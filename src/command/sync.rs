@@ -59,7 +59,7 @@ fn extract_path(conflict: &IndexConflict) -> Maybe<PathBuf> {
     }
 }
 
-fn get_entry_oid(entry: &Option<IndexEntry>) -> Oid {
+fn get_entry_oid(entry: Option<&IndexEntry>) -> Oid {
     entry.as_ref().map_or_else(Oid::zero, |e| e.id)
 }
 
@@ -79,9 +79,9 @@ fn apply_resolution(
             select_entry(index, &current_path, choice)
         }
         (C::Later, _, _) => {
-            let ancestor_oid = get_entry_oid(&conflict.ancestor);
-            let our_oid = get_entry_oid(&conflict.our);
-            let their_oid = get_entry_oid(&conflict.their);
+            let ancestor_oid = get_entry_oid(conflict.ancestor.as_ref());
+            let our_oid = get_entry_oid(conflict.our.as_ref());
+            let their_oid = get_entry_oid(conflict.their.as_ref());
             let conflicted = get_merge_text(repo, &ancestor_oid, &their_oid, &our_oid)?;
             let mut new_entry = clone_entry(conflict.their.as_ref().unwrap());
             new_entry.id = repo.blob(conflicted.as_bytes())?;

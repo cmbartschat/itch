@@ -85,7 +85,7 @@ impl Range {
     }
 
     #[must_use]
-    pub fn join_with_opt(&self, other: &Option<Self>) -> Self {
+    pub fn join_with_opt(&self, other: Option<&Self>) -> Self {
         if let Some(other) = other {
             self.join(other)
         } else {
@@ -107,8 +107,8 @@ struct MyHunk {
 
 fn get_diff_hunks(
     repo: &Repository,
-    old_blob: &Option<git2::Blob>,
-    new_blob: &Option<git2::Blob>,
+    old_blob: Option<&git2::Blob>,
+    new_blob: Option<&git2::Blob>,
 ) -> Vec<MyHunk> {
     let old_as_path = None;
     let new_as_path = None;
@@ -122,9 +122,9 @@ fn get_diff_hunks(
     let mut res = vec![];
 
     repo.diff_blobs(
-        old_blob.as_ref(),
+        old_blob,
         old_as_path,
-        new_blob.as_ref(),
+        new_blob,
         new_as_path,
         Some(&mut opts),
         file_cb,
@@ -158,10 +158,10 @@ pub fn get_merge_text(
     let (branch_blob, branch_string) = oid_to_string(repo, branch_id)?;
     let branch_lines = get_lines(&branch_string);
 
-    let mut branch_hunks = get_diff_hunks(repo, &original_blob, &branch_blob)
+    let mut branch_hunks = get_diff_hunks(repo, original_blob.as_ref(), branch_blob.as_ref())
         .into_iter()
         .peekable();
-    let mut upstream_hunks = get_diff_hunks(repo, &original_blob, &upstream_blob)
+    let mut upstream_hunks = get_diff_hunks(repo, original_blob.as_ref(), upstream_blob.as_ref())
         .into_iter()
         .peekable();
 
@@ -194,7 +194,7 @@ pub fn get_merge_text(
                 if next_upstream.old.touches(&original_range) {
                     should_continue = true;
                     original_range.join_mut(&next_upstream.old);
-                    upstream_range = Some(next_upstream.new.join_with_opt(&upstream_range));
+                    upstream_range = Some(next_upstream.new.join_with_opt(upstream_range.as_ref()));
                     upstream_hunks.next();
                 }
             }
@@ -203,7 +203,7 @@ pub fn get_merge_text(
                 if next_branch.old.touches(&original_range) {
                     should_continue = true;
                     original_range.join_mut(&next_branch.old);
-                    branch_range = Some(next_branch.new.join_with_opt(&branch_range));
+                    branch_range = Some(next_branch.new.join_with_opt(branch_range.as_ref()));
                     branch_hunks.next();
                 }
             }

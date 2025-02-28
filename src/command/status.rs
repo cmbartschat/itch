@@ -400,7 +400,7 @@ pub fn resolve_fork_info(ctx: &Ctx, branch_name: Option<&str>) -> Maybe<ForkInfo
         });
     }
 
-    return Ok(ForkInfo {
+    Ok(ForkInfo {
         base: BranchSummary {
             name: base.to_string(),
             latest_message: base_commit.summary().map(std::string::ToString::to_string),
@@ -413,7 +413,7 @@ pub fn resolve_fork_info(ctx: &Ctx, branch_name: Option<&str>) -> Maybe<ForkInfo
         },
         dirty: head_dirty,
         file_statuses: statuses,
-    });
+    })
 }
 
 pub fn status_command(ctx: &Ctx, args: &StatusArgs) -> Attempt {

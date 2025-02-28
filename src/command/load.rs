@@ -8,7 +8,7 @@ use crate::{
     save::save_temp,
 };
 
-fn _load_command(ctx: &Ctx, args: &LoadArgs) -> Attempt {
+fn load_command_inner(ctx: &Ctx, args: &LoadArgs) -> Attempt {
     let target_ref = ctx
         .repo
         .find_branch(&args.name, git2::BranchType::Local)?
@@ -29,5 +29,5 @@ fn _load_command(ctx: &Ctx, args: &LoadArgs) -> Attempt {
 pub fn load_command(ctx: &Ctx, args: &LoadArgs) -> Attempt {
     save_temp(ctx, format!("Save before switching to {}", args.name))?;
 
-    _load_command(ctx, args)
+    load_command_inner(ctx, args)
 }

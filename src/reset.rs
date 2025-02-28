@@ -11,7 +11,7 @@ pub fn reset_repo(ctx: &Ctx) -> Attempt {
 fn is_temp_commit(c: &Commit) -> bool {
     c.parent_count() == 1
         && c.message()
-            .map_or(false, |m| m.starts_with(TEMP_COMMIT_PREFIX))
+            .is_some_and(|m| m.starts_with(TEMP_COMMIT_PREFIX))
 }
 
 pub fn pop_and_reset(ctx: &Ctx) -> Attempt {

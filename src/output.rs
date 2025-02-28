@@ -29,7 +29,10 @@ impl fmt::Write for OutputTarget {
     fn write_str(&mut self, s: &str) -> std::fmt::Result {
         match self {
             Self::Pager(p) => p.write_str(s),
-            Self::Stdout => Ok(print!("{s}")),
+            Self::Stdout => {
+                print!("{s}");
+                Ok(())
+            }
         }
     }
 }
