@@ -190,7 +190,7 @@ fn common_head_contents() -> Markup {
     }
 }
 
-fn render_message(title: &str, text: Option<&str>) -> impl IntoResponse {
+fn render_message(title: &str, text: Option<&str>) -> Markup {
     html! {
         (DOCTYPE)
         html {
