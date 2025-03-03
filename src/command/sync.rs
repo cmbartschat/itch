@@ -14,7 +14,7 @@ use crate::{
     ctx::Ctx,
     diff::get_merge_text,
     editor::edit_temp_text,
-    error::{fail, Attempt, Maybe},
+    error::{Attempt, Maybe, fail},
     path::bytes2path,
     prompt::ask_option,
     remote::try_pull_main,

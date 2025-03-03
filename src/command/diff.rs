@@ -2,7 +2,7 @@ use crate::{
     cli::DiffArgs,
     ctx::Ctx,
     diff::{collapse_renames, good_diff_options, split_diff_line},
-    error::{fail, Attempt, Maybe},
+    error::{Attempt, Maybe, fail},
     output::OutputTarget,
 };
 
@@ -154,7 +154,7 @@ pub fn diff_command(ctx: &Ctx, args: &DiffArgs) -> Attempt {
                 return fail("Cannot diff current to current.");
             }
             (DiffPoint::Current, DiffPoint::Ref(_)) => {
-                return fail("Cannot diff in this direction.")
+                return fail("Cannot diff in this direction.");
             }
             (DiffPoint::Ref(from), DiffPoint::Current) => {
                 let from_tree = ctx.repo.revparse_single(from)?.peel_to_tree()?;

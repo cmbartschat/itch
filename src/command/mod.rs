@@ -7,10 +7,10 @@ use init::init_command;
 use revert::revert_command;
 use split::split_command;
 
-use crate::error::{fail, Attempt};
+use crate::error::{Attempt, fail};
 use crate::{
     cli::{Cli, Commands},
-    ctx::{init_ctx, Mode},
+    ctx::{Mode, init_ctx},
 };
 
 use self::{

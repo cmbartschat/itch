@@ -2,7 +2,7 @@ use git2::Oid;
 
 use crate::{
     ctx::Ctx,
-    error::{fail, Attempt, Maybe},
+    error::{Attempt, Maybe, fail},
     remote::{try_pull_main, try_push_main},
 };
 

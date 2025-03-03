@@ -6,7 +6,7 @@ use crate::{
     cli::StatusArgs,
     ctx::Ctx,
     diff::{collapse_renames, good_diff_options},
-    error::{fail, Attempt, Maybe},
+    error::{Attempt, Maybe, fail},
     reset::reset_repo,
 };
 

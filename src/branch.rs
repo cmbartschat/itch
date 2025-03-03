@@ -2,7 +2,7 @@ use git2::{BranchType, ErrorCode};
 
 use crate::{
     ctx::Ctx,
-    error::{fail, inner_fail, Maybe},
+    error::{Maybe, fail, inner_fail},
 };
 
 pub fn local_branch_exists(ctx: &Ctx, branch: &str) -> Maybe<bool> {

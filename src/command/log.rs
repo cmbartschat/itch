@@ -1,6 +1,6 @@
 use crate::{
     ctx::Ctx,
-    error::{fail, inner_fail, Attempt},
+    error::{Attempt, fail, inner_fail},
     output::OutputTarget,
 };
 use std::fmt::Write;

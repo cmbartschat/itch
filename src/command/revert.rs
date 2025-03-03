@@ -3,7 +3,7 @@ use git2::build::CheckoutBuilder;
 use crate::{
     cli::RevertArgs,
     ctx::Ctx,
-    error::{fail, Attempt},
+    error::{Attempt, fail},
     reset::pop_and_reset,
     save::save_temp,
 };

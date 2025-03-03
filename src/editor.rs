@@ -1,6 +1,6 @@
 use std::ffi::{OsStr, OsString};
 
-use crate::error::{fail, inner_fail, Maybe};
+use crate::error::{Maybe, fail, inner_fail};
 
 pub fn edit_temp_text(initial_content: &str, extension: Option<&OsStr>) -> Maybe<String> {
     let mut temp_path = std::env::temp_dir();

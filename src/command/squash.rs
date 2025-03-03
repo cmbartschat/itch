@@ -1,7 +1,7 @@
 use crate::{
     cli::SquashArgs,
     ctx::Ctx,
-    error::{fail, Attempt},
+    error::{Attempt, fail},
     save::resolve_commit_message,
 };
 

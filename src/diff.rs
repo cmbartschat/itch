@@ -1,7 +1,7 @@
 use git2::{Blob, Diff, DiffFindOptions, DiffLine, DiffOptions, Oid, Repository};
 use std::io::Read;
 
-use crate::error::{fail, Attempt, Maybe};
+use crate::error::{Attempt, Maybe, fail};
 
 pub fn split_diff_line(line: &DiffLine) -> (String, String) {
     let line = String::from_utf8_lossy(line.content());

@@ -1,6 +1,6 @@
 use git2::{ErrorClass, ErrorCode, Repository, RepositoryInitOptions};
 
-use crate::error::{fail, inner_fail, Attempt};
+use crate::error::{Attempt, fail, inner_fail};
 
 pub fn init_command() -> Attempt {
     match Repository::open_from_env() {

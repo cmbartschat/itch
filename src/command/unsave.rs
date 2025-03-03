@@ -1,11 +1,11 @@
 use std::path::Path;
 
-use git2::{build::TreeUpdateBuilder, Commit, FileMode, ResetType, Tree, TreeEntry};
+use git2::{Commit, FileMode, ResetType, Tree, TreeEntry, build::TreeUpdateBuilder};
 
 use crate::{
     cli::UnsaveArgs,
     ctx::Ctx,
-    error::{fail, Attempt},
+    error::{Attempt, fail},
 };
 
 const GIT_FILEMODE_UNREADABLE: i32 = 0o000_000;

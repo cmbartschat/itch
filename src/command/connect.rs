@@ -1,7 +1,7 @@
 use crate::{
     cli::ConnectArgs,
     ctx::Ctx,
-    error::{fail, Attempt},
+    error::{Attempt, fail},
     prompt::ask_option,
     remote::{connect_remote, pull_main, reset_main_to_remote},
     reset::pop_and_reset,

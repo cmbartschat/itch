@@ -6,7 +6,7 @@ use git2::{
 
 use crate::{
     ctx::Ctx,
-    error::{fail, Attempt, Maybe},
+    error::{Attempt, Maybe, fail},
     print::show_warning,
 };
 

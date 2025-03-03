@@ -1,8 +1,8 @@
 use base64::Engine;
-use fork::{close_fd, fork, Fork};
+use fork::{Fork, close_fd, fork};
 use rand::RngCore;
 use std::{
-    collections::{hash_map::DefaultHasher, HashMap},
+    collections::{HashMap, hash_map::DefaultHasher},
     hash::{Hash, Hasher},
     net::{IpAddr, Ipv4Addr, SocketAddr},
     path::PathBuf,
@@ -10,8 +10,8 @@ use std::{
 };
 
 use axum_extra::extract::{
-    cookie::{Cookie, SameSite},
     CookieJar,
+    cookie::{Cookie, SameSite},
 };
 use git2::{Commit, Delta, DiffDelta, DiffHunk, DiffLine, Patch};
 use rand::rngs::OsRng;
@@ -21,23 +21,23 @@ use crate::{
     branch::get_current_branch,
     cli::{DeleteArgs, LoadArgs, NewArgs, SaveArgs, SquashArgs},
     command::new::new_command,
-    ctx::{init_ctx, Ctx},
+    ctx::{Ctx, init_ctx},
     diff::{collapse_renames, good_diff_options, split_diff_line},
-    error::{fail, inner_fail, Attempt, Fail, Maybe},
+    error::{Attempt, Fail, Maybe, fail, inner_fail},
     reset::pop_and_reset,
     save::save_temp,
     sync::{Conflict, ResolutionChoice, ResolutionMap, SyncDetails},
 };
 
 use axum::{
+    Form, Router,
     extract::{Path, State},
     http::{Request, StatusCode},
     middleware::Next,
     response::{IntoResponse, Redirect},
     routing::{get, post},
-    Form, Router,
 };
-use maud::{html, Markup, PreEscaped, DOCTYPE};
+use maud::{DOCTYPE, Markup, PreEscaped, html};
 
 use super::{
     delete::delete_command,
@@ -46,7 +46,7 @@ use super::{
     prune::prune_command,
     save::save_command,
     squash::squash_command,
-    status::{resolve_fork_info, FileStatus, ForkInfo, SegmentedStatus},
+    status::{FileStatus, ForkInfo, SegmentedStatus, resolve_fork_info},
     sync::try_sync_branch,
 };
 
