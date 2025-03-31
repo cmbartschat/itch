@@ -36,6 +36,8 @@ If there are unsaved changes in the current branch, they will be saved and broug
 
 `itch prune` - Delete branches that have no pending changes
 
+`itch rename newname` - Rename the current branch to "newname"
+
 `itch split` - Duplicate the current branch with a placeholder name
 
 `itch split mybranch` - Duplicate the current branch as "mybranch"

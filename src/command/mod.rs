@@ -4,6 +4,7 @@ use std::{env, io::stdout};
 use connect::connect_command;
 use disconnect::disconnect_command;
 use init::init_command;
+use rename::rename_command;
 use revert::revert_command;
 use split::split_command;
 
@@ -31,6 +32,7 @@ mod log;
 mod merge;
 mod new;
 mod prune;
+mod rename;
 mod revert;
 mod save;
 mod split;
@@ -69,6 +71,7 @@ pub fn run_command(cli: &Cli) -> Attempt {
         Commands::Prune => prune_command(&ctx),
         Commands::Save(args) => save_command(&ctx, args, false),
         Commands::Split(args) => split_command(&ctx, args),
+        Commands::Rename(args) => rename_command(&ctx, args),
         Commands::Squash(args) => squash_command(&ctx, args),
         Commands::Status(args) => status_command(&ctx, args),
         Commands::Sync(args) => sync_command(&ctx, args),
