@@ -18,7 +18,17 @@ pub fn delete_command(ctx: &Ctx, args: &DeleteArgs) -> Attempt {
                 },
             )?;
         }
-        branch.delete()?;
+
+        match branch.delete() {
+            Ok(()) => {}
+            Err(e) => {
+                // Due to multivars in config breaking libgit2, we retry if config cleanup fails
+                // https://github.com/libgit2/libgit2/issues/6722
+                if e.class() == git2::ErrorClass::Config {
+                    branch.delete()?;
+                }
+            }
+        };
         try_delete_remote_branch(ctx, branch_name);
     }
 
