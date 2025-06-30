@@ -6,14 +6,13 @@ use std::{
     hash::{Hash, Hasher},
     net::{IpAddr, Ipv4Addr, SocketAddr},
     path::PathBuf,
-    rc::Rc,
 };
 
 use axum_extra::extract::{
     CookieJar,
     cookie::{Cookie, SameSite},
 };
-use git2::{Commit, Delta, DiffDelta, DiffHunk, DiffLine, Patch};
+use git2::{Delta, DiffDelta, DiffHunk, DiffLine, Patch};
 use rand::rngs::OsRng;
 use serde::{Deserialize, Serialize};
 
@@ -21,6 +20,7 @@ use crate::{
     branch::get_current_branch,
     cli::{DeleteArgs, LoadArgs, NewArgs, SaveArgs, SquashArgs},
     command::new::new_command,
+    commit::count_commits_since,
     ctx::{Ctx, init_ctx},
     diff::{collapse_renames, good_diff_options, split_diff_line},
     error::{Attempt, Fail, Maybe, fail, inner_fail},
@@ -215,23 +215,6 @@ fn render_message(title: &str, text: Option<&str>) -> Markup {
 
 async fn render_404() -> impl IntoResponse {
     (StatusCode::NOT_FOUND, render_message("Not found", None))
-}
-
-fn count_commits_since(_ctx: &Ctx, older: &Commit, newer: &Commit) -> Maybe<usize> {
-    let mut count: usize = 0;
-    let mut current = Rc::from(newer.clone());
-    while current.id() != older.id() {
-        let next = current.parents().next();
-        match next {
-            Some(c) => {
-                count += 1;
-                current = Rc::from(c);
-            }
-            None => return fail("Unable to navigate to fork point."),
-        }
-    }
-
-    Ok(count)
 }
 
 fn get_workspace_name(ctx: &Ctx) -> String {

@@ -1,24 +1,54 @@
-use crate::{ctx::Ctx, error::Attempt};
+use git2::Commit;
+
+use crate::{commit::count_commits_since, ctx::Ctx, error::Attempt};
 
 pub fn list_command(ctx: &Ctx) -> Attempt {
-    let (selected_color, clear_color) = if ctx.color_enabled() {
-        ("\x1b[1;34m", "\x1b[0m")
+    let (selected_color, muted_color, clear_color) = if ctx.color_enabled() {
+        ("\x1b[1;34m", "\x1b[1;30m", "\x1b[0m")
     } else {
-        ("", "")
+        ("", "", "")
     };
     let (selected_prefix, normal_prefix) = if ctx.is_pipe() {
         ("", "")
     } else {
         ("> ", "  ")
     };
+
+    let include_status = !ctx.is_pipe();
+    let mut main_commit: Option<Commit> = None;
     for branch in ctx.repo.branches(Some(git2::BranchType::Local))? {
         match branch {
             Ok(b) => match b.0.name() {
                 Ok(Some(name)) => {
                     if b.0.is_head() {
-                        println!("{selected_color}{selected_prefix}{name}{clear_color}");
+                        print!("{selected_color}{selected_prefix}{name}{clear_color}");
                     } else {
-                        println!("{normal_prefix}{name}");
+                        print!("{normal_prefix}{name}");
+                    }
+
+                    if include_status {
+                        let commit = if let Some(e) = main_commit.as_ref() {
+                            e
+                        } else {
+                            let main = ctx.repo.find_branch("main", git2::BranchType::Local)?;
+                            main_commit = Some(main.into_reference().peel_to_commit()?);
+                            main_commit.as_ref().unwrap()
+                        };
+
+                        let fork_id = ctx
+                            .repo
+                            .merge_base(commit.id(), b.0.into_reference().peel_to_commit()?.id())?;
+                        let fork_commit = ctx.repo.find_commit(fork_id)?;
+
+                        let behind = count_commits_since(ctx, &fork_commit, commit)?;
+
+                        if behind > 0 {
+                            println!("{muted_color} {behind} behind{clear_color}");
+                        } else {
+                            println!();
+                        }
+                    } else {
+                        println!();
                     }
                 }
                 _ => println!("<Invalid branch>"),

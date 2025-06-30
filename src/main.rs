@@ -11,6 +11,7 @@ use log::LevelFilter;
 mod branch;
 mod cli;
 mod command;
+mod commit;
 mod consts;
 mod ctx;
 mod diff;
