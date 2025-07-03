@@ -1,4 +1,4 @@
-use git2::Commit;
+use git2::{Commit, ErrorCode};
 
 use crate::{commit::count_commits_since, ctx::Ctx, error::Attempt};
 
@@ -35,18 +35,32 @@ pub fn list_command(ctx: &Ctx) -> Attempt {
                             main_commit.as_ref().unwrap()
                         };
 
-                        let fork_id = ctx
+                        match ctx
                             .repo
-                            .merge_base(commit.id(), b.0.into_reference().peel_to_commit()?.id())?;
-                        let fork_commit = ctx.repo.find_commit(fork_id)?;
+                            .merge_base(commit.id(), b.0.into_reference().peel_to_commit()?.id())
+                        {
+                            Ok(fork_id) => {
+                                let fork_commit = ctx.repo.find_commit(fork_id)?;
 
-                        let behind = count_commits_since(ctx, &fork_commit, commit)?;
+                                let behind = count_commits_since(ctx, &fork_commit, commit)?;
 
-                        if behind > 0 {
-                            println!("{muted_color} {behind} behind{clear_color}");
-                        } else {
-                            println!();
-                        }
+                                if behind > 0 {
+                                    println!("{muted_color} {behind} behind{clear_color}");
+                                } else {
+                                    println!();
+                                }
+                            }
+                            Err(e) => match e.code() {
+                                ErrorCode::NotFound => {
+                                    println!("{selected_color} orphan{clear_color}");
+                                }
+                                _ => {
+                                    println!(
+                                        "{selected_color} error calculating status{clear_color}"
+                                    );
+                                }
+                            },
+                        };
                     } else {
                         println!();
                     }
