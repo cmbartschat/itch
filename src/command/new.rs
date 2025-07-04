@@ -24,7 +24,11 @@ pub fn new_command(ctx: &Ctx, args: &NewArgs) -> Attempt {
 
     ctx.repo.branch(&name, &base_commit, false)?;
 
-    load_command(ctx, &LoadArgs { name })?;
+    if base_branch.is_head() {
+        ctx.repo.set_head(&format!("refs/heads/{name}"))?;
+    } else {
+        load_command(ctx, &LoadArgs { name })?;
+    }
 
     Ok(())
 }
