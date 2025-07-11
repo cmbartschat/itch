@@ -12,7 +12,7 @@ use axum_extra::extract::{
     CookieJar,
     cookie::{Cookie, SameSite},
 };
-use git2::{Delta, DiffDelta, DiffHunk, DiffLine, Patch};
+use git2::{BranchType, Delta, DiffDelta, DiffHunk, DiffLine, Patch};
 use rand::rngs::OsRng;
 use serde::{Deserialize, Serialize};
 
@@ -360,6 +360,7 @@ fn render_dashboard(info: &DashboardInfo) -> Markup {
                         div.spaced-across {
                             h2 {"All Branches"}
                             (action_btn("POST", "/api/prune", "Prune empty", &None, false))
+                            (action_btn("POST", "/api/sync_all", "Sync all", &None, false))
                         }
 
                         form method="POST" action="/api/new" .inline-form.spaced-across.end  {
@@ -691,6 +692,28 @@ async fn handle_sync(Form(mut body): Form<SyncForm>) -> impl IntoResponse {
     }
 }
 
+async fn handle_sync_all() -> impl IntoResponse {
+    let sync_result = with_ctx(|ctx| {
+        save_temp(ctx, "Save before sync".to_string())?;
+
+        let branches = ctx.repo.branches(Some(BranchType::Local))?;
+        for branch in branches {
+            let branch = branch?.0;
+            if let Some(branch_name) = branch.name()? {
+                if branch_name != "main" {
+                    try_sync_branch(ctx, branch_name, None)?;
+                }
+            }
+        }
+        pop_and_reset(ctx)?;
+        Ok(())
+    });
+    match sync_result {
+        Ok(()) => Redirect::to("/").into_response(),
+        Err(e) => map_error_to_response(e).into_response(),
+    }
+}
+
 async fn handle_new(Form(body): Form<NewArgs>) -> impl IntoResponse {
     api_handler(move |ctx| new_command(ctx, &body))
 }
@@ -801,6 +824,7 @@ async fn run_ui_server(ctx: &Ctx) -> Attempt {
         .route("/merge", post(handle_merge))
         .route("/squash", post(handle_squash))
         .route("/sync", post(handle_sync))
+        .route("/sync_all", post(handle_sync_all))
         .route("/save", post(handle_save))
         .route("/quit", post(handle_quit))
         .route("/load", post(handle_load))
