@@ -4,6 +4,7 @@ use std::{env, io::stdout};
 use connect::connect_command;
 use disconnect::disconnect_command;
 use init::init_command;
+use please::please_command;
 use rename::rename_command;
 use revert::revert_command;
 use split::split_command;
@@ -14,6 +15,7 @@ use crate::{
     cli::{Cli, Commands},
     ctx::{Mode, init_ctx},
 };
+use mcp::mcp_command;
 
 use self::{
     delete::delete_command, diff::diff_command, list::list_command, load::load_command,
@@ -31,8 +33,10 @@ mod init;
 mod list;
 mod load;
 mod log;
+mod mcp;
 mod merge;
 mod new;
+mod please;
 mod prune;
 mod rename;
 mod revert;
@@ -71,6 +75,8 @@ pub fn run_command(cli: &Cli) -> Attempt {
         Commands::Log => log_command(&ctx),
         Commands::Merge => merge_command(&ctx),
         Commands::New(args) => new_command(&ctx, args),
+        Commands::Please(args) => please_command(&ctx, args),
+        Commands::Mcp => mcp_command(&ctx),
         Commands::Prune => prune_command(&ctx),
         Commands::Save(args) => save_command(&ctx, args, false),
         Commands::Split(args) => split_command(&ctx, args),

@@ -50,6 +50,12 @@ pub enum Commands {
     #[command(about = "Show the commit history")]
     Log,
 
+    #[command(about = "Ask itch to perform any action you'd like to take.")]
+    Please(PleaseArgs),
+
+    #[command(about = "Run an mcp server")]
+    Mcp,
+
     #[command(about = "Apply current changes to the main branch")]
     Merge,
 
@@ -96,6 +102,11 @@ pub struct RenameArgs {
 #[derive(Args)]
 pub struct DeleteArgs {
     pub names: Vec<String>,
+}
+
+#[derive(Args)]
+pub struct PleaseArgs {
+    pub words: Vec<String>,
 }
 
 #[derive(Args)]
