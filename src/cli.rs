@@ -1,5 +1,5 @@
 use clap::{Args, Parser, Subcommand};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
@@ -47,6 +47,9 @@ pub enum Commands {
     #[command(about = "Show the commit history")]
     Log,
 
+    #[command(about = "Run an mcp server")]
+    Mcp,
+
     #[command(about = "Apply current changes to the main branch")]
     Merge,
 
@@ -75,7 +78,7 @@ pub enum Commands {
     Revert(RevertArgs),
 }
 
-#[derive(Args, Deserialize, Debug)]
+#[derive(Args, Serialize, Deserialize, Debug)]
 pub struct NewArgs {
     pub name: Option<String>,
 }

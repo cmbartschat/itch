@@ -1,6 +1,7 @@
 use std::{rc::Rc, vec};
 
 use git2::{Commit, Delta, DiffDelta, DiffFile, StatusOptions};
+use serde::{Deserialize, Serialize};
 
 use crate::{
     cli::StatusArgs,
@@ -10,14 +11,14 @@ use crate::{
     reset::reset_repo,
 };
 
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct BranchSummary {
     pub name: String,
     pub latest_message: Option<String>,
     pub commit_count: usize,
 }
 
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct ForkInfo {
     pub base: BranchSummary,
     pub head: BranchSummary,
@@ -72,11 +73,21 @@ fn create_many_dots(count: usize) -> String {
     )
 }
 
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
+pub enum FileStatusStatus {
+    None,
+    Added,
+    Deleted,
+    Modified,
+    Renamed,
+    Other,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
 pub struct FileStatus {
     pub from: Option<String>,
     pub to: Option<String>,
-    pub status: Delta,
+    pub status: FileStatusStatus,
 }
 
 impl FileStatus {
@@ -84,20 +95,25 @@ impl FileStatus {
         Self {
             from: extract_optional_path(&delta.old_file()),
             to: extract_optional_path(&delta.new_file()),
-            status: delta.status(),
+            status: match delta.status() {
+                Delta::Unmodified => FileStatusStatus::None,
+                Delta::Added | Delta::Untracked => FileStatusStatus::Added,
+                Delta::Deleted => FileStatusStatus::Deleted,
+                Delta::Modified => FileStatusStatus::Modified,
+                Delta::Renamed => FileStatusStatus::Renamed,
+                _ => FileStatusStatus::Other,
+            },
         }
     }
 
     fn char(&self) -> char {
         match self.status {
-            Delta::Unmodified => ' ',
-            Delta::Added | Delta::Untracked => 'A',
-            Delta::Deleted => 'D',
-            Delta::Modified => 'M',
-            Delta::Renamed => 'R',
-            Delta::Copied => 'C',
-            Delta::Typechange => 'T',
-            _ => '?',
+            FileStatusStatus::None => ' ',
+            FileStatusStatus::Added => 'A',
+            FileStatusStatus::Deleted => 'D',
+            FileStatusStatus::Modified => 'M',
+            FileStatusStatus::Renamed => 'R',
+            FileStatusStatus::Other => '?',
         }
     }
 }
@@ -117,7 +133,7 @@ fn extract_optional_path(d: &DiffFile) -> Option<String> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct SegmentedStatus {
     pub committed: Option<FileStatus>,
     pub work: Option<FileStatus>,

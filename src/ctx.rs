@@ -41,6 +41,15 @@ impl Ctx {
     }
 }
 
+pub fn init_from_dir(location: &str) -> Maybe<Ctx> {
+    let repo = Repository::open(location)?;
+    Ok(Ctx {
+        repo,
+        mode: Mode::Unknown,
+        no_color: false,
+    })
+}
+
 pub fn init_ctx() -> Maybe<Ctx> {
     let repo = Repository::open_from_env()?;
     Ok(Ctx {

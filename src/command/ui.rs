@@ -12,14 +12,14 @@ use axum_extra::extract::{
     CookieJar,
     cookie::{Cookie, SameSite},
 };
-use git2::{BranchType, Delta, DiffDelta, DiffHunk, DiffLine, Patch};
+use git2::{BranchType, DiffDelta, DiffHunk, DiffLine, Patch};
 use rand::rngs::OsRng;
 use serde::{Deserialize, Serialize};
 
 use crate::{
     branch::get_current_branch,
     cli::{DeleteArgs, LoadArgs, NewArgs, SaveArgs, SquashArgs},
-    command::new::new_command,
+    command::{new::new_command, status::FileStatusStatus},
     commit::count_commits_since,
     ctx::{Ctx, init_ctx},
     diff::{collapse_renames, good_diff_options, split_diff_line},
@@ -89,13 +89,14 @@ fn radio(label: &str, name: &str, value: &str, checked: bool) -> Markup {
     }
 }
 
-fn status_class(delta: Delta) -> &'static str {
+fn status_class(delta: FileStatusStatus) -> &'static str {
     match delta {
-        Delta::Added | Delta::Untracked => "status-added",
-        Delta::Deleted => "status-deleted",
-        Delta::Modified => "status-modified",
-        Delta::Renamed => "status-renamed",
-        _ => "status-other",
+        FileStatusStatus::Added => "status-added",
+        FileStatusStatus::Deleted => "status-deleted",
+        FileStatusStatus::Modified => "status-modified",
+        FileStatusStatus::Renamed => "status-renamed",
+        FileStatusStatus::Other => "status-other",
+        FileStatusStatus::None => "",
     }
 }
 
@@ -166,12 +167,14 @@ fn branch_entry(info: &DashboardInfo, branch: &BranchInfo) -> Markup {
     }
 }
 
+#[derive(Serialize, Deserialize)]
 struct BranchInfo {
     name: String,
     commits_behind: usize,
 }
 
-struct DashboardInfo {
+#[derive(Serialize, Deserialize)]
+pub struct DashboardInfo {
     current_branch: String,
     unsaved_changes: usize,
     commits_ahead: usize,
@@ -227,10 +230,7 @@ fn get_workspace_name(ctx: &Ctx) -> String {
         .into_owned()
 }
 
-fn load_dashboard_info() -> Maybe<DashboardInfo> {
-    let mut ctx = init_ctx()?;
-    ctx.set_mode(crate::ctx::Mode::Background);
-
+pub fn load_dashboard_for_ctx(ctx: &Ctx) -> Maybe<DashboardInfo> {
     let repo_head = ctx.repo.head()?;
 
     let head_name_str = repo_head.name().unwrap();
@@ -250,8 +250,8 @@ fn load_dashboard_info() -> Maybe<DashboardInfo> {
         .repo
         .find_commit(ctx.repo.merge_base(base_commit.id(), head_commit.id())?)?;
 
-    let base_past_fork = count_commits_since(&ctx, &fork_point, &base_commit)?;
-    let head_past_fork = count_commits_since(&ctx, &fork_point, &head_commit)?;
+    let base_past_fork = count_commits_since(ctx, &fork_point, &base_commit)?;
+    let head_past_fork = count_commits_since(ctx, &fork_point, &head_commit)?;
 
     let mut branches: Vec<BranchInfo> = vec![];
 
@@ -263,7 +263,7 @@ fn load_dashboard_info() -> Maybe<DashboardInfo> {
             .repo
             .find_commit(ctx.repo.merge_base(base_commit.id(), head_commit.id())?)?;
 
-        let base_past_fork = count_commits_since(&ctx, &fork_point, &base_commit)?;
+        let base_past_fork = count_commits_since(ctx, &fork_point, &base_commit)?;
 
         branches.push(BranchInfo {
             name: branch_name,
@@ -283,9 +283,16 @@ fn load_dashboard_info() -> Maybe<DashboardInfo> {
         current_branch: head_name.clone(),
         unsaved_changes: unsaved_diff.deltas().count(),
         branches,
-        fork_info: resolve_fork_info(&ctx, None)?,
-        workspace: get_workspace_name(&ctx),
+        fork_info: resolve_fork_info(ctx, None)?,
+        workspace: get_workspace_name(ctx),
     })
+}
+
+fn load_dashboard_info() -> Maybe<DashboardInfo> {
+    let mut ctx = init_ctx()?;
+    ctx.set_mode(crate::ctx::Mode::Background);
+
+    load_dashboard_for_ctx(&ctx)
 }
 
 fn render_dashboard(info: &DashboardInfo) -> Markup {

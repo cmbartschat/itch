@@ -13,6 +13,7 @@ use crate::{
     cli::{Cli, Commands},
     ctx::{Mode, init_ctx},
 };
+use mcp::mcp_command;
 
 use self::{
     delete::delete_command, diff::diff_command, list::list_command, load::load_command,
@@ -29,6 +30,7 @@ mod init;
 mod list;
 mod load;
 mod log;
+mod mcp;
 mod merge;
 mod new;
 mod prune;
@@ -45,6 +47,10 @@ mod unsave;
 pub fn run_command(cli: &Cli) -> Attempt {
     if let Commands::Init = cli.command {
         return init_command();
+    }
+
+    if let Commands::Mcp = cli.command {
+        return mcp_command();
     }
 
     let mut ctx = init_ctx()?;
@@ -68,6 +74,7 @@ pub fn run_command(cli: &Cli) -> Attempt {
         Commands::Log => log_command(&ctx),
         Commands::Merge => merge_command(&ctx),
         Commands::New(args) => new_command(&ctx, args),
+        Commands::Mcp => fail("Unexpected mcp after block"),
         Commands::Prune => prune_command(&ctx),
         Commands::Save(args) => save_command(&ctx, args, false),
         Commands::Split(args) => split_command(&ctx, args),

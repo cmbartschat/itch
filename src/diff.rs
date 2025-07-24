@@ -1,5 +1,7 @@
-use git2::{Blob, Diff, DiffFindOptions, DiffLine, DiffOptions, Oid, Repository};
-use std::io::Read;
+use git2::{
+    Blob, Diff, DiffDelta, DiffFindOptions, DiffHunk, DiffLine, DiffOptions, Oid, Patch, Repository,
+};
+use std::{io::Read, path::PathBuf};
 
 use crate::error::{Attempt, Maybe, fail};
 
@@ -242,6 +244,48 @@ pub fn get_merge_text(
     }
 
     Ok(res)
+}
+
+pub fn get_unsaved_file_diff(
+    repo: &Repository,
+    file_path: impl Into<PathBuf>,
+) -> Maybe<Option<Vec<(char, String, String)>>> {
+    let head_commit = repo.head()?.peel_to_commit()?;
+
+    let mut unsaved_diff =
+        repo.diff_tree_to_workdir(Some(&head_commit.tree()?), Some(&mut good_diff_options()))?;
+
+    collapse_renames(&mut unsaved_diff)?;
+
+    let target_path = file_path.into();
+
+    let change_index = unsaved_diff.deltas().enumerate().find_map(|(i, e)| {
+        if e.new_file().path() == Some(&target_path) {
+            Some(i)
+        } else {
+            None
+        }
+    });
+
+    let Some(change_index) = change_index else {
+        return Ok(None);
+    };
+
+    let mut patch =
+        Patch::from_diff(&unsaved_diff, change_index)?.expect("Change index should be valid");
+
+    let mut lines = Vec::<(char, String, String)>::new();
+
+    patch.print(&mut |_: DiffDelta, __: Option<DiffHunk>, line: DiffLine| {
+        let origin = line.origin();
+        let (main_line, trailing_whitespace_line) = split_diff_line(&line);
+
+        lines.push((origin, main_line, trailing_whitespace_line));
+
+        true
+    })?;
+
+    Ok(Some(lines))
 }
 
 #[cfg(test)]
