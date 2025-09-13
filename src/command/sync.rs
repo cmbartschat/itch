@@ -288,7 +288,7 @@ pub fn try_sync_branch(
             _ => {
                 todo!("Handle: {:?}", operation);
             }
-        };
+        }
 
         if !details.is_empty() {
             return Ok(SyncDetails::Conflicted(details));

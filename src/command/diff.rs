@@ -84,7 +84,7 @@ fn parse_intent(parts: &[String]) -> Maybe<DiffIntent> {
                 return fail("Expected 'of', 'from', or 'to'.");
             }
         };
-    };
+    }
 
     if parts.len() != 4 {
         fail("Unexpected argument format.")

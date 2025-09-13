@@ -60,7 +60,7 @@ pub fn list_command(ctx: &Ctx) -> Attempt {
                                     );
                                 }
                             },
-                        };
+                        }
                     } else {
                         println!();
                     }

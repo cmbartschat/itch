@@ -190,22 +190,22 @@ pub fn get_merge_text(
         while should_continue {
             should_continue = false;
 
-            if let Some(next_upstream) = upstream_hunks.peek() {
-                if next_upstream.old.touches(&original_range) {
-                    should_continue = true;
-                    original_range.join_mut(&next_upstream.old);
-                    upstream_range = Some(next_upstream.new.join_with_opt(upstream_range.as_ref()));
-                    upstream_hunks.next();
-                }
+            if let Some(next_upstream) = upstream_hunks.peek()
+                && next_upstream.old.touches(&original_range)
+            {
+                should_continue = true;
+                original_range.join_mut(&next_upstream.old);
+                upstream_range = Some(next_upstream.new.join_with_opt(upstream_range.as_ref()));
+                upstream_hunks.next();
             }
 
-            if let Some(next_branch) = branch_hunks.peek() {
-                if next_branch.old.touches(&original_range) {
-                    should_continue = true;
-                    original_range.join_mut(&next_branch.old);
-                    branch_range = Some(next_branch.new.join_with_opt(branch_range.as_ref()));
-                    branch_hunks.next();
-                }
+            if let Some(next_branch) = branch_hunks.peek()
+                && next_branch.old.touches(&original_range)
+            {
+                should_continue = true;
+                original_range.join_mut(&next_branch.old);
+                branch_range = Some(next_branch.new.join_with_opt(branch_range.as_ref()));
+                branch_hunks.next();
             }
         }
 
@@ -230,7 +230,7 @@ pub fn get_merge_text(
             (None, None) => {
                 panic!("Should always have upstream or branch range.");
             }
-        };
+        }
 
         original_index = original_range.1;
     }

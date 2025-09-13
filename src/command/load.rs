@@ -17,7 +17,7 @@ fn load_command_inner(ctx: &Ctx, args: &LoadArgs) -> Attempt {
     match target_ref.name() {
         Some(name) => ctx.repo.set_head(name)?,
         None => return fail("Invalid branch name"),
-    };
+    }
 
     let mut options = CheckoutBuilder::new();
     options.force();

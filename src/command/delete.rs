@@ -30,7 +30,7 @@ pub fn delete_command(ctx: &Ctx, args: &DeleteArgs) -> Attempt {
                     return Err(e);
                 }
             }
-        };
+        }
         try_delete_remote_branch(ctx, branch_name);
     }
 
