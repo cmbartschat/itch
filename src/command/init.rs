@@ -13,7 +13,7 @@ pub fn init_command() -> Attempt {
                 return fail("unexpected error checking for existing repository");
             }
         },
-    };
+    }
 
     let path =
         std::env::current_dir().map_err(|_| inner_fail("failed to resolve current directory."))?;

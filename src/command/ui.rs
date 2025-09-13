@@ -699,10 +699,10 @@ async fn handle_sync_all() -> impl IntoResponse {
         let branches = ctx.repo.branches(Some(BranchType::Local))?;
         for branch in branches {
             let branch = branch?.0;
-            if let Some(branch_name) = branch.name()? {
-                if branch_name != "main" {
-                    try_sync_branch(ctx, branch_name, None)?;
-                }
+            if let Some(branch_name) = branch.name()?
+                && branch_name != "main"
+            {
+                try_sync_branch(ctx, branch_name, None)?;
             }
         }
         pop_and_reset(ctx)?;
@@ -847,7 +847,7 @@ async fn run_ui_server(ctx: &Ctx) -> Attempt {
 
     let builder = (|| {
         for port in iterate_ports(&ctx.repo.path().to_string_lossy()) {
-            let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), port);
+            let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), port);
             if let Ok(l) = axum::Server::try_bind(&addr) {
                 return l;
             }
@@ -882,7 +882,7 @@ pub fn ui_command(ctx: &Ctx) -> Attempt {
             return Ok(());
         }
         Err(_) => return fail("Failed to start in background"),
-    };
+    }
 
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()

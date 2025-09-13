@@ -137,15 +137,13 @@ impl SegmentedStatus {
         }
     }
     fn maybe_add_work(&mut self, delta: &DiffDelta) -> bool {
-        if let Some(committed) = &self.committed {
-            if let Some(committed_path) = &committed.to {
-                if let Some(new_base_path) = extract_optional_path(&delta.old_file()) {
-                    if &new_base_path == committed_path {
-                        self.work = Some(FileStatus::from_delta(delta));
-                        return true;
-                    }
-                }
-            }
+        if let Some(committed) = &self.committed
+            && let Some(committed_path) = &committed.to
+            && let Some(new_base_path) = extract_optional_path(&delta.old_file())
+            && &new_base_path == committed_path
+        {
+            self.work = Some(FileStatus::from_delta(delta));
+            return true;
         }
 
         false
@@ -194,10 +192,10 @@ impl SegmentedStatus {
             .flatten()
             .collect::<Vec<String>>();
 
-        if let Some(first) = rename_chain.first() {
-            if rename_chain.iter().skip(1).all(|f| f == first) {
-                rename_chain.truncate(1);
-            }
+        if let Some(first) = rename_chain.first()
+            && rename_chain.iter().skip(1).all(|f| f == first)
+        {
+            rename_chain.truncate(1);
         }
 
         let combined = if committed_char == ' ' || work_char == ' ' {

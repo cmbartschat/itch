@@ -35,7 +35,7 @@ fn setup_remote_callbacks(ctx: &Ctx) -> RemoteCallbacks<'_> {
             } else if allowed_types.contains(CredentialType::SSH_KEY) {
                 match username_from_url {
                     Some(user) => Cred::ssh_key_from_agent(user),
-                    None => return fail("Username not provided, expecting git@ in ssh URLs"),
+                    None => fail("Username not provided, expecting git@ in ssh URLs"),
                 }
             } else {
                 todo!("support for auth type: {allowed_types:?}");
@@ -197,7 +197,7 @@ pub fn connect_remote(ctx: &Ctx, url: &str) -> Attempt {
         }
         Ok(None) => {}
         Err(e) => return Err(e),
-    };
+    }
 
     let mut remote = ctx.repo.remote("origin", url)?;
 
@@ -213,7 +213,7 @@ pub fn disconnect_remote(ctx: &Ctx) -> Attempt {
     match get_remote(ctx)? {
         Some(remote) => ctx.repo.remote_delete(remote.name().unwrap())?,
         None => show_warning(ctx, "No remote to disconnect."),
-    };
+    }
 
     Ok(())
 }
@@ -231,7 +231,7 @@ pub fn delete_remote_branch(ctx: &Ctx, name: &str) -> Attempt {
             )?;
         }
         None => return Ok(()),
-    };
+    }
 
     Ok(())
 }
