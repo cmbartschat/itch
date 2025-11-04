@@ -1,8 +1,5 @@
-use crate::{
-    ctx::Ctx,
-    error::{Attempt, fail, inner_fail},
-    output::OutputTarget,
-};
+use crate::{ctx::Ctx, error::Attempt, output::OutputTarget};
+use anyhow::{anyhow, bail};
 use std::fmt::Write;
 
 pub fn log_command(ctx: &Ctx) -> Attempt {
@@ -11,25 +8,31 @@ pub fn log_command(ctx: &Ctx) -> Attempt {
     let mut repo_head = Some(ctx.repo.head()?.peel_to_commit()?);
     let mut iterations = 0;
     while let Some(current_commit) = repo_head {
-        let message = &current_commit.message().unwrap_or("<invalid message>");
-
-        let truncated_message = match message.find('\n') {
-            Some(i) => &message[0..i],
-            None => &message[0..],
-        };
+        let summary = current_commit.message()?.summary();
 
         writeln!(
             output,
             "[{}] {}",
             &current_commit.id().to_string()[0..8],
-            truncated_message,
+            summary,
         )
-        .map_err(|_| inner_fail("Failed to output data"))?;
+        .map_err(|_| anyhow!("Failed to output data"))?;
 
-        repo_head = current_commit.parents().next();
+        match current_commit
+            .parent_ids()
+            .next()
+            .map(|i| ctx.repo.find_commit(i))
+        {
+            Some(i) => {
+                repo_head = Some(i?);
+            }
+            None => {
+                repo_head = None;
+            }
+        };
         iterations += 1;
         if iterations > 1000 {
-            return fail("Reached limit of 1000 commits printed.");
+            bail!("Reached limit of 1000 commits printed.");
         }
     }
 

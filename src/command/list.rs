@@ -1,6 +1,6 @@
-use git2::{Commit, ErrorCode};
+use gix::Commit;
 
-use crate::{commit::count_commits_since, ctx::Ctx, error::Attempt};
+use crate::{branch::find_main, commit::count_commits_since, ctx::Ctx, error::Attempt};
 
 pub fn list_command(ctx: &Ctx) -> Attempt {
     let (selected_color, muted_color, clear_color) = if ctx.color_enabled() {
@@ -16,11 +16,12 @@ pub fn list_command(ctx: &Ctx) -> Attempt {
 
     let include_status = !ctx.is_pipe();
     let mut main_commit: Option<Commit> = None;
-    for branch in ctx.repo.branches(Some(git2::BranchType::Local))? {
+    let head_ref = ctx.repo.head_ref()?;
+    for mut branch in ctx.repo.references()?.local_branches()? {
         match branch {
-            Ok(b) => match b.0.name() {
+            Ok(mut b) => match Ok(Some(b.name().shorten().to_string())) {
                 Ok(Some(name)) => {
-                    if b.0.is_head() {
+                    if head_ref.is_some_and(|f| f.name() == b.name()) {
                         print!("{selected_color}{selected_prefix}{name}{clear_color}");
                     } else {
                         print!("{normal_prefix}{name}");
@@ -30,15 +31,11 @@ pub fn list_command(ctx: &Ctx) -> Attempt {
                         let commit = if let Some(e) = main_commit.as_ref() {
                             e
                         } else {
-                            let main = ctx.repo.find_branch("main", git2::BranchType::Local)?;
-                            main_commit = Some(main.into_reference().peel_to_commit()?);
+                            main_commit = Some(find_main(ctx)?.peel_to_commit()?);
                             main_commit.as_ref().unwrap()
                         };
 
-                        match ctx
-                            .repo
-                            .merge_base(commit.id(), b.0.into_reference().peel_to_commit()?.id())
-                        {
+                        match ctx.repo.merge_base(commit.id(), b.peel_to_commit()?.id()) {
                             Ok(fork_id) => {
                                 let fork_commit = ctx.repo.find_commit(fork_id)?;
 
@@ -50,8 +47,8 @@ pub fn list_command(ctx: &Ctx) -> Attempt {
                                     println!();
                                 }
                             }
-                            Err(e) => match e.code() {
-                                ErrorCode::NotFound => {
+                            Err(e) => match e {
+                                gix::repository::merge_base::Error::NotFound { .. } => {
                                     println!("{selected_color} orphan{clear_color}");
                                 }
                                 _ => {

@@ -1,6 +1,7 @@
 use std::io::IsTerminal;
 use std::{env, io::stdout};
 
+use anyhow::bail;
 use connect::connect_command;
 use disconnect::disconnect_command;
 use init::init_command;
@@ -8,7 +9,7 @@ use rename::rename_command;
 use revert::revert_command;
 use split::split_command;
 
-use crate::error::{Attempt, fail};
+use crate::error::Attempt;
 use crate::{
     cli::{Cli, Commands},
     ctx::{Mode, init_ctx},
@@ -58,7 +59,7 @@ pub fn run_command(cli: &Cli) -> Attempt {
     }
 
     match &cli.command {
-        Commands::Init => fail("Unexpected command after block"),
+        Commands::Init => bail!("Unexpected command after block"),
         Commands::Connect(args) => connect_command(&ctx, args),
         Commands::Disconnect => disconnect_command(&ctx),
         Commands::Delete(args) => delete_command(&ctx, args),

@@ -1,5 +1,5 @@
 use crate::{
-    branch::choose_random_branch_name,
+    branch::{choose_random_branch_name, find_main},
     cli::{LoadArgs, NewArgs},
     command::load::load_command,
     ctx::Ctx,
@@ -18,17 +18,20 @@ pub fn new_command(ctx: &Ctx, args: &NewArgs) -> Attempt {
         None => choose_random_branch_name(ctx),
     }?;
 
-    let base_branch = ctx.repo.find_branch("main", git2::BranchType::Local)?;
+    let mut base_branch = find_main(ctx)?;
 
-    let base_commit = base_branch.get().peel_to_commit()?;
+    let base_commit = base_branch.peel_to_id()?;
 
-    ctx.repo.branch(&name, &base_commit, false)?;
+    ctx.repo.reference(
+        name,
+        base_commit,
+        gix::refs::transaction::PreviousValue::MustNotExist,
+        "",
+    )?;
 
-    if base_branch.is_head() {
-        ctx.repo.set_head(&format!("refs/heads/{name}"))?;
-    } else {
-        load_command(ctx, &LoadArgs { name })?;
-    }
+    todo!();
+
+    load_command(ctx, &LoadArgs { name })?;
 
     Ok(())
 }

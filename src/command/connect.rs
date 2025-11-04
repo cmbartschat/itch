@@ -1,7 +1,9 @@
+use anyhow::bail;
+
 use crate::{
     cli::ConnectArgs,
     ctx::Ctx,
-    error::{Attempt, fail},
+    error::Attempt,
     prompt::ask_option,
     remote::{connect_remote, pull_main, reset_main_to_remote},
     reset::pop_and_reset,
@@ -12,13 +14,14 @@ pub fn connect_command(ctx: &Ctx, args: &ConnectArgs) -> Attempt {
     save_temp(ctx, "Save before connect".to_string())?;
 
     connect_remote(ctx, &args.url)?;
+    todo!();
 
-    let mut main_branch = ctx.repo.find_branch("main", git2::BranchType::Local)?;
-    main_branch.set_upstream(Some("origin/main"))?;
+    // ctx.repo
+    //     .branch_remote_tracking_ref_name("main", "origin/main");
 
     if pull_main(ctx).is_err() {
         if !ctx.can_prompt() {
-            return fail("Added remote, but local main branch has diverged from origin.");
+            bail!("Added remote, but local main branch has diverged from origin.");
         }
 
         let ignore_option = "ignore";

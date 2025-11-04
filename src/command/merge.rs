@@ -1,35 +1,36 @@
-use git2::Oid;
+use anyhow::bail;
+use gix::ObjectId;
 
 use crate::{
+    branch::find_main,
     ctx::Ctx,
-    error::{Attempt, Maybe, fail},
+    error::{Attempt, Maybe},
     remote::{try_pull_main, try_push_main},
 };
 
-fn combine_branches(ctx: &Ctx) -> Maybe<Oid> {
+fn combine_branches(ctx: &Ctx) -> Maybe<ObjectId> {
     let repo = &ctx.repo;
 
-    let main_ref = repo
-        .find_branch("main", git2::BranchType::Local)?
-        .into_reference();
+    let main_ref = find_main(ctx)?;
 
-    let branch_id = repo.reference_to_annotated_commit(&repo.head()?)?;
+    // let branch_id = repo.reference_to_annotated_commit(&repo.head()?)?;
 
-    let analysis = ctx.repo.merge_analysis_for_ref(&main_ref, &[&branch_id])?.0;
+    todo!();
+    // let analysis = ctx.repo.merge_analysis_for_ref(&main_ref, &[&branch_id])?.0;
 
-    if analysis.is_fast_forward() {
-        return Ok(branch_id.id());
-    }
+    // if analysis.is_fast_forward() {
+    //     return Ok(branch_id.id());
+    // }
 
-    fail("Must be synced on main")
+    bail!("Must be synced on main")
 }
 
 pub fn merge_command(ctx: &Ctx) -> Attempt {
     let head = ctx.repo.head()?;
-    let head_name = head.name().expect("No valid head name.");
+    let head_name = head.name().shorten().to_string();
 
     if head_name == "refs/heads/main" {
-        return fail("Cannot merge from main.");
+        bail!("Cannot merge from main.");
     }
 
     try_pull_main(ctx);
@@ -38,10 +39,7 @@ pub fn merge_command(ctx: &Ctx) -> Attempt {
 
     let reflog_message = format!("Merged from {head_name}");
 
-    ctx.repo
-        .find_branch("main", git2::BranchType::Local)?
-        .into_reference()
-        .set_target(resolved_commit, &reflog_message)?;
+    find_main(ctx)?.set_target_id(resolved_commit, reflog_message)?;
 
     try_push_main(ctx);
 

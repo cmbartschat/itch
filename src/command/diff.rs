@@ -1,8 +1,11 @@
+use anyhow::bail;
+
 use crate::{
+    branch::find_branch,
     cli::DiffArgs,
     ctx::Ctx,
     diff::{collapse_renames, good_diff_options, split_diff_line},
-    error::{Attempt, Maybe, fail},
+    error::{Attempt, Maybe},
     output::OutputTarget,
 };
 
@@ -59,7 +62,7 @@ fn parse_intent(parts: &[String]) -> Maybe<DiffIntent> {
         if parts[0] == "unsaved" {
             return Ok(DiffIntent::FromSaved);
         } else {
-            return fail("Unexpected arguments to diff.");
+            bail!("Unexpected arguments to diff.");
         }
     }
 
@@ -81,15 +84,15 @@ fn parse_intent(parts: &[String]) -> Maybe<DiffIntent> {
                 ));
             }
             _ => {
-                return fail("Expected 'of', 'from', or 'to'.");
+                bail!("Expected 'of', 'from', or 'to'.");
             }
         };
     }
 
     if parts.len() != 4 {
-        fail("Unexpected argument format.")
+        bail!("Unexpected argument format.")
     } else if parts[0] != "from" || parts[2] != "to" {
-        fail("Expected 'from x to y' format.")
+        bail!("Expected 'from x to y' format.")
     } else {
         Ok(DiffIntent::Range(
             DiffPoint::Ref(parts[1].clone()),
@@ -99,8 +102,7 @@ fn parse_intent(parts: &[String]) -> Maybe<DiffIntent> {
 }
 
 pub fn diff_command(ctx: &Ctx, args: &DiffArgs) -> Attempt {
-    let base_branch = ctx.repo.find_branch("main", git2::BranchType::Local)?;
-    let base_commit = base_branch.into_reference().peel_to_commit()?;
+    let base_commit = find_branch(ctx, "main")?.peel_to_commit()?;
 
     let mut options = good_diff_options();
 
@@ -117,20 +119,16 @@ pub fn diff_command(ctx: &Ctx, args: &DiffArgs) -> Attempt {
                 .find_commit(ctx.repo.merge_base(base_commit.id(), head_id.id())?)?;
 
             ctx.repo
-                .diff_tree_to_workdir(Some(&fork_point.tree()?), diff_options)?
+                .diff_tree_to_tree(Some(&fork_point.tree()?), None, diff_options)?
         }
         DiffIntent::FromSaved => {
-            let from_tree = ctx.repo.head()?.peel_to_tree()?;
+            let from_tree = ctx.repo.head()?.peel_to_object()?.peel_to_tree()?;
 
             ctx.repo
-                .diff_tree_to_workdir(Some(&from_tree), diff_options)?
+                .diff_tree_to_tree(Some(&from_tree), None, diff_options)?
         }
         DiffIntent::OfBranch(branch) => {
-            let target_id = ctx
-                .repo
-                .find_branch(&branch, git2::BranchType::Local)?
-                .into_reference()
-                .peel_to_commit()?;
+            let target_id = find_branch(ctx, &branch)?.peel_to_commit()?;
 
             let fork_point = ctx
                 .repo
@@ -144,23 +142,35 @@ pub fn diff_command(ctx: &Ctx, args: &DiffArgs) -> Attempt {
         }
         DiffIntent::Range(from_point, to_point) => match (&from_point, &to_point) {
             (DiffPoint::Ref(from), DiffPoint::Ref(to)) => {
-                let from_tree = ctx.repo.revparse_single(from)?.peel_to_tree()?;
-                let to_tree = ctx.repo.revparse_single(to)?.peel_to_tree()?;
+                let from_tree = ctx
+                    .repo
+                    .rev_parse_single(from.as_str())?
+                    .object()?
+                    .peel_to_tree()?;
+                let to_tree = ctx
+                    .repo
+                    .rev_parse_single(to.as_str())?
+                    .object()?
+                    .peel_to_tree()?;
 
                 ctx.repo
                     .diff_tree_to_tree(Some(&from_tree), Some(&to_tree), diff_options)?
             }
             (DiffPoint::Current, DiffPoint::Current) => {
-                return fail("Cannot diff current to current.");
+                bail!("Cannot diff current to current.");
             }
             (DiffPoint::Current, DiffPoint::Ref(_)) => {
-                return fail("Cannot diff in this direction.");
+                bail!("Cannot diff in this direction.");
             }
             (DiffPoint::Ref(from), DiffPoint::Current) => {
-                let from_tree = ctx.repo.revparse_single(from)?.peel_to_tree()?;
+                let from_tree = ctx
+                    .repo
+                    .rev_parse_single(from.as_str())?
+                    .object()?
+                    .peel_to_tree()?;
 
                 ctx.repo
-                    .diff_tree_to_workdir(Some(&from_tree), diff_options)?
+                    .diff_tree_to_tree(Some(&from_tree), None, diff_options)?
             }
         },
     };
@@ -169,31 +179,33 @@ pub fn diff_command(ctx: &Ctx, args: &DiffArgs) -> Attempt {
 
     let mut output = OutputTarget::new();
 
-    diff.print(git2::DiffFormat::Patch, |_, _, line| {
-        let origin = line.origin();
-        let (color_code, background_code, clear_code) = match (ctx.color_enabled(), origin) {
-            (true, '+') => ("\x1b[32m", "\x1b[42m", "\x1b[0m"),
-            (true, '-') => ("\x1b[31m", "\x1b[41m", "\x1b[0m"),
-            _ => ("", "", ""),
-        };
+    todo!();
 
-        let char = match origin {
-            '+' => "+",
-            '-' => "-",
-            ' ' => " ",
-            _ => "",
-        };
+    // diff.print(git2::DiffFormat::Patch, |_, _, line| {
+    //     let origin = line.origin();
+    //     let (color_code, background_code, clear_code) = match (ctx.color_enabled(), origin) {
+    //         (true, '+') => ("\x1b[32m", "\x1b[42m", "\x1b[0m"),
+    //         (true, '-') => ("\x1b[31m", "\x1b[41m", "\x1b[0m"),
+    //         _ => ("", "", ""),
+    //     };
 
-        let (visible_line, trailing_non_newline) = split_diff_line(&line);
+    //     let char = match origin {
+    //         '+' => "+",
+    //         '-' => "-",
+    //         ' ' => " ",
+    //         _ => "",
+    //     };
 
-        writeln!(
-            output,
-            "{color_code}{char}{visible_line}{background_code}{trailing_non_newline}{clear_code}"
-        )
-        .unwrap();
+    //     let (visible_line, trailing_non_newline) = split_diff_line(&line);
 
-        true
-    })?;
+    //     writeln!(
+    //         output,
+    //         "{color_code}{char}{visible_line}{background_code}{trailing_non_newline}{clear_code}"
+    //     )
+    //     .unwrap();
+
+    //     true
+    // })?;
 
     output.finish();
 

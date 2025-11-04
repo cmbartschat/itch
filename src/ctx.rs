@@ -1,4 +1,4 @@
-use git2::Repository;
+use gix::Repository;
 
 use crate::error::Maybe;
 
@@ -42,7 +42,7 @@ impl Ctx {
 }
 
 pub fn init_ctx() -> Maybe<Ctx> {
-    let repo = Repository::open_from_env()?;
+    let repo = gix::open(std::env::current_dir().unwrap()).unwrap();
     Ok(Ctx {
         repo,
         mode: Mode::Unknown,

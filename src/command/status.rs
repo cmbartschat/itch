@@ -1,12 +1,14 @@
 use std::{rc::Rc, vec};
 
-use git2::{Commit, Delta, DiffDelta, DiffFile, StatusOptions};
+use anyhow::bail;
+use gix::{Commit, diff::index::Change};
 
 use crate::{
+    branch::{find_branch, find_main},
     cli::StatusArgs,
     ctx::Ctx,
     diff::{collapse_renames, good_diff_options},
-    error::{Attempt, Maybe, fail},
+    error::{Attempt, Maybe},
     reset::reset_repo,
 };
 
@@ -72,79 +74,44 @@ fn create_many_dots(count: usize) -> String {
     )
 }
 
-#[derive(Debug)]
-pub struct FileStatus {
-    pub from: Option<String>,
-    pub to: Option<String>,
-    pub status: Delta,
-}
-
-impl FileStatus {
-    fn from_delta(delta: &DiffDelta) -> Self {
-        Self {
-            from: extract_optional_path(&delta.old_file()),
-            to: extract_optional_path(&delta.new_file()),
-            status: delta.status(),
-        }
-    }
-
-    fn char(&self) -> char {
-        match self.status {
-            Delta::Unmodified => ' ',
-            Delta::Added | Delta::Untracked => 'A',
-            Delta::Deleted => 'D',
-            Delta::Modified => 'M',
-            Delta::Renamed => 'R',
-            Delta::Copied => 'C',
-            Delta::Typechange => 'T',
-            _ => '?',
-        }
-    }
-}
-
-fn extract_path(d: &DiffFile) -> String {
-    d.path()
-        .expect("Expected path for DiffFile.")
-        .to_string_lossy()
-        .into_owned()
-}
-
-fn extract_optional_path(d: &DiffFile) -> Option<String> {
-    if d.exists() {
-        Some(extract_path(d))
-    } else {
-        None
+fn char_for_change(change: &Change) -> char {
+    match change {
+        gix::diff::index::ChangeRef::Addition { .. } => 'A',
+        gix::diff::index::ChangeRef::Deletion { .. } => 'D',
+        gix::diff::index::ChangeRef::Modification { .. } => 'M',
+        gix::diff::index::ChangeRef::Rewrite { .. } => 'M',
     }
 }
 
 #[derive(Debug)]
 pub struct SegmentedStatus {
-    pub committed: Option<FileStatus>,
-    pub work: Option<FileStatus>,
+    pub committed: Option<Change>,
+    pub work: Option<Change>,
 }
 
 impl SegmentedStatus {
-    fn from_committed_delta(delta: &DiffDelta) -> Self {
+    fn from_committed_delta(delta: Change) -> Self {
         Self {
-            committed: Some(FileStatus::from_delta(delta)),
+            committed: Some(delta),
             work: None,
         }
     }
-    fn from_work_delta(delta: &DiffDelta) -> Self {
+    fn from_work_delta(delta: Change) -> Self {
         Self {
             committed: None,
-            work: Some(FileStatus::from_delta(delta)),
+            work: Some(delta),
         }
     }
-    fn maybe_add_work(&mut self, delta: &DiffDelta) -> bool {
-        if let Some(committed) = &self.committed
-            && let Some(committed_path) = &committed.to
-            && let Some(new_base_path) = extract_optional_path(&delta.old_file())
-            && &new_base_path == committed_path
-        {
-            self.work = Some(FileStatus::from_delta(delta));
-            return true;
-        }
+    fn maybe_add_work(&mut self, delta: &Change) -> bool {
+        todo!();
+        // if let Some(committed) = &self.committed
+        //     && let Some(committed_path) = &committed.to
+        //     && let Some(new_base_path) = extract_optional_path(&delta.old_file())
+        //     && &new_base_path == committed_path
+        // {
+        //     self.work = Some(FileStatus::from_delta(delta));
+        //     return true;
+        // }
 
         false
     }
@@ -286,17 +253,17 @@ fn draw_fork_diagram(info: &ForkInfo, styles: &Styles) {
     );
 }
 
-fn count_commits_since(_ctx: &Ctx, older: &Commit, newer: &Commit) -> Maybe<usize> {
+fn count_commits_since(ctx: &Ctx, older: &Commit, newer: &Commit) -> Maybe<usize> {
     let mut count: usize = 0;
     let mut current = Rc::from(newer.clone());
     while current.id() != older.id() {
-        let next = current.parents().next();
+        let next = current.parent_ids().next();
         match next {
             Some(c) => {
                 count += 1;
-                current = Rc::from(c);
+                current = Rc::from(ctx.repo.find_commit(c)?);
             }
-            None => return fail("Unable to navigate to fork point."),
+            None => bail!("Unable to navigate to fork point."),
         }
     }
 
@@ -317,26 +284,22 @@ file1.txt
 + a
 - b
  */
-pub fn resolve_fork_info(ctx: &Ctx, branch_name: Option<&str>) -> Maybe<ForkInfo> {
+pub fn resolve_fork_info(ctx: &Ctx, branch_name: Option<String>) -> Maybe<ForkInfo> {
     let repo_head = ctx.repo.head()?;
-    let head_name: &str = match &branch_name {
+    let head_name: String = match branch_name {
         Some(name) => name,
-        None => repo_head.shorthand().unwrap(),
+        None => repo_head.name().shorten().to_string(),
     };
 
     let base = "main";
 
-    let base_commit = ctx
-        .repo
-        .find_branch(base, git2::BranchType::Local)?
-        .into_reference()
-        .peel_to_commit()?;
+    let base_commit = find_main(ctx)?.peel_to_commit()?;
 
-    let head_branch = ctx.repo.find_branch(head_name, git2::BranchType::Local)?;
+    let head_branch = find_branch(ctx, &head_name)?;
 
-    let is_head = head_branch.is_head();
+    let is_head = head_branch.name() == repo_head.name();
 
-    let head_commit = head_branch.into_reference().peel_to_commit()?;
+    let head_commit = head_branch.peel_to_commit()?;
     let fork_point = ctx
         .repo
         .find_commit(ctx.repo.merge_base(base_commit.id(), head_commit.id())?)?;
@@ -357,10 +320,8 @@ pub fn resolve_fork_info(ctx: &Ctx, branch_name: Option<&str>) -> Maybe<ForkInfo
 
     collapse_renames(&mut committed_diff)?;
 
-    let _has_saved = committed_diff.deltas().len() > 0;
-
-    committed_diff.deltas().for_each(|d| {
-        statuses.push(SegmentedStatus::from_committed_delta(&d));
+    committed_diff.into_iter().for_each(|d| {
+        statuses.push(SegmentedStatus::from_committed_delta(d));
     });
 
     let mut head_dirty = false;
@@ -368,45 +329,45 @@ pub fn resolve_fork_info(ctx: &Ctx, branch_name: Option<&str>) -> Maybe<ForkInfo
     if is_head {
         reset_repo(ctx)?;
 
-        let unsaved_statuses = ctx.repo.statuses(Some(
-            StatusOptions::new()
-                .show(git2::StatusShow::Workdir)
-                .include_untracked(true)
-                .recurse_untracked_dirs(true)
-                .renames_index_to_workdir(true),
-        ))?;
+        // let unsaved_statuses = ctx.repo.statuses(Some(
+        //     StatusOptions::new()
+        //         .show(git2::StatusShow::Workdir)
+        //         .include_untracked(true)
+        //         .recurse_untracked_dirs(true)
+        //         .renames_index_to_workdir(true),
+        // ))?;
 
-        unsaved_statuses.into_iter().for_each(|unsaved_status| {
-            if let Some(d) = unsaved_status.index_to_workdir() {
-                if d.status() == Delta::Ignored {
-                    return;
-                }
-                head_dirty = true;
-                let mut found = false;
+        // unsaved_statuses.into_iter().for_each(|unsaved_status| {
+        //     if let Some(d) = unsaved_status.index_to_workdir() {
+        //         if d.status() == Delta::Ignored {
+        //             return;
+        //         }
+        //         head_dirty = true;
+        //         let mut found = false;
 
-                for change in &mut statuses {
-                    if change.maybe_add_work(&d) {
-                        found = true;
-                        break;
-                    }
-                }
+        //         for change in &mut statuses {
+        //             if change.maybe_add_work(&d) {
+        //                 found = true;
+        //                 break;
+        //             }
+        //         }
 
-                if !found {
-                    statuses.push(SegmentedStatus::from_work_delta(&d));
-                }
-            }
-        });
+        //         if !found {
+        //             statuses.push(SegmentedStatus::from_work_delta(&d));
+        //         }
+        //     }
+        // });
     }
 
     Ok(ForkInfo {
         base: BranchSummary {
             name: base.to_string(),
-            latest_message: base_commit.summary().map(std::string::ToString::to_string),
+            latest_message: Some(base_commit.message()?.summary().to_string()),
             commit_count: base_past_fork + 1,
         },
         head: BranchSummary {
             name: head_name.to_string(),
-            latest_message: head_commit.summary().map(std::string::ToString::to_string),
+            latest_message: Some(head_commit.message()?.summary().to_string()),
             commit_count: head_past_fork,
         },
         dirty: head_dirty,
@@ -415,7 +376,7 @@ pub fn resolve_fork_info(ctx: &Ctx, branch_name: Option<&str>) -> Maybe<ForkInfo
 }
 
 pub fn status_command(ctx: &Ctx, args: &StatusArgs) -> Attempt {
-    let info = resolve_fork_info(ctx, args.name.as_deref())?;
+    let info = resolve_fork_info(ctx, args.name.clone())?;
 
     let styles = get_styles(ctx);
 

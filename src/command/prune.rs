@@ -1,45 +1,37 @@
-use git2::BranchType;
+use anyhow::bail;
 
 use crate::{
-    cli::DeleteArgs, command::delete::delete_command, ctx::Ctx, error::Attempt,
+    branch::find_main, cli::DeleteArgs, command::delete::delete_command, ctx::Ctx, error::Attempt,
     reset::pop_and_reset, save::save_temp,
 };
 
 pub fn prune_command(ctx: &Ctx) -> Attempt {
     let mut branches_to_delete: Vec<String> = vec![];
 
-    let main_id = ctx
-        .repo
-        .find_branch("main", git2::BranchType::Local)?
-        .into_reference()
-        .peel_to_commit()?
-        .id();
+    let main_id = find_main(ctx)?.peel_to_id()?;
 
     save_temp(ctx, "Save before prune".into())?;
 
-    for branch in ctx.repo.branches(Some(git2::BranchType::Local))?.flatten() {
-        if let (branch, BranchType::Local) = branch {
-            let Some(name) = branch.name()? else {
-                continue;
-            };
-            if name == "main" {
-                continue;
-            }
+    for branch in ctx.repo.references()?.local_branches()?.into_iter() {
+        let Ok(mut branch) = branch else {
+            bail!("Invalid branch");
+        };
 
-            let branch_commit = ctx
-                .repo
-                .find_branch(name, BranchType::Local)?
-                .into_reference()
-                .peel_to_commit()?;
+        let name = branch.name().shorten().to_string();
 
-            let fork_id = ctx.repo.merge_base(main_id, branch_commit.id())?;
+        if name == "main" {
+            continue;
+        };
 
-            let branch_tree_id = branch_commit.tree_id();
-            let fork_tree_id = ctx.repo.find_commit(fork_id)?.tree_id();
+        let branch_commit = branch.peel_to_commit()?;
 
-            if branch_tree_id == fork_tree_id {
-                branches_to_delete.push(name.into());
-            }
+        let fork_id = ctx.repo.merge_base(main_id, branch_commit.id())?;
+
+        let branch_tree_id = branch_commit.tree_id()?;
+        let fork_tree_id = ctx.repo.find_commit(fork_id)?.tree_id()?;
+
+        if branch_tree_id == fork_tree_id {
+            branches_to_delete.push(name);
         }
     }
 

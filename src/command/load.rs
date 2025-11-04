@@ -1,27 +1,27 @@
-use git2::build::CheckoutBuilder;
+use gix::{bstr::Find, worktree::stack::state::attributes::Source};
 
 use crate::{
-    cli::LoadArgs,
-    ctx::Ctx,
-    error::{Attempt, fail},
-    reset::pop_and_reset,
+    branch::find_branch, cli::LoadArgs, ctx::Ctx, error::Attempt, reset::pop_and_reset,
     save::save_temp,
 };
 
 fn load_command_inner(ctx: &Ctx, args: &LoadArgs) -> Attempt {
-    let target_ref = ctx
-        .repo
-        .find_branch(&args.name, git2::BranchType::Local)?
-        .into_reference();
+    let target_ref = find_branch(ctx, &args.name)?;
 
-    match target_ref.name() {
-        Some(name) => ctx.repo.set_head(name)?,
-        None => return fail("Invalid branch name"),
-    }
+    let mut options = ctx.repo.checkout_options(Source::IdMapping)?;
+    options.overwrite_existing = true;
 
-    let mut options = CheckoutBuilder::new();
-    options.force();
-    ctx.repo.checkout_head(Some(&mut options))?;
+    todo!();
+    // gix();
+    // gix::worktree::state::checkout(
+    //     ctx.repo.worktree().unwrap().index().unwrap(),
+    //     ctx.repo.workdir().unwrap(),
+    //     ctx.repo.workdir().unwrap().f,
+    //     None,
+    //     None,
+    //     false,
+    //     options,
+    // );
 
     pop_and_reset(ctx)
 }
