@@ -41,9 +41,8 @@ pub fn get_current_branch(ctx: &Ctx) -> Maybe<String> {
 
         if let Some(name) = name_attempt {
             return Ok(name.to_string());
-        } else {
-            return fail("Current branch appears to have no name");
         }
+        return fail("Current branch appears to have no name");
     }
 
     fail("Failed to locate active branch")

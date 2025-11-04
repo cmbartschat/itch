@@ -58,9 +58,8 @@ fn parse_intent(parts: &[String]) -> Maybe<DiffIntent> {
     if parts.len() == 1 {
         if parts[0] == "unsaved" {
             return Ok(DiffIntent::FromSaved);
-        } else {
-            return fail("Unexpected arguments to diff.");
         }
+        return fail("Unexpected arguments to diff.");
     }
 
     if parts.len() == 2 {

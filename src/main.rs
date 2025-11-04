@@ -1,12 +1,14 @@
 #![deny(clippy::all)]
 #![deny(clippy::pedantic)]
-#![allow(clippy::module_name_repetitions)]
-#![allow(clippy::redundant_else)]
+// #![allow(clippy::module_name_repetitions)]
+// #![allow(clippy::redundant_else)]
 
 use clap::Parser;
 use cli::Cli;
 use command::run_command;
 use log::LevelFilter;
+
+use crate::repro::clippy_repro;
 
 mod branch;
 mod cli;
@@ -22,12 +24,14 @@ mod path;
 mod print;
 mod prompt;
 mod remote;
+mod repro;
 mod reset;
 mod save;
 mod sync;
 mod timer;
 
 fn main() {
+    clippy_repro(3, &[]);
     let cli = Cli::parse();
 
     if cli.verbose {
