@@ -16,7 +16,6 @@ axum-extra = { version = "0.8.0", features = ["cookie"] }
 base64 = "0.21.5"
 clap = { version = "4.4.8", features = ["derive"] }
 env_logger = "0.10.1"
-git2 = "0.20.2"
 log = "0.4.20"
 maud = { version = "0.25.0", features = ["axum"] }
 minus = { version = "5.5.3", features = ["static_output"] }
@@ -32,3 +31,4 @@ macros = { path = "macros" }
 reqwest = "0.12.12"
 serde_json = "1.0.138"
 fork = "0.2.0"
+gix = "0.74.1"
