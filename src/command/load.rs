@@ -18,8 +18,8 @@ use gix::{
 };
 
 use crate::{
-    branch::find_branch, cli::LoadArgs, ctx::Ctx, error::Attempt, reset::pop_and_reset,
-    save::save_temp,
+    branch::find_branch, checkout::checkout, cli::LoadArgs, ctx::Ctx, error::Attempt,
+    reference::set_head_direct, reset::pop_and_reset, save::save_temp,
 };
 
 struct Wildcard {}
@@ -34,58 +34,11 @@ impl gix::objs::Find for Wildcard {
     }
 }
 
-fn load_command_inner(ctx: &Ctx, args: &LoadArgs) -> Attempt {
-    let mut target_ref = find_branch(ctx, &args.name)?;
-
-    let mut options = ctx.repo.checkout_options(Source::IdMappingThenWorktree)?;
-    options.overwrite_existing = true;
-
-    // let owned_index: gix::index::File = owned_snapshot;
-    let mut index_state: gix::index::State = ctx
-        .repo
-        .index_from_tree(&target_ref.peel_to_tree()?.id)?
-        .into_parts()
-        .0;
-    let dir: PathBuf = ctx.repo.path().to_path_buf();
-    let objects = ctx.repo.clone().objects.into_arc()?;
-    let files = Discard; // &dyn gix::features::progress::Count;
-    let bytes = Discard; // &dyn gix::features::progress::Count;
-    let should_interrupt: AtomicBool = Default::default();
-
-    let outcome = gix::worktree::state::checkout(
-        &mut index_state,
-        dir,
-        objects,
-        &files,
-        &bytes,
-        &should_interrupt,
-        options,
-    )?;
-
-    eprintln!("Checkout finished: {:?}", outcome);
-
-    let message = format!("Loading {}", args.name);
-
-    ctx.repo.edit_reference(gix::refs::transaction::RefEdit {
-        change: Change::Update {
-            log: LogChange {
-                mode: gix::refs::transaction::RefLog::AndReference,
-                force_create_reflog: false,
-                message: message.into(),
-            },
-            expected: PreviousValue::Any,
-            new: gix::refs::Target::Symbolic(target_ref.name().to_owned()),
-        },
-        name: ctx.repo.head()?.name().into(),
-        deref: false,
-    })?;
-
-    // pop_and_reset(ctx)
-    Ok(())
-}
-
 pub fn load_command(ctx: &Ctx, args: &LoadArgs) -> Attempt {
     save_temp(ctx, format!("Save before switching to {}", args.name))?;
-
-    load_command_inner(ctx, args)
+    let mut target_ref = find_branch(ctx, &args.name)?;
+    checkout(ctx, target_ref.peel_to_commit()?)?;
+    set_head_direct(ctx, target_ref.name().to_owned())?;
+    pop_and_reset(ctx)?;
+    Ok(())
 }

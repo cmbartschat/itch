@@ -7,6 +7,7 @@ use crate::command::delete::delete_command;
 use crate::command::init::init_command;
 use crate::command::load::load_command;
 use crate::command::new::new_command;
+use crate::command::save::save_command;
 use crate::command::split::split_command;
 use crate::error::Attempt;
 use crate::{
@@ -27,7 +28,7 @@ mod new;
 // mod prune;
 mod rename;
 // mod revert;
-// mod save;
+mod save;
 mod split;
 // mod squash;
 // mod status;
@@ -62,7 +63,7 @@ pub fn run_command(cli: &Cli) -> Attempt {
         // Commands::Merge => merge_command(&ctx),
         Commands::New(args) => new_command(&ctx, args),
         // Commands::Prune => prune_command(&ctx),
-        // Commands::Save(args) => save_command(&ctx, args, false),
+        Commands::Save(args) => save_command(&ctx, args, false),
         Commands::Split(args) => split_command(&ctx, args),
         // Commands::Rename(args) => rename_command(&ctx, args),
         // Commands::Squash(args) => squash_command(&ctx, args),

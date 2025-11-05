@@ -10,11 +10,13 @@ use command::run_command;
 use log::LevelFilter;
 
 mod branch;
+mod checkout;
 mod cli;
 mod command;
 mod commit;
 mod consts;
 mod ctx;
+mod reference;
 // mod diff;
 // mod editor;
 mod error;

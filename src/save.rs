@@ -27,7 +27,7 @@ pub fn save(ctx: &Ctx, args: &SaveArgs, silent: bool) -> Attempt {
     let repo = &ctx.repo;
 
     let status = repo.status(Discard)?;
-
+    let live_index = repo.index()?;
     let worktree_index = status.into_index_worktree_iter(vec![])?;
     let mut index = ctx.repo.index()?.as_ref().clone();
 
@@ -44,6 +44,9 @@ pub fn save(ctx: &Ctx, args: &SaveArgs, silent: bool) -> Attempt {
             continue;
         };
 
+        let item_path = worktree_item.rela_path();
+        eprintln!("worktree_item: {status:?} {item_path:?}");
+
         let Some(entry) = index.entry_mut_by_path_and_stage(
             worktree_item.rela_path(),
             gix::index::entry::Stage::Unconflicted,
@@ -52,8 +55,8 @@ pub fn save(ctx: &Ctx, args: &SaveArgs, silent: bool) -> Attempt {
             if status != Summary::Added {
                 bail!("Missing entries should be added in the workdir");
             }
-            let stat = Metadata::from_path_no_follow(worktree_item.rela_path().to_path()?)?;
-            let data = std::fs::read(worktree_item.rela_path().to_os_str()?)?;
+            let stat = Metadata::from_path_no_follow(item_path.to_path()?)?;
+            let data = std::fs::read(item_path.to_os_str()?)?;
             let id = ctx.repo.write_blob(data)?.detach();
             index.dangerously_push_entry(
                 Stat::from_fs(&stat)?,
@@ -76,6 +79,7 @@ pub fn save(ctx: &Ctx, args: &SaveArgs, silent: bool) -> Attempt {
                 let blob = Blob { data: data };
                 let id = ctx.repo.write_object(blob)?;
                 entry.id = id.detach();
+                entry.mode = Mode::FILE;
                 entry.flags |= Flags::UPDATE;
             }
             Summary::TypeChange => todo!(),
@@ -90,6 +94,11 @@ pub fn save(ctx: &Ctx, args: &SaveArgs, silent: bool) -> Attempt {
     let mut write_options = gix::index::write::Options::default();
     write_options.extensions = gix::index::write::Extensions::All;
     index.write(write_options)?;
+
+    eprintln!(
+        "After worktree updates written, live: {:?}",
+        live_index.entries()
+    );
 
     // gix::index::extension::decode
 
