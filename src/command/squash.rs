@@ -1,4 +1,3 @@
-
 use crate::{
     branch::find_main, cli::SquashArgs, ctx::Ctx, error::Attempt, save::resolve_commit_message,
 };
@@ -18,7 +17,6 @@ pub fn squash_command(ctx: &Ctx, args: &SquashArgs) -> Attempt {
         Some(m) => m,
         None => top_commit
             .message()?
-            .body()
             .map(|f| f.to_string())
             .unwrap_or_default(),
     };

@@ -2,6 +2,7 @@
 #![deny(clippy::pedantic)]
 #![allow(clippy::module_name_repetitions)]
 #![allow(clippy::redundant_else)]
+#![allow(unused, dead_code)]
 
 use clap::Parser;
 use cli::Cli;
@@ -39,6 +40,6 @@ fn main() {
     let res = run_command(&cli);
 
     if let Err(e) = res {
-        eprintln!("Failed with error: {}", e);
+        eprintln!("Failed with error: {:?}", e);
     }
 }

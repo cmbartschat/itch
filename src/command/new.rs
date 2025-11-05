@@ -22,14 +22,14 @@ pub fn new_command(ctx: &Ctx, args: &NewArgs) -> Attempt {
 
     let base_commit = base_branch.peel_to_id()?;
 
+    eprintln!("Creating branch {name}");
+
     ctx.repo.reference(
-        name,
+        format!("refs/heads/{name}"),
         base_commit,
         gix::refs::transaction::PreviousValue::MustNotExist,
         "",
     )?;
-
-    todo!();
 
     load_command(ctx, &LoadArgs { name })?;
 

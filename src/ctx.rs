@@ -43,6 +43,7 @@ impl Ctx {
 
 pub fn init_ctx() -> Maybe<Ctx> {
     let repo = gix::open(std::env::current_dir().unwrap()).unwrap();
+    eprintln!("Initialized repo in {:?}", repo.path());
     Ok(Ctx {
         repo,
         mode: Mode::Unknown,
