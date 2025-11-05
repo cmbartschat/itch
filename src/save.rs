@@ -1,5 +1,3 @@
-use git2::IndexAddOption;
-
 use crate::{cli::SaveArgs, consts::TEMP_COMMIT_PREFIX, ctx::Ctx, error::Attempt};
 
 pub fn resolve_commit_message(message_parts: &[String]) -> Option<String> {
@@ -15,32 +13,22 @@ pub fn save(ctx: &Ctx, args: &SaveArgs, silent: bool) -> Attempt {
     let repo = &ctx.repo;
 
     let mut index = repo.index()?;
-    index.add_all(["*"], IndexAddOption::all(), None)?;
-    let index_commit = index.write_tree()?;
-
-    let tree = repo.find_tree(index_commit)?;
+    todo!();
+    // index.add_all(["*"], IndexAddOption::all(), None)?;
+    let tree_id = index.tree().unwrap().id;
 
     let message = resolve_commit_message(&args.message).unwrap_or_else(|| "Save".into());
 
-    let signature = repo.signature()?;
-
     let parent = repo.head()?.peel_to_commit()?;
 
-    if index_commit == parent.tree_id() {
+    if tree_id == parent.tree_id()? {
         if !silent {
             eprintln!("Nothing to commit.");
         }
         return Ok(());
     }
 
-    repo.commit(
-        Some("HEAD"),
-        &signature,
-        &signature,
-        &message,
-        &tree,
-        &[&parent],
-    )?;
+    repo.commit("HEAD", &message, tree_id, vec![parent.id()])?;
 
     Ok(())
 }

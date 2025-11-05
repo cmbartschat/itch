@@ -1,12 +1,8 @@
 use std::path::Path;
 
-use git2::{Commit, FileMode, ResetType, Tree, TreeEntry, build::TreeUpdateBuilder};
+use anyhow::bail;
 
-use crate::{
-    cli::UnsaveArgs,
-    ctx::Ctx,
-    error::{Attempt, fail},
-};
+use crate::{branch::find_main, cli::UnsaveArgs, ctx::Ctx, error::Attempt};
 
 const GIT_FILEMODE_UNREADABLE: i32 = 0o000_000;
 const GIT_FILEMODE_TREE: i32 = 0o040_000;
@@ -112,18 +108,14 @@ fn unsave_single(ctx: &Ctx, prev_commit: Commit) -> Attempt {
 
 pub fn unsave_command(ctx: &Ctx, args: &UnsaveArgs) -> Attempt {
     let head_commit = ctx.repo.head()?.peel_to_commit()?;
-    let base_commit = ctx
-        .repo
-        .find_branch("main", git2::BranchType::Local)?
-        .into_reference()
-        .peel_to_commit()?;
+    let base_commit = find_main(ctx)?.peel_to_commit()?;
 
     let fork_commit = ctx
         .repo
         .find_commit(ctx.repo.merge_base(base_commit.id(), head_commit.id())?)?;
 
     if head_commit.id() == fork_commit.id() {
-        return fail("Cannot unsave past the fork point");
+        bail!("Cannot unsave past the fork point");
     }
 
     let mut parent_commits = head_commit.parents();

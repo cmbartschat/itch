@@ -1,5 +1,7 @@
 use std::ffi::{OsStr, OsString};
 
+use anyhow::bail;
+
 use crate::error::{Maybe, fail, inner_fail};
 
 pub fn edit_temp_text(initial_content: &str, extension: Option<&OsStr>) -> Maybe<String> {
@@ -24,7 +26,7 @@ pub fn edit_temp_text(initial_content: &str, extension: Option<&OsStr>) -> Maybe
             std::process::Command::new("vim").arg(&temp_path).spawn()
         }
         Err(_) => {
-            return fail("Unexpected error reading EDITOR variable");
+            bail!("Unexpected error reading EDITOR variable");
         }
     };
 
@@ -35,7 +37,7 @@ pub fn edit_temp_text(initial_content: &str, extension: Option<&OsStr>) -> Maybe
         .map_err(|_| inner_fail("Failed to complete edit."))?;
 
     if !status.success() {
-        return fail("Edit sesssion exited with failure.");
+        bail!("Edit sesssion exited with failure.");
     }
 
     let res = std::fs::read_to_string(&temp_path)

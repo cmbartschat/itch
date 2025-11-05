@@ -1,12 +1,13 @@
 use std::env;
 
+use anyhow::bail;
 use git2::{
     Cred, CredentialType, FetchOptions, ProxyOptions, PushOptions, Remote, RemoteCallbacks,
 };
 
 use crate::{
     ctx::Ctx,
-    error::{Attempt, Maybe, fail},
+    error::{Attempt, Maybe},
     print::show_warning,
 };
 
@@ -193,7 +194,7 @@ pub fn try_pull_main(ctx: &Ctx) {
 pub fn connect_remote(ctx: &Ctx, url: &str) -> Attempt {
     match get_remote(ctx) {
         Ok(Some(_)) => {
-            return fail("Already have a remote.");
+            bail!("Already have a remote.");
         }
         Ok(None) => {}
         Err(e) => return Err(e),
@@ -220,7 +221,7 @@ pub fn disconnect_remote(ctx: &Ctx) -> Attempt {
 
 pub fn delete_remote_branch(ctx: &Ctx, name: &str) -> Attempt {
     if name == "main" {
-        return fail("Refusing to delete main branch.");
+        bail!("Refusing to delete main branch.");
     }
     match get_remote(ctx)? {
         Some(mut remote) => {

@@ -3,18 +3,13 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use git2::{
-    ErrorCode, Index, IndexConflict, IndexEntry, Oid, RebaseOperationType, RebaseOptions,
-    Repository,
-};
-
 use crate::{
     branch::get_current_branch,
     cli::SyncArgs,
     ctx::Ctx,
     diff::get_merge_text,
     editor::edit_temp_text,
-    error::{Attempt, Maybe, fail},
+    error::{Attempt, Maybe},
     path::bytes2path,
     prompt::ask_option,
     remote::try_pull_main,
@@ -29,18 +24,8 @@ fn delete_entry(index: &mut Index, path: &Path) -> Attempt {
 
 fn clone_entry(entry: &IndexEntry) -> IndexEntry {
     IndexEntry {
-        ctime: entry.ctime,
-        mtime: entry.mtime,
-        dev: entry.dev,
-        ino: entry.ino,
-        mode: entry.mode,
-        uid: entry.uid,
-        gid: entry.gid,
-        file_size: entry.file_size,
-        id: entry.id,
-        flags: entry.flags,
-        flags_extended: entry.flags_extended,
         path: entry.path.clone(),
+        ..entry
     }
 }
 

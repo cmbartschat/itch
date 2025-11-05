@@ -3,7 +3,7 @@ use crate::{
     cli::{DeleteArgs, LoadArgs},
     ctx::Ctx,
     error::Attempt,
-    remote::try_delete_remote_branch,
+    // remote::try_delete_remote_branch,
 };
 
 use super::load::load_command;
@@ -25,7 +25,8 @@ pub fn delete_command(ctx: &Ctx, args: &DeleteArgs) -> Attempt {
         }
 
         branch.delete()?;
-        try_delete_remote_branch(ctx, branch_name);
+        todo!()
+        // try_delete_remote_branch(ctx, branch_name);
     }
 
     Ok(())

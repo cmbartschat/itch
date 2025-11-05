@@ -14,18 +14,18 @@ mod command;
 mod commit;
 mod consts;
 mod ctx;
-mod diff;
-mod editor;
+// mod diff;
+// mod editor;
 mod error;
-mod output;
-mod path;
-mod print;
-mod prompt;
-mod remote;
+// mod output;
+// mod path;
+// mod print;
+// mod prompt;
+// mod remote;
 mod reset;
 mod save;
-mod sync;
-mod timer;
+// mod sync;
+// mod timer;
 
 fn main() {
     let cli = Cli::parse();
@@ -39,6 +39,6 @@ fn main() {
     let res = run_command(&cli);
 
     if let Err(e) = res {
-        eprintln!("Failed with error: {}", e.message());
+        eprintln!("Failed with error: {}", e);
     }
 }

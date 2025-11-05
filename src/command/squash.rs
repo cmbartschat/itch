@@ -1,4 +1,3 @@
-use anyhow::bail;
 
 use crate::{
     branch::find_main, cli::SquashArgs, ctx::Ctx, error::Attempt, save::resolve_commit_message,

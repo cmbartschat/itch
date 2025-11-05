@@ -661,7 +661,7 @@ fn convert_sync_form(body: &SyncForm) -> Maybe<ResolutionMap> {
         } else if let Some(("manual", value)) = value.split_once(':') {
             ResolutionChoice::Manual(value.into())
         } else {
-            return fail("Unexpected selection");
+            bail!("Unexpected selection");
         };
         resolutions.insert(key.clone(), value);
     }
@@ -800,7 +800,7 @@ async fn locate_background(dir: &str) -> Maybe<Option<UiHost>> {
                 if e.is_connect() {
                     continue;
                 }
-                return fail("Unexpected error in request");
+                bail!("Unexpected error in request");
             }
         }
     }
@@ -880,7 +880,7 @@ pub fn ui_command(ctx: &Ctx) -> Attempt {
             std::thread::sleep(std::time::Duration::from_millis(500));
             return Ok(());
         }
-        Err(_) => return fail("Failed to start in background"),
+        Err(_) => bail!("Failed to start in background"),
     }
 
     let runtime = tokio::runtime::Builder::new_current_thread()

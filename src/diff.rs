@@ -1,3 +1,4 @@
+use anyhow::bail;
 use git2::{Blob, Diff, DiffFindOptions, DiffLine, DiffOptions, Oid, Repository};
 use std::io::Read;
 
@@ -33,7 +34,7 @@ fn oid_to_string<'a>(repo: &'a Repository, oid: &git2::Oid) -> Maybe<(Option<Blo
     }
     let blob = repo.find_blob(*oid)?;
     if blob.is_binary() {
-        return fail("Cannot load binary data line-by-line");
+        bail!("Cannot load binary data line-by-line");
     }
     let mut original_content = String::new();
     blob.content()

@@ -1,23 +1,19 @@
-use std::rc::Rc;
+use anyhow::bail;
+use gix::Commit;
 
-use git2::Commit;
-
-use crate::{
-    ctx::Ctx,
-    error::{Maybe, fail},
-};
+use crate::{ctx::Ctx, error::Maybe};
 
 pub fn count_commits_since(_ctx: &Ctx, older: &Commit, newer: &Commit) -> Maybe<usize> {
     let mut count: usize = 0;
-    let mut current = Rc::from(newer.clone());
+    let mut current = newer.clone();
     while current.id() != older.id() {
-        let next = current.parents().next();
+        let next = current.parent_ids().next();
         match next {
             Some(c) => {
                 count += 1;
-                current = Rc::from(c);
+                current = c.object()?.try_into_commit()?;
             }
-            None => return fail("Unable to navigate to fork point."),
+            None => bail!("Unable to navigate to fork point."),
         }
     }
 
