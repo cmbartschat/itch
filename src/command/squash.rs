@@ -1,9 +1,36 @@
+use git2::{Commit, Oid};
+
 use crate::{
     cli::SquashArgs,
     ctx::Ctx,
-    error::{Attempt, fail},
+    error::{Attempt, Maybe, fail},
     save::resolve_commit_message,
 };
+
+pub fn resolve_squashed_message(
+    message: &[String],
+    top_commit: Commit,
+    fork_id: Oid,
+) -> Maybe<String> {
+    if let Some(m) = resolve_commit_message(message) {
+        return Ok(m);
+    }
+
+    let mut commit = top_commit;
+    while commit.id() != fork_id {
+        match commit.message() {
+            None => return fail("Invalid characters in previous message"),
+            Some(m) => {
+                if m == "Save" {
+                    commit = commit.parent(0)?;
+                } else {
+                    return Ok(m.to_string());
+                }
+            }
+        }
+    }
+    fail("Unable to resolve squashed message")
+}
 
 pub fn squash_command(ctx: &Ctx, args: &SquashArgs) -> Attempt {
     let _head = ctx.repo.head()?;
@@ -18,19 +45,13 @@ pub fn squash_command(ctx: &Ctx, args: &SquashArgs) -> Attempt {
 
     let top_commit = ctx.repo.head()?.peel_to_commit()?;
 
-    let parent_id = ctx.repo.merge_base(latest_main.id(), top_commit.id())?;
+    let fork_id = ctx.repo.merge_base(latest_main.id(), top_commit.id())?;
 
-    let parent = ctx.repo.find_commit(parent_id)?;
-
-    let message = match resolve_commit_message(&args.message) {
-        Some(m) => m,
-        None => match top_commit.message() {
-            Some(m) => m.to_string(),
-            None => return fail("Invalid characters in previous message"),
-        },
-    };
+    let parent = ctx.repo.find_commit(fork_id)?;
 
     let tree = top_commit.tree()?;
+
+    let message = resolve_squashed_message(&args.message, top_commit, fork_id)?;
 
     let squashed_commit = ctx.repo.find_commit(ctx.repo.commit(
         None,
