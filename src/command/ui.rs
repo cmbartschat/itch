@@ -21,7 +21,7 @@ use crate::{
     cli::{DeleteArgs, LoadArgs, NewArgs, SaveArgs, SquashArgs},
     command::new::new_command,
     commit::count_commits_since,
-    ctx::{Ctx, init_ctx},
+    ctx::{Ctx, EnvCtx, init_ctx},
     diff::{collapse_renames, good_diff_options, split_diff_line},
     error::{Attempt, Fail, Maybe, fail, inner_fail},
     reset::pop_and_reset,
@@ -228,8 +228,7 @@ fn get_workspace_name(ctx: &Ctx) -> String {
 }
 
 fn load_dashboard_info() -> Maybe<DashboardInfo> {
-    let mut ctx = init_ctx()?;
-    ctx.set_mode(crate::ctx::Mode::Background);
+    let ctx = init_ctx(EnvCtx::background())?;
 
     let repo_head = ctx.repo.head()?;
 
@@ -491,8 +490,7 @@ async fn sync() -> impl IntoResponse {
 }
 
 fn render_diff(file_path: &str) -> Maybe<Option<Markup>> {
-    let mut ctx = init_ctx()?;
-    ctx.set_mode(crate::ctx::Mode::Background);
+    let ctx = init_ctx(EnvCtx::background())?;
 
     let head_commit = ctx.repo.head()?.peel_to_commit()?;
 
@@ -577,8 +575,7 @@ fn with_ctx<R, T>(callback: T) -> Maybe<R>
 where
     T: FnOnce(&Ctx) -> Maybe<R>,
 {
-    let mut ctx = init_ctx()?;
-    ctx.set_mode(crate::ctx::Mode::Background);
+    let ctx = init_ctx(EnvCtx::background())?;
     callback(&ctx)
 }
 

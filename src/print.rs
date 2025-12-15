@@ -1,14 +1,18 @@
-use crate::ctx::Ctx;
+use crate::ctx::{Ctx, EnvCtx};
 
 const RESET: &str = "\x1b[0m";
 const FG_ORANGE: &str = "\x1b[38;5;214m";
 
-pub fn show_warning(ctx: &Ctx, message: &str) {
-    if ctx.can_prompt() {
-        if ctx.color_enabled() {
+pub fn show_warning_env(ctx: &EnvCtx, message: &str) {
+    if ctx.can_prompt {
+        if ctx.color_enabled {
             eprintln!("{FG_ORANGE}{message}{RESET}");
         } else {
             eprintln!("{message}");
         }
     }
+}
+
+pub fn show_warning(ctx: &Ctx, message: &str) {
+    show_warning_env(ctx.env(), message);
 }

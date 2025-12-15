@@ -1,6 +1,3 @@
-use std::io::IsTerminal;
-use std::{env, io::stdout};
-
 use connect::connect_command;
 use disconnect::disconnect_command;
 use init::init_command;
@@ -9,10 +6,12 @@ use revert::revert_command;
 use split::split_command;
 
 use crate::command::archive::archive_command;
+use crate::ctx::EnvCtx;
 use crate::error::{Attempt, fail};
+use crate::print::show_warning_env;
 use crate::{
     cli::{Cli, Commands},
-    ctx::{Mode, init_ctx},
+    ctx::init_ctx,
 };
 
 use self::{
@@ -44,20 +43,12 @@ mod sync;
 mod ui;
 mod unsave;
 
-pub fn run_command(cli: &Cli) -> Attempt {
+pub fn run_command_inner(env: EnvCtx, cli: &Cli) -> Attempt {
     if let Commands::Init = cli.command {
         return init_command();
     }
 
-    let mut ctx = init_ctx()?;
-    ctx.set_mode(if stdout().lock().is_terminal() {
-        Mode::Cli
-    } else {
-        Mode::Pipe
-    });
-    if env::var_os("NO_COLOR").is_some() {
-        ctx.disable_color();
-    }
+    let ctx = init_ctx(env)?;
 
     match &cli.command {
         Commands::Archive(args) => archive_command(&ctx, args),
@@ -82,4 +73,10 @@ pub fn run_command(cli: &Cli) -> Attempt {
         Commands::Unsave(args) => unsave_command(&ctx, args),
         Commands::Revert(args) => revert_command(&ctx, args),
     }
+}
+
+pub fn run_command(cli: &Cli) -> Attempt {
+    let env_ctx = EnvCtx::from_cli();
+    run_command_inner(env_ctx.clone(), cli)
+        .inspect_err(|f| show_warning_env(&env_ctx, &format!("Error: {f}")))
 }
