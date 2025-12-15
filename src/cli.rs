@@ -44,6 +44,9 @@ pub enum Commands {
     #[command(about = "Delete a branch")]
     Delete(DeleteArgs),
 
+    #[command(about = "Archive a branch by creating a tag at where it pointed, then deleting")]
+    Archive(DeleteArgs),
+
     #[command(about = "Show the commit history")]
     Log,
 

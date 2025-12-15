@@ -78,17 +78,35 @@ fn get_remote(ctx: &Ctx) -> Maybe<Option<Remote<'_>>> {
     fail("Unable to resolve default remote ('origin') out of multiple options")
 }
 
+fn force_push_ref(ctx: &Ctx, local_ref: &str, remote_ref: &str) -> Attempt {
+    let remote = get_remote(ctx)?;
+    if let Some(mut remote) = remote {
+        let refspec = format!("+refs/{local_ref}:refs/{remote_ref}");
+        remote.push(&[refspec], Some(&mut setup_push_options(ctx)))?;
+    }
+    Ok(())
+}
+
 pub fn push_branch(ctx: &Ctx, branch: &str) -> Attempt {
     if branch == "main" {
         return push_main(ctx);
     }
-    let remote = get_remote(ctx)?;
-    if let Some(mut remote) = remote {
-        let remote_prefix = get_remote_prefix()?;
-        let refspec = format!("+refs/heads/{branch}:refs/heads/{remote_prefix}{branch}");
-        remote.push(&[refspec], Some(&mut setup_push_options(ctx)))?;
-    }
-    Ok(())
+    let remote_prefix = get_remote_prefix()?;
+
+    force_push_ref(
+        ctx,
+        format!("heads/{branch}").as_str(),
+        format!("heads/{remote_prefix}{branch}").as_str(),
+    )
+}
+
+pub fn push_tag(ctx: &Ctx, tag: &str) -> Attempt {
+    let remote_prefix = get_remote_prefix()?;
+    force_push_ref(
+        ctx,
+        format!("tags/{tag}").as_str(),
+        format!("tags/{remote_prefix}{tag}").as_str(),
+    )
 }
 
 pub fn pull_main(ctx: &Ctx) -> Attempt {

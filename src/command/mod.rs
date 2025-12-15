@@ -8,6 +8,7 @@ use rename::rename_command;
 use revert::revert_command;
 use split::split_command;
 
+use crate::command::archive::archive_command;
 use crate::error::{Attempt, fail};
 use crate::{
     cli::{Cli, Commands},
@@ -21,6 +22,7 @@ use self::{
     ui::ui_command, unsave::unsave_command,
 };
 
+mod archive;
 mod connect;
 mod delete;
 mod diff;
@@ -59,6 +61,7 @@ pub fn run_command(cli: &Cli) -> Attempt {
 
     match &cli.command {
         Commands::Init => fail("Unexpected command after block"),
+        Commands::Archive(args) => archive_command(&ctx, args),
         Commands::Connect(args) => connect_command(&ctx, args),
         Commands::Disconnect => disconnect_command(&ctx),
         Commands::Delete(args) => delete_command(&ctx, args),
