@@ -24,7 +24,7 @@ use crate::{
 };
 
 fn delete_entry(index: &mut Index, path: &Path) -> Attempt {
-    index.remove_path(path)
+    index.remove_path(path).map_err(std::convert::Into::into)
 }
 
 fn clone_entry(entry: &IndexEntry) -> IndexEntry {
@@ -48,7 +48,7 @@ fn select_entry(index: &mut Index, old_path: &Path, entry: &IndexEntry) -> Attem
     index.remove_path(old_path)?;
     let mut new_entry = clone_entry(entry);
     new_entry.flags = new_entry.flags.bitand(0x3000_u16.reverse_bits());
-    index.add(&new_entry)
+    index.add(&new_entry).map_err(std::convert::Into::into)
 }
 
 fn extract_path(conflict: &IndexConflict) -> Maybe<PathBuf> {
@@ -300,7 +300,7 @@ pub fn try_sync_branch(
             }
             Err(e) => {
                 if e.code() != ErrorCode::Applied {
-                    return Err(e);
+                    return Err(e.into());
                 }
             }
         }

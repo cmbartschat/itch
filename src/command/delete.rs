@@ -27,7 +27,7 @@ pub fn delete_command(ctx: &Ctx, args: &DeleteArgs) -> Attempt {
                 if e.class() == git2::ErrorClass::Config {
                     branch.delete()?;
                 } else {
-                    return Err(e);
+                    return Err(e.into());
                 }
             }
         }

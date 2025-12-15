@@ -17,6 +17,7 @@ pub fn collapse_renames(diff: &mut Diff) -> Attempt {
     options.all(true);
     options.break_rewrites(false);
     diff.find_similar(Some(&mut options))
+        .map_err(std::convert::Into::into)
 }
 
 pub fn good_diff_options() -> DiffOptions {

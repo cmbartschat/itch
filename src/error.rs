@@ -1,4 +1,4 @@
-pub type Fail = git2::Error;
+pub type Fail = anyhow::Error;
 
 pub type Attempt = Result<(), Fail>;
 
@@ -11,7 +11,7 @@ mod mac {
     #[macro_export]
     macro_rules! inner_fail {
         ($msg:expr $(,)?) => {
-            $crate::error::Fail::from_str($msg)
+            anyhow::anyhow!($msg)
         };
     }
 

@@ -592,7 +592,7 @@ where
 fn map_error_to_response(err: Fail) -> impl IntoResponse {
     let res = (
         StatusCode::INTERNAL_SERVER_ERROR,
-        render_message("Error", Some(err.message())),
+        render_message("Error", Some(err.to_string().as_ref())),
     );
     std::mem::drop(err);
     res

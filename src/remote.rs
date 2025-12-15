@@ -24,7 +24,7 @@ fn setup_remote_callbacks(ctx: &Ctx) -> RemoteCallbacks<'_> {
     callbacks
         .push_update_reference(|_, status| {
             if let Some(error_message) = status {
-                fail!(error_message)
+                Err(git2::Error::from_str(error_message))
             } else {
                 Ok(())
             }
@@ -35,7 +35,9 @@ fn setup_remote_callbacks(ctx: &Ctx) -> RemoteCallbacks<'_> {
             } else if allowed_types.contains(CredentialType::SSH_KEY) {
                 match username_from_url {
                     Some(user) => Cred::ssh_key_from_agent(user),
-                    None => fail!("Username not provided, expecting git@ in ssh URLs"),
+                    None => Err(git2::Error::from_str(
+                        "Username not provided, expecting git@ in ssh URLs",
+                    )),
                 }
             } else {
                 todo!("support for auth type: {allowed_types:?}");
@@ -182,10 +184,7 @@ pub fn try_push_branch(ctx: &Ctx, name: &str) {
     if let Err(e) = push_branch(ctx, name) {
         show_warning(
             ctx,
-            &format!(
-                "Failed to update remote; continuing anyway ({})",
-                e.message()
-            ),
+            &format!("Failed to update remote; continuing anyway ({e})"),
         );
     }
 }
@@ -194,7 +193,7 @@ pub fn try_push_main(ctx: &Ctx) {
     if let Err(e) = push_main(ctx) {
         show_warning(
             ctx,
-            &format!("Failed to push remote; continuing anyway ({})", e.message()),
+            &format!("Failed to push remote; continuing anyway ({e})"),
         );
     }
 }
@@ -203,7 +202,7 @@ pub fn try_pull_main(ctx: &Ctx) {
     if let Err(e) = pull_main(ctx) {
         show_warning(
             ctx,
-            &format!("Failed to pull remote; continuing anyway ({})", e.message()),
+            &format!("Failed to pull remote; continuing anyway ({e})"),
         );
     }
 }
@@ -256,9 +255,6 @@ pub fn delete_remote_branch(ctx: &Ctx, name: &str) -> Attempt {
 
 pub fn try_delete_remote_branch(ctx: &Ctx, name: &str) {
     if let Err(e) = delete_remote_branch(ctx, name) {
-        show_warning(
-            ctx,
-            &format!("Failed to delete branch on remote ({})", e.message()),
-        );
+        show_warning(ctx, &format!("Failed to delete branch on remote ({e})"));
     }
 }

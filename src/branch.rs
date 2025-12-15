@@ -12,7 +12,7 @@ pub fn local_branch_exists(ctx: &Ctx, branch: &str) -> Maybe<bool> {
             if err.code() == ErrorCode::NotFound {
                 return Ok(false);
             }
-            Err(err)
+            Err(err.into())
         }
     }
 }

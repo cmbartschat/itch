@@ -8,6 +8,8 @@ use cli::Cli;
 use command::run_command;
 use log::LevelFilter;
 
+use crate::error::Attempt;
+
 mod branch;
 mod cli;
 mod command;
@@ -27,7 +29,7 @@ mod save;
 mod sync;
 mod timer;
 
-fn main() {
+fn main() -> Attempt {
     let cli = Cli::parse();
 
     if cli.verbose {
@@ -36,9 +38,5 @@ fn main() {
             .init();
     }
 
-    let res = run_command(&cli);
-
-    if let Err(e) = res {
-        eprintln!("Failed with error: {}", e.message());
-    }
+    run_command(&cli)
 }

@@ -66,7 +66,7 @@ fn unsave_files(
                             if e.code() == git2::ErrorCode::NotFound {
                                 false
                             } else {
-                                return Err(e);
+                                return Err(e.into());
                             }
                         }
                     };
@@ -74,7 +74,7 @@ fn unsave_files(
                         new_tree_builder.remove(file_path);
                     }
                 }
-                _ => return Err(e),
+                _ => return Err(e.into()),
             },
         }
     }
