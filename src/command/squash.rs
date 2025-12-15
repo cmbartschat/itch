@@ -29,12 +29,10 @@ pub fn resolve_squashed_message(
             }
         }
     }
-    fail("Unable to resolve squashed message")
+    Ok("Squash".into())
 }
 
 pub fn squash_command(ctx: &Ctx, args: &SquashArgs) -> Attempt {
-    let _head = ctx.repo.head()?;
-
     let signature = ctx.repo.signature()?;
 
     let latest_main = ctx
@@ -46,6 +44,9 @@ pub fn squash_command(ctx: &Ctx, args: &SquashArgs) -> Attempt {
     let top_commit = ctx.repo.head()?.peel_to_commit()?;
 
     let fork_id = ctx.repo.merge_base(latest_main.id(), top_commit.id())?;
+    if top_commit.id() == fork_id {
+        return Ok(());
+    }
 
     let parent = ctx.repo.find_commit(fork_id)?;
 
