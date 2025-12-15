@@ -11,7 +11,7 @@ use crate::{
 pub fn archive_command(ctx: &Ctx, args: &DeleteArgs) -> Attempt {
     let now = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
-        .map_err(|_| inner_fail("Unable to get current timestamp"))?
+        .map_err(|_| inner_fail!("Unable to get current timestamp"))?
         .as_secs()
         .to_string();
     save_temp(ctx, "Save before archive".to_string())?;

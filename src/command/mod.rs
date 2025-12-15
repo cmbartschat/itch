@@ -60,8 +60,8 @@ pub fn run_command(cli: &Cli) -> Attempt {
     }
 
     match &cli.command {
-        Commands::Init => fail("Unexpected command after block"),
         Commands::Archive(args) => archive_command(&ctx, args),
+        Commands::Init => fail!("Unexpected command after block"),
         Commands::Connect(args) => connect_command(&ctx, args),
         Commands::Disconnect => disconnect_command(&ctx),
         Commands::Delete(args) => delete_command(&ctx, args),

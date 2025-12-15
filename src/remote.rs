@@ -14,7 +14,7 @@ fn get_remote_prefix() -> Maybe<String> {
     match env::var("ITCH_REMOTE_PREFIX") {
         Ok(v) => Ok(v),
         Err(env::VarError::NotPresent) => Ok(whoami::username() + "-"),
-        Err(env::VarError::NotUnicode(_)) => fail("Non-unicode remote prefix specified"),
+        Err(env::VarError::NotUnicode(_)) => fail!("Non-unicode remote prefix specified"),
     }
 }
 
@@ -24,7 +24,7 @@ fn setup_remote_callbacks(ctx: &Ctx) -> RemoteCallbacks<'_> {
     callbacks
         .push_update_reference(|_, status| {
             if let Some(error_message) = status {
-                fail(error_message)
+                fail!(error_message)
             } else {
                 Ok(())
             }
@@ -35,7 +35,7 @@ fn setup_remote_callbacks(ctx: &Ctx) -> RemoteCallbacks<'_> {
             } else if allowed_types.contains(CredentialType::SSH_KEY) {
                 match username_from_url {
                     Some(user) => Cred::ssh_key_from_agent(user),
-                    None => fail("Username not provided, expecting git@ in ssh URLs"),
+                    None => fail!("Username not provided, expecting git@ in ssh URLs"),
                 }
             } else {
                 todo!("support for auth type: {allowed_types:?}");
@@ -75,7 +75,7 @@ fn get_remote(ctx: &Ctx) -> Maybe<Option<Remote<'_>>> {
     if let Ok(origin) = origin {
         return Ok(Some(origin));
     }
-    fail("Unable to resolve default remote ('origin') out of multiple options")
+    fail!("Unable to resolve default remote ('origin') out of multiple options")
 }
 
 fn force_push_ref(ctx: &Ctx, local_ref: &str, remote_ref: &str) -> Attempt {
@@ -141,7 +141,7 @@ pub fn pull_main(ctx: &Ctx) -> Attempt {
                 local_ref.set_target(remote_commit.id(), "Sync main")?;
                 Ok(())
             } else {
-                fail("Local diverges from remote.")
+                fail!("Local diverges from remote.")
             }
         }
     }
@@ -211,7 +211,7 @@ pub fn try_pull_main(ctx: &Ctx) {
 pub fn connect_remote(ctx: &Ctx, url: &str) -> Attempt {
     match get_remote(ctx) {
         Ok(Some(_)) => {
-            return fail("Already have a remote.");
+            return fail!("Already have a remote.");
         }
         Ok(None) => {}
         Err(e) => return Err(e),
@@ -238,7 +238,7 @@ pub fn disconnect_remote(ctx: &Ctx) -> Attempt {
 
 pub fn delete_remote_branch(ctx: &Ctx, name: &str) -> Attempt {
     if name == "main" {
-        return fail("Refusing to delete main branch.");
+        return fail!("Refusing to delete main branch.");
     }
     match get_remote(ctx)? {
         Some(mut remote) => {

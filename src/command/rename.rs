@@ -9,7 +9,7 @@ use crate::{
 pub fn rename_command(ctx: &Ctx, args: &RenameArgs) -> Attempt {
     let old_name = get_current_branch(ctx)?;
     if old_name == "main" {
-        return fail("Cannot rename the main branch");
+        return fail!("Cannot rename the main branch");
     }
     let ref_name = format!("refs/heads/{}", args.name);
     let message = format!("Renaming current branch to {}", args.name);

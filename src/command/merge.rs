@@ -21,7 +21,7 @@ fn combine_branches(ctx: &Ctx) -> Maybe<Oid> {
         return Ok(branch_id.id());
     }
 
-    fail("Must be synced on main")
+    fail!("Must be synced on main")
 }
 
 pub fn merge_command(ctx: &Ctx) -> Attempt {
@@ -29,7 +29,7 @@ pub fn merge_command(ctx: &Ctx) -> Attempt {
     let head_name = head.name().expect("No valid head name.");
 
     if head_name == "refs/heads/main" {
-        return fail("Cannot merge from main.");
+        return fail!("Cannot merge from main.");
     }
 
     try_pull_main(ctx);

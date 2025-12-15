@@ -296,7 +296,7 @@ fn count_commits_since(_ctx: &Ctx, older: &Commit, newer: &Commit) -> Maybe<usiz
                 count += 1;
                 current = Rc::from(c);
             }
-            None => return fail("Unable to navigate to fork point."),
+            None => return fail!("Unable to navigate to fork point."),
         }
     }
 

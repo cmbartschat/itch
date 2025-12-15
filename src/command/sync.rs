@@ -324,7 +324,7 @@ pub fn try_sync_branch(
 fn sync_branch(ctx: &Ctx, branch_name: &str) -> Attempt {
     match try_sync_branch(ctx, branch_name, None)? {
         SyncDetails::Complete => Ok(()),
-        SyncDetails::Conflicted(_) => fail("Still conflicted after sync."),
+        SyncDetails::Conflicted(_) => fail!("Still conflicted after sync."),
     }
 }
 

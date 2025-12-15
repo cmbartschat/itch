@@ -25,7 +25,7 @@ pub fn choose_random_branch_name(ctx: &Ctx) -> Maybe<String> {
             return Ok(new_name);
         }
     }
-    fail("Could not autogenerate branch name.")
+    fail!("Could not autogenerate branch name.")
 }
 
 pub fn get_current_branch(ctx: &Ctx) -> Maybe<String> {
@@ -37,14 +37,14 @@ pub fn get_current_branch(ctx: &Ctx) -> Maybe<String> {
 
         let name_attempt = branch
             .name()
-            .map_err(|_| inner_fail("Invalid branch name"))?;
+            .map_err(|_| inner_fail!("Invalid branch name"))?;
 
         if let Some(name) = name_attempt {
             return Ok(name.to_string());
         } else {
-            return fail("Current branch appears to have no name");
+            return fail!("Current branch appears to have no name");
         }
     }
 
-    fail("Failed to locate active branch")
+    fail!("Failed to locate active branch")
 }

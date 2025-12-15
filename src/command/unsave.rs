@@ -123,12 +123,12 @@ pub fn unsave_command(ctx: &Ctx, args: &UnsaveArgs) -> Attempt {
         .find_commit(ctx.repo.merge_base(base_commit.id(), head_commit.id())?)?;
 
     if head_commit.id() == fork_commit.id() {
-        return fail("Cannot unsave past the fork point");
+        return fail!("Cannot unsave past the fork point");
     }
 
     let mut parent_commits = head_commit.parents();
     match (parent_commits.next(), parent_commits.next()) {
-        (None, _) => fail("Latest commit has no parent."),
+        (None, _) => fail!("Latest commit has no parent."),
         (Some(prev_commit), None) => {
             if args.args.is_empty() {
                 unsave_single(ctx, prev_commit)
@@ -136,6 +136,6 @@ pub fn unsave_command(ctx: &Ctx, args: &UnsaveArgs) -> Attempt {
                 unsave_files(ctx, &args.args, &head_commit, &prev_commit)
             }
         }
-        (Some(_), Some(_)) => fail("Expected single parent commit."),
+        (Some(_), Some(_)) => fail!("Expected single parent commit."),
     }
 }

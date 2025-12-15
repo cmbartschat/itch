@@ -661,7 +661,7 @@ fn convert_sync_form(body: &SyncForm) -> Maybe<ResolutionMap> {
         } else if let Some(("manual", value)) = value.split_once(':') {
             ResolutionChoice::Manual(value.into())
         } else {
-            return fail("Unexpected selection");
+            return fail!("Unexpected selection");
         };
         resolutions.insert(key.clone(), value);
     }
@@ -729,7 +729,7 @@ async fn handle_info() -> impl IntoResponse {
         };
         let json = serde_json::to_string(&data).map_err(|e| {
             eprintln!("{e:?}");
-            inner_fail("Failed to Serialize")
+            inner_fail!("Failed to Serialize")
         })?;
         Ok((StatusCode::OK, json))
     })
@@ -788,9 +788,12 @@ async fn locate_background(dir: &str) -> Maybe<Option<UiHost>> {
         match reqwest::get(format!("http:/0.0.0.0:{port}/_info")).await {
             Ok(res) => {
                 if res.status().is_success() {
-                    let text = res.text().await.map_err(|_| inner_fail("Failed to load"))?;
+                    let text = res
+                        .text()
+                        .await
+                        .map_err(|_| inner_fail!("Failed to load"))?;
                     let parsed: UiInfo =
-                        serde_json::from_str(&text).map_err(|_| inner_fail("Parse error"))?;
+                        serde_json::from_str(&text).map_err(|_| inner_fail!("Parse error"))?;
                     if parsed.directory == dir {
                         return Ok(Some(UiHost { port }));
                     }
@@ -800,7 +803,7 @@ async fn locate_background(dir: &str) -> Maybe<Option<UiHost>> {
                 if e.is_connect() {
                     continue;
                 }
-                return fail("Unexpected error in request");
+                return fail!("Unexpected error in request");
             }
         }
     }
@@ -868,9 +871,9 @@ async fn run_ui_server(ctx: &Ctx) -> Attempt {
 
     open::that(address).unwrap();
 
-    close_fd().map_err(|_| inner_fail("Failed to fork"))?;
+    close_fd().map_err(|_| inner_fail!("Failed to fork"))?;
 
-    shutdown.await.map_err(|_| inner_fail("Exited with error"))
+    shutdown.await.map_err(|_| inner_fail!("Exited with error"))
 }
 
 pub fn ui_command(ctx: &Ctx) -> Attempt {
@@ -880,13 +883,13 @@ pub fn ui_command(ctx: &Ctx) -> Attempt {
             std::thread::sleep(std::time::Duration::from_millis(500));
             return Ok(());
         }
-        Err(_) => return fail("Failed to start in background"),
+        Err(_) => return fail!("Failed to start in background"),
     }
 
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
-        .map_err(|_| inner_fail("Async runtime error"))?;
+        .map_err(|_| inner_fail!("Async runtime error"))?;
 
     runtime.block_on(async {
         match locate_background(ctx.repo.path().to_string_lossy().as_ref()).await {

@@ -5,18 +5,18 @@ use crate::error::{Attempt, fail, inner_fail};
 pub fn init_command() -> Attempt {
     match Repository::open_from_env() {
         Ok(_) => {
-            return fail("a repository already exists in this location");
+            return fail!("a repository already exists in this location");
         }
         Err(e) => match (e.class(), e.code()) {
             (ErrorClass::Repository, ErrorCode::NotFound) => {}
             _ => {
-                return fail("unexpected error checking for existing repository");
+                return fail!("unexpected error checking for existing repository");
             }
         },
     }
 
     let path =
-        std::env::current_dir().map_err(|_| inner_fail("failed to resolve current directory."))?;
+        std::env::current_dir().map_err(|_| inner_fail!("failed to resolve current directory."))?;
     let mut options = RepositoryInitOptions::new();
     options.initial_head("main");
     let repo = Repository::init_opts(path, &options)?;

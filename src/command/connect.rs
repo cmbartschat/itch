@@ -18,7 +18,7 @@ pub fn connect_command(ctx: &Ctx, args: &ConnectArgs) -> Attempt {
 
     if pull_main(ctx).is_err() {
         if !ctx.can_prompt() {
-            return fail("Added remote, but local main branch has diverged from origin.");
+            return fail!("Added remote, but local main branch has diverged from origin.");
         }
 
         let ignore_option = "ignore";

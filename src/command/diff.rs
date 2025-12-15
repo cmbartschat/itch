@@ -59,7 +59,7 @@ fn parse_intent(parts: &[String]) -> Maybe<DiffIntent> {
         if parts[0] == "unsaved" {
             return Ok(DiffIntent::FromSaved);
         } else {
-            return fail("Unexpected arguments to diff.");
+            return fail!("Unexpected arguments to diff.");
         }
     }
 
@@ -81,15 +81,15 @@ fn parse_intent(parts: &[String]) -> Maybe<DiffIntent> {
                 ));
             }
             _ => {
-                return fail("Expected 'of', 'from', or 'to'.");
+                return fail!("Expected 'of', 'from', or 'to'.");
             }
         };
     }
 
     if parts.len() != 4 {
-        fail("Unexpected argument format.")
+        fail!("Unexpected argument format.")
     } else if parts[0] != "from" || parts[2] != "to" {
-        fail("Expected 'from x to y' format.")
+        fail!("Expected 'from x to y' format.")
     } else {
         Ok(DiffIntent::Range(
             DiffPoint::Ref(parts[1].clone()),
@@ -151,10 +151,10 @@ pub fn diff_command(ctx: &Ctx, args: &DiffArgs) -> Attempt {
                     .diff_tree_to_tree(Some(&from_tree), Some(&to_tree), diff_options)?
             }
             (DiffPoint::Current, DiffPoint::Current) => {
-                return fail("Cannot diff current to current.");
+                return fail!("Cannot diff current to current.");
             }
             (DiffPoint::Current, DiffPoint::Ref(_)) => {
-                return fail("Cannot diff in this direction.");
+                return fail!("Cannot diff in this direction.");
             }
             (DiffPoint::Ref(from), DiffPoint::Current) => {
                 let from_tree = ctx.repo.revparse_single(from)?.peel_to_tree()?;

@@ -24,12 +24,12 @@ pub fn log_command(ctx: &Ctx) -> Attempt {
             &current_commit.id().to_string()[0..8],
             truncated_message,
         )
-        .map_err(|_| inner_fail("Failed to output data"))?;
+        .map_err(|_| inner_fail!("Failed to output data"))?;
 
         repo_head = current_commit.parents().next();
         iterations += 1;
         if iterations > 1000 {
-            return fail("Reached limit of 1000 commits printed.");
+            return fail!("Reached limit of 1000 commits printed.");
         }
     }
 

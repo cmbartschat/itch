@@ -19,7 +19,7 @@ pub fn resolve_squashed_message(
     let mut commit = top_commit;
     while commit.id() != fork_id {
         match commit.message() {
-            None => return fail("Invalid characters in previous message"),
+            None => return fail!("Invalid characters in previous message"),
             Some(m) => {
                 if m == "Save" {
                     commit = commit.parent(0)?;

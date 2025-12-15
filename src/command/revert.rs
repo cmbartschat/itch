@@ -23,7 +23,7 @@ pub fn revert_command(ctx: &Ctx, args: &RevertArgs) -> Attempt {
         .find_commit(ctx.repo.merge_base(base_commit.id(), head_commit.id())?)?;
 
     if args.args.is_empty() {
-        return fail("Missing files to revert.");
+        return fail!("Missing files to revert.");
     }
     let tree = fork_commit.tree()?;
     let mut options = CheckoutBuilder::new();
