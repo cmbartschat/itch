@@ -12,7 +12,7 @@ pub fn new_command(ctx: &Ctx, args: &NewArgs) -> Attempt {
             if n.is_empty() {
                 choose_random_branch_name(ctx)
             } else {
-                Ok(n.to_string())
+                Ok(n.clone())
             }
         }
         None => choose_random_branch_name(ctx),

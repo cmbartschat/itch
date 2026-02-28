@@ -154,13 +154,13 @@ impl SegmentedStatus {
             match (&work.from, &work.to) {
                 (Some(from), Some(to)) => {
                     if from == to {
-                        vec![from.to_string()]
+                        vec![from.clone()]
                     } else {
-                        vec![from.to_string(), to.to_string()]
+                        vec![from.clone(), to.clone()]
                     }
                 }
-                (None, Some(to)) => vec![to.to_string()],
-                (Some(from), None) => vec![from.to_string()],
+                (None, Some(to)) => vec![to.clone()],
+                (Some(from), None) => vec![from.clone()],
                 (None, None) => vec![],
             }
         } else {
