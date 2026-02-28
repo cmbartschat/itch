@@ -98,6 +98,15 @@ If you have remote, it will be used by itch to backup pending changes, and synch
 
 itch will also push and pull changes from the remote main branch, allowing you to collaborate with others in the repository.
 
+## Commit Footer
+
+If a project expects signoff with `git commit --signoff`, for example under the [Developer Certificate of Origin](https://wiki.linuxfoundation.org/dco), you can add the following to the `.git/config` file:
+
+```
+[itch]
+	footer = Signed-off-by: Full Name <email>
+```
+
 ## Recovering from bad states
 
 Itch is made to reduce the chances of mistakes during normal operation. If something does happen, it might be time to drop down into git. git has powerful tools for manipulating state and using the reflog to recover "lost" work is usually possible.

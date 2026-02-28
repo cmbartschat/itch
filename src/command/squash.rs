@@ -4,21 +4,22 @@ use crate::{
     cli::SquashArgs,
     ctx::Ctx,
     error::{Attempt, Maybe, fail},
-    save::resolve_commit_message,
+    save::{include_footer, resolve_commit_message},
 };
 
 pub fn resolve_squashed_message(
+    ctx: &Ctx,
     message: &[String],
     top_commit: Commit,
     fork_id: Oid,
 ) -> Maybe<String> {
     if let Some(m) = resolve_commit_message(message) {
-        return Ok(m);
+        return include_footer(ctx, &m);
     }
 
     let mut commit = top_commit;
     while commit.id() != fork_id {
-        match commit.message() {
+        match commit.summary() {
             None => return fail!("Invalid characters in previous message"),
             Some(m) => {
                 if m == "Save" {
@@ -29,7 +30,7 @@ pub fn resolve_squashed_message(
             }
         }
     }
-    Ok("Squash".into())
+    include_footer(ctx, "Squash")
 }
 
 pub fn squash_command(ctx: &Ctx, args: &SquashArgs) -> Attempt {
@@ -52,7 +53,7 @@ pub fn squash_command(ctx: &Ctx, args: &SquashArgs) -> Attempt {
 
     let tree = top_commit.tree()?;
 
-    let message = resolve_squashed_message(&args.message, top_commit, fork_id)?;
+    let message = resolve_squashed_message(ctx, &args.message, top_commit, fork_id)?;
 
     let squashed_commit = ctx.repo.find_commit(ctx.repo.commit(
         None,

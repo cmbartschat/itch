@@ -1,6 +1,19 @@
-use git2::IndexAddOption;
+use git2::{ErrorCode, IndexAddOption};
 
-use crate::{cli::SaveArgs, consts::TEMP_COMMIT_PREFIX, ctx::Ctx, error::Attempt};
+use crate::{
+    cli::SaveArgs,
+    consts::TEMP_COMMIT_PREFIX,
+    ctx::Ctx,
+    error::{Attempt, Maybe},
+};
+
+pub fn include_footer(ctx: &Ctx, full_message: &str) -> Maybe<String> {
+    match ctx.repo.config()?.get_string("itch.footer") {
+        Ok(v) => Ok(format!("{full_message}\n\n{v}")),
+        Err(e) if { e.code() == ErrorCode::NotFound } => Ok(full_message.to_string()),
+        Err(e) => Err(e.into()),
+    }
+}
 
 pub fn resolve_commit_message(message_parts: &[String]) -> Option<String> {
     let joined = message_parts.join(" ");
@@ -37,7 +50,7 @@ pub fn save(ctx: &Ctx, args: &SaveArgs, silent: bool) -> Attempt {
         Some("HEAD"),
         &signature,
         &signature,
-        &message,
+        &include_footer(ctx, &message)?,
         &tree,
         &[&parent],
     )?;
