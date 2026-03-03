@@ -37,15 +37,17 @@ fn create_stacked_send_commit(
         )?,
     )?;
 
-    let fork_tree = fork_commit.tree()?;
+    let mut new_tree = ctx.repo.treebuilder(Some(&fork_commit.tree()?))?;
 
-    let mut new_tree = ctx.repo.treebuilder(Some(&fork_tree))?;
+    let head_tree = head_commit.tree()?;
+
+    eprintln!("Updating {fork_commit:?} with files from tree: {head_tree:?}");
 
     for file in files_to_include {
-        if let Some(e) = fork_tree.get_name(file.as_str()) {
+        eprintln!("Adding {file}");
+        if let Some(e) = head_tree.get_name(file.as_str()) {
             new_tree.insert(file, e.id(), e.filemode())?;
         } else {
-            eprintln!("Removing {file}");
             new_tree.remove(file)?;
         }
     }
@@ -106,7 +108,7 @@ pub fn list_changed_files(ctx: &Ctx, head_commit: &Commit) -> Maybe<Vec<String>>
     Ok(files)
 }
 
-pub fn send_command(ctx: &Ctx, args: &SaveArgs) -> Attempt {
+fn inner_send_command(ctx: &Ctx, args: &SaveArgs, always_prompt_files: bool) -> Attempt {
     save_temp(ctx, "Save before sending".into())?;
     let head = ctx.repo.head()?;
 
@@ -122,7 +124,7 @@ pub fn send_command(ctx: &Ctx, args: &SaveArgs) -> Attempt {
         Err(e) => return Err(e.into()),
     };
 
-    let files_to_include = if let Some(e) = &previous_push_commit {
+    let files_to_include = if !always_prompt_files && let Some(e) = &previous_push_commit {
         list_changed_files(ctx, e)?
     } else {
         let all_files = list_changed_files(ctx, &head.peel_to_commit()?)?;
@@ -163,10 +165,22 @@ pub fn send_command(ctx: &Ctx, args: &SaveArgs) -> Attempt {
     Ok(())
 }
 
-pub fn resend_command(_ctx: &Ctx, _args: &SaveArgs) -> Attempt {
-    todo!()
+pub fn send_command(ctx: &Ctx, args: &SaveArgs) -> Attempt {
+    inner_send_command(ctx, args, false)
 }
 
-pub fn unsend_command(_ctx: &Ctx) -> Attempt {
-    todo!()
+pub fn resend_command(ctx: &Ctx, args: &SaveArgs) -> Attempt {
+    inner_send_command(ctx, args, true)
+}
+
+pub fn unsend_command(ctx: &Ctx) -> Attempt {
+    let head = ctx.repo.head()?;
+
+    let Some(base_name) = head.shorthand() else {
+        return fail!("Unable to resolve current branch name");
+    };
+
+    let tag_name = make_send_tag_name(base_name);
+    ctx.repo.tag_delete(&tag_name)?;
+    Ok(())
 }
