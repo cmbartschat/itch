@@ -98,6 +98,23 @@ If you have remote, it will be used by itch to backup pending changes, and synch
 
 itch will also push and pull changes from the remote main branch, allowing you to collaborate with others in the repository.
 
+### Sending Pull Requests
+
+`itch save` will automatically save your branch to the remote server, and you have the option to open a Pull Request using that branch. If you'd like to customize which changed files to include in the PR, use `itch send`.
+
+// send up a PR
+// update the "message"
+// add or remove selected files
+
+// If unsent:
+`itch send` - you will be prompted to confirm which changed files to include
+`itch send this is the message` - specify a custom message for the sent changes
+
+// If already exists
+`itch send` - push again with same files
+`itch send new message` - update the message in the sent commit
+`itch resend` - prompt again for files
+
 ## Commit Footer
 
 If a project expects signoff with `git commit --signoff`, for example under the [Developer Certificate of Origin](https://wiki.linuxfoundation.org/dco), you can add the following to the `.git/config` file:

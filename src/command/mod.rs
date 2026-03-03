@@ -9,6 +9,7 @@ use revert::revert_command;
 use split::split_command;
 
 use crate::command::archive::archive_command;
+use crate::command::send::{resend_command, send_command, unsend_command};
 use crate::error::{Attempt, fail};
 use crate::{
     cli::{Cli, Commands},
@@ -37,6 +38,7 @@ mod prune;
 mod rename;
 mod revert;
 mod save;
+mod send;
 mod split;
 mod squash;
 mod status;
@@ -79,6 +81,9 @@ pub fn run_command(cli: &Cli) -> Attempt {
         Commands::Status(args) => status_command(&ctx, args),
         Commands::Sync(args) => sync_command(&ctx, args),
         Commands::Ui => ui_command(&ctx),
+        Commands::Send(args) => send_command(&ctx, args),
+        Commands::Resend(args) => resend_command(&ctx, args),
+        Commands::Unsend => unsend_command(&ctx),
         Commands::Unsave(args) => unsave_command(&ctx, args),
         Commands::Revert(args) => revert_command(&ctx, args),
     }

@@ -68,6 +68,15 @@ pub enum Commands {
     #[command(about = "Rename the current branch")]
     Rename(RenameArgs),
 
+    #[command(about = "Push a branch with selected changes in your branch")]
+    Send(SaveArgs),
+
+    #[command(about = "Reconfigure the files contain in a \"send\" branch")]
+    Resend(SaveArgs),
+
+    #[command(about = "Delete the current \"send\" branch")]
+    Unsend,
+
     #[command(about = "Show interactive UI")]
     Ui,
 
