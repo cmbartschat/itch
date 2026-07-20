@@ -214,17 +214,25 @@ impl SegmentedStatus {
     }
 }
 
+fn truncate_message(s: &str) -> String {
+    if s.len() < 40 {
+        s.to_string()
+    } else {
+        // Truncate on a char boundary at or before byte 37 so multi-byte
+        // UTF-8 characters landing on the cutoff don't cause a panic.
+        let cut = s
+            .char_indices()
+            .map(|(i, _)| i)
+            .take_while(|&i| i <= 37)
+            .last()
+            .unwrap_or(0);
+        format!("{}...", s[..cut].trim())
+    }
+}
+
 fn get_post_fork_commits(info: &BranchSummary, styles: &Styles) -> String {
     let truncated_message = match &info.latest_message {
-        Some(s) => {
-            let mut final_message = String::from(s);
-            if final_message.len() < 40 {
-                final_message
-            } else {
-                final_message.truncate(37);
-                format!("{}...", final_message.trim())
-            }
-        }
+        Some(s) => truncate_message(s),
         _ => String::new(),
     };
 
@@ -430,4 +438,32 @@ pub fn status_command(ctx: &Ctx, args: &StatusArgs) -> Attempt {
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod truncate_tests {
+    use super::truncate_message;
+
+    #[test]
+    fn short_message_is_unchanged() {
+        assert_eq!(truncate_message("a short message"), "a short message");
+    }
+
+    #[test]
+    fn long_ascii_message_is_truncated() {
+        let s = "a".repeat(60);
+        let out = truncate_message(&s);
+        assert!(out.ends_with("..."));
+        assert!(out.len() < s.len());
+    }
+
+    #[test]
+    fn multibyte_char_on_cutoff_does_not_panic() {
+        // A right-arrow (3 bytes) straddling byte 37 used to trigger
+        // `assertion failed: self.is_char_boundary(new_len)`.
+        let s = format!("{}→ trailing text after the cutoff", "x".repeat(36));
+        let out = truncate_message(&s);
+        assert!(out.ends_with("..."));
+        assert!(out.is_char_boundary(out.len()));
+    }
 }
