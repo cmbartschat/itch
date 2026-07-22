@@ -217,12 +217,11 @@ impl SegmentedStatus {
 fn get_post_fork_commits(info: &BranchSummary, styles: &Styles) -> String {
     let truncated_message = match &info.latest_message {
         Some(s) => {
-            let mut final_message = String::from(s);
-            if final_message.len() < 40 {
-                final_message
+            if s.len() < 40 {
+                s.into()
             } else {
-                final_message.truncate(37);
-                format!("{}...", final_message.trim())
+                let f: String = s.chars().take(37).collect();
+                format!("{}...", f.trim())
             }
         }
         _ => String::new(),
